@@ -16,6 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { BrandIcon, BrandLogo } from "@/components/Brand";
 import { LanguageSwitch } from "@/components/LanguageSwitch";
+import { PublicContactForm } from "@/components/PublicContactForm";
 import { useI18n } from "@/lib/i18n";
 import { useMe } from "@/lib/session";
 
@@ -412,9 +413,11 @@ function Landing() {
             </Link>
           </Button>
         </section>
+
+        <PublicContactForm />
       </main>
 
-      <footer className="public-footer" id="contact">
+      <footer className="public-footer">
         <div className="public-footer-main">
           <div className="public-footer-brand">
             <Link to="/" aria-label="EXAMPRO — Accueil">
@@ -437,7 +440,7 @@ function Landing() {
           </div>
           <div className="public-footer-links">
             <strong>{t("landing.navContact")}</strong>
-            <p>{t("landing.footerContactNote")}</p>
+            <a href="#contact">{t("contact.footerLink")}</a>
           </div>
         </div>
         <div className="public-footer-bottom">

@@ -22,3 +22,39 @@ cd <repository-name>
 npm i
 npm run dev
 ```
+
+## Database migrations
+
+Supabase SQL migrations in `supabase/migrations/` are the source of truth. Add
+new schema changes as timestamped SQL files in that directory, for example
+`supabase/migrations/<timestamp>_<description>.sql`. Do not generate or edit
+migrations with Drizzle.
+
+### Local development and fresh local databases
+
+The following commands start and reset the local Supabase stack. `db reset`
+recreates the **local** database and applies every migration in
+`supabase/migrations/`; it does not target the linked ExamPro project:
+
+```sh
+npm exec supabase -- start
+npm exec supabase -- db reset
+```
+
+Run the reset only when it is acceptable to recreate local database data.
+
+### Inspecting the linked project
+
+To compare local migration versions with the configured remote project, run:
+
+```sh
+npm exec supabase -- migration list --linked
+```
+
+This lists migration history and does not apply migrations. The linked project
+is selected by `supabase/config.toml`; confirm that it is the intended
+environment before any remote operation.
+
+Applying migrations to a remote project changes its database. Do not run
+`supabase db push` or another migration-apply command against ExamPro without
+explicit approval and a reviewed deployment plan.

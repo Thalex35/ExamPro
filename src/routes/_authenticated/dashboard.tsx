@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { BookOpen, FileText } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { catalogQuery, subjectsFor, trackFilter } from "@/lib/catalog";
+import { catalogQuery, isPrioritySubject, subjectsFor, trackFilter } from "@/lib/catalog";
 import { useMe } from "@/lib/session";
 import { useI18n } from "@/lib/i18n";
 import { Empty, ErrorState, Loading } from "@/components/States";
@@ -69,9 +69,12 @@ function Dashboard() {
         {subjects.length === 0 ? <Empty>{t("subj.empty")}</Empty> : (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {subjects.map((s) => (
-              <Link key={s.id} to="/subjects/$subjectId" params={{ subjectId: s.id }} className="card-surface flex items-center gap-3 p-4 transition-shadow hover:shadow-brand">
+              <Link key={s.id} to="/subjects/$subjectId" params={{ subjectId: s.id }} className={`card-surface flex items-center gap-3 p-4 transition-shadow hover:shadow-brand ${isPrioritySubject(s, track) ? "border-brand/50 bg-brand/5" : ""}`}>
                 <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent text-accent-foreground"><BookOpen className="h-4 w-4" /></span>
-                <span className="font-semibold text-heading">{name(s)}</span>
+                <span className="flex flex-wrap items-center gap-2 font-semibold text-heading">
+                  {name(s)}
+                  {isPrioritySubject(s, track) && <span className="rounded-full bg-brand/10 px-2 py-0.5 text-xs font-medium text-deep">{t("subj.priority")}</span>}
+                </span>
               </Link>
             ))}
           </div>

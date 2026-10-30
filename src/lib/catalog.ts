@@ -9,6 +9,14 @@ export type Subject = T["subjects"]["Row"];
 export type Chapter = T["chapters"]["Row"];
 export type Topic = T["topics"]["Row"];
 
+const prioritySubjectsByTrack: Readonly<Record<string, readonly string[]>> = {
+  SMP: ["mathematiques", "physique"],
+};
+
+export function isPrioritySubject(subject: Subject, track: Track | undefined) {
+  return track ? (prioritySubjectsByTrack[track.code]?.includes(subject.slug) ?? false) : false;
+}
+
 /** Whole academic catalog. Small and read-only for non-admins, so fetched once. */
 export const catalogQuery = queryOptions({
   queryKey: ["catalog"],
@@ -46,11 +54,24 @@ export function subjectsFor(c: Catalog, levelId: string | null | undefined, trac
   if (!level) return [];
   const inLevel = new Set(c.levelSubjects.filter((x) => x.level_id === levelId).map((x) => x.subject_id));
   let ids = inLevel;
+  let track: Track | undefined;
   if (level.requires_track && trackId) {
-    const inTrack = new Set(c.trackSubjects.filter((x) => x.track_id === trackId).map((x) => x.subject_id));
+    const selectedTrack = c.tracks.find((candidate) => candidate.id === trackId && candidate.level_id === levelId);
+    if (!selectedTrack) return [];
+    track = selectedTrack;
+    const inTrack = new Set(c.trackSubjects.filter((x) => x.track_id === selectedTrack.id).map((x) => x.subject_id));
     ids = new Set([...inLevel].filter((id) => inTrack.has(id)));
+  } else if (level.requires_track) {
+    return [];
   }
-  return c.subjects.filter((s) => ids.has(s.id));
+  const priorityTrack = track;
+  return c.subjects
+    .filter((subject) => ids.has(subject.id))
+    .sort(
+      (a, b) =>
+        Number(isPrioritySubject(b, priorityTrack)) - Number(isPrioritySubject(a, priorityTrack)) ||
+        a.name_fr.localeCompare(b.name_fr),
+    );
 }
 
 export function tracksFor(c: Catalog, levelId: string | null | undefined) {

@@ -1,5 +1,18 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { BookOpen, FileText, GraduationCap, Languages } from "lucide-react";
+import { useState } from "react";
+import {
+  ArrowRight,
+  BookOpen,
+  CheckCircle2,
+  ChevronRight,
+  FileText,
+  GraduationCap,
+  Languages,
+  Library,
+  Menu,
+  Plus,
+  X,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BrandIcon, BrandLogo } from "@/components/Brand";
 import { LanguageSwitch } from "@/components/LanguageSwitch";
@@ -10,9 +23,16 @@ export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "EXAMPRO — Préparez vos examens officiels en Haïti" },
-      { name: "description", content: "Cours et anciens examens classés par niveau, filière et matière pour les élèves de 9e AF et de Terminale." },
+      {
+        name: "description",
+        content:
+          "Cours et anciens examens classés par niveau, filière, matière et chapitre pour les élèves de 9e AF et de Terminale.",
+      },
       { property: "og:title", content: "EXAMPRO — Learn · Practice · Succeed" },
-      { property: "og:description", content: "Cours et anciens examens pour les élèves haïtiens de 9e AF et de Terminale." },
+      {
+        property: "og:description",
+        content: "Cours et anciens examens pour les élèves haïtiens de 9e AF et de Terminale.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -23,101 +43,411 @@ export const Route = createFileRoute("/")({
 function Landing() {
   const { t } = useI18n();
   const { data: me } = useMe();
-  const benefits = [
-    { icon: GraduationCap, t: t("landing.b1.t"), d: t("landing.b1.d") },
-    { icon: FileText, t: t("landing.b2.t"), d: t("landing.b2.d") },
-    { icon: BookOpen, t: t("landing.b3.t"), d: t("landing.b3.d") },
-    { icon: Languages, t: t("landing.b4.t"), d: t("landing.b4.d") },
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+
+  const closeMobileNav = () => setMobileNavOpen(false);
+  const navLinks = [
+    { href: "#top", label: t("landing.navHome") },
+    { href: "#mission", label: t("landing.navFeatures") },
+    { href: "#how", label: t("landing.navHow") },
+    { href: "#about", label: t("landing.navAbout") },
+    { href: "#contact", label: t("landing.navContact") },
   ];
-  const steps = [t("landing.h1"), t("landing.h2"), t("landing.h3")];
 
   return (
-    <div className="min-h-screen">
-      <header className="border-b bg-card">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-8">
-          <BrandLogo className="h-10 sm:h-12" />
-          <div className="flex items-center gap-2 sm:gap-3">
-            <LanguageSwitch />
-            {me ? (
-              <Button asChild size="sm">
-                <Link to="/dashboard">{t("nav.dashboard")}</Link>
-              </Button>
-            ) : (
-              <>
-                <Button asChild variant="ghost" size="sm" className="hidden sm:inline-flex">
-                  <Link to="/auth">{t("nav.login")}</Link>
-                </Button>
+    <div className="public-site" id="top">
+      <header className="public-header">
+        <div className="public-nav">
+          <Link
+            to="/"
+            className="public-brand"
+            aria-label="EXAMPRO — Accueil"
+            onClick={closeMobileNav}
+          >
+            <BrandLogo className="h-10 sm:h-11" />
+          </Link>
+
+          <div
+            id="public-navigation"
+            className={`public-nav-content${mobileNavOpen ? " is-open" : ""}`}
+          >
+            <nav className="public-links" aria-label={t("landing.navLabel")}>
+              {navLinks.map((item) => (
+                <a key={item.href} href={item.href} onClick={closeMobileNav}>
+                  {item.label}
+                </a>
+              ))}
+            </nav>
+            <div className="public-actions">
+              <LanguageSwitch />
+              {me ? (
                 <Button asChild size="sm">
-                  <Link to="/auth" search={{ mode: "signup" }}>{t("nav.signup")}</Link>
+                  <Link to="/dashboard">{t("nav.dashboard")}</Link>
                 </Button>
-              </>
-            )}
+              ) : (
+                <>
+                  <Button asChild variant="ghost" size="sm">
+                    <Link to="/auth" onClick={closeMobileNav}>
+                      {t("nav.login")}
+                    </Link>
+                  </Button>
+                  <Button asChild size="sm">
+                    <Link to="/auth" search={{ mode: "signup" }} onClick={closeMobileNav}>
+                      {t("nav.signup")}
+                    </Link>
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
+
+          <button
+            type="button"
+            className="public-mobile-toggle"
+            onClick={() => setMobileNavOpen((open) => !open)}
+            aria-label={mobileNavOpen ? t("landing.closeMenu") : t("landing.openMenu")}
+            aria-expanded={mobileNavOpen}
+            aria-controls="public-navigation"
+          >
+            {mobileNavOpen ? <X aria-hidden="true" /> : <Menu aria-hidden="true" />}
+          </button>
         </div>
       </header>
 
-      <section className="hero-surface">
-        <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-16 sm:px-8 md:grid-cols-[1.3fr_1fr] md:py-24">
-          <div>
-            <p className="mb-4 inline-block rounded-full bg-primary-foreground/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-brand">{t("landing.eyebrow")}</p>
-            <h1 className="text-4xl font-extrabold leading-tight text-primary-foreground sm:text-5xl">{t("landing.title")}</h1>
-            <p className="mt-5 max-w-xl text-lg text-primary-foreground/80">{t("landing.subtitle")}</p>
-            <div className="mt-8 flex flex-wrap gap-3">
-              <Button asChild variant="hero" size="lg">
-                <Link to="/auth" search={{ mode: "signup" }}>{t("landing.cta")}</Link>
-              </Button>
-              <Button asChild variant="outline-light" size="lg">
-                <Link to="/auth">{t("landing.cta2")}</Link>
-              </Button>
-            </div>
-          </div>
-          <div className="hidden justify-center md:flex">
-            <div className="rounded-3xl bg-card p-10 shadow-brand">
-              <BrandIcon className="h-48 w-48" />
-              <p className="mt-4 text-center text-sm font-semibold tracking-widest text-deep">{t("brand.tagline")}</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-6xl px-4 py-16 sm:px-8">
-        <h2 className="text-2xl font-bold sm:text-3xl">{t("landing.benefits")}</h2>
-        <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {benefits.map((b) => (
-            <div key={b.t} className="card-surface p-6">
-              <div className="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-accent text-accent-foreground">
-                <b.icon className="h-5 w-5" />
+      <main>
+        <section className="public-hero">
+          <div className="public-hero-inner">
+            <div className="public-hero-copy">
+              <span className="public-eyebrow">
+                <span className="public-eyebrow-dot" />
+                {t("landing.heroEyebrow")}
+              </span>
+              <h1>
+                {t("landing.heroTitle")}
+                <span>{t("landing.heroTitleAccent")}</span>
+              </h1>
+              <p>{t("landing.heroDescription")}</p>
+              <div className="public-hero-actions">
+                <Button asChild variant="hero" size="lg">
+                  <Link to="/auth" search={{ mode: "signup" }}>
+                    {t("landing.heroPrimary")} <ArrowRight aria-hidden="true" />
+                  </Link>
+                </Button>
+                <a className="public-secondary-action" href="#mission">
+                  <span className="public-play-icon">
+                    <BookOpen aria-hidden="true" />
+                  </span>
+                  {t("landing.heroSecondary")}
+                </a>
               </div>
-              <h3 className="font-semibold">{b.t}</h3>
-              <p className="mt-2 text-sm text-muted-foreground">{b.d}</p>
+              <div className="public-trust-row">
+                <span>
+                  <CheckCircle2 aria-hidden="true" />
+                  {t("landing.trustLevel")}
+                </span>
+                <span>
+                  <CheckCircle2 aria-hidden="true" />
+                  {t("landing.trustLanguage")}
+                </span>
+                <span>
+                  <CheckCircle2 aria-hidden="true" />
+                  {t("landing.trustResources")}
+                </span>
+              </div>
             </div>
-          ))}
-        </div>
-      </section>
 
-      <section className="border-y bg-card">
-        <div className="mx-auto max-w-6xl px-4 py-16 sm:px-8">
-          <h2 className="text-2xl font-bold sm:text-3xl">{t("landing.how")}</h2>
-          <ol className="mt-8 grid gap-6 md:grid-cols-3">
-            {steps.map((s, i) => (
-              <li key={s} className="flex gap-4">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary font-bold text-primary-foreground">{i + 1}</span>
-                <p className="pt-2 font-medium text-heading">{s}</p>
-              </li>
+            <div className="public-hero-visual" role="img" aria-label={t("landing.previewLabel")}>
+              <div className="public-visual-orbit public-visual-orbit-one" />
+              <div className="public-visual-orbit public-visual-orbit-two" />
+              <div className="public-preview-window">
+                <div className="public-preview-top">
+                  <span className="public-preview-brand">
+                    <BrandIcon className="h-7 w-7" />
+                  </span>
+                  <span className="public-preview-search">
+                    <Library aria-hidden="true" /> {t("landing.previewResources")}
+                  </span>
+                  <span className="public-preview-avatar" aria-hidden="true">
+                    <GraduationCap />
+                  </span>
+                </div>
+                <div className="public-preview-body">
+                  <div className="public-preview-sidebar" aria-hidden="true">
+                    <span className="active">
+                      <BookOpen />
+                    </span>
+                    <span>
+                      <Library />
+                    </span>
+                    <span>
+                      <FileText />
+                    </span>
+                  </div>
+                  <div className="public-preview-content">
+                    <span className="public-preview-kicker">{t("landing.previewKicker")}</span>
+                    <strong>{t("landing.previewTitle")}</strong>
+                    <div className="public-preview-subject">
+                      <span className="public-preview-subject-icon">
+                        <BookOpen />
+                      </span>
+                      <span>
+                        <small>{t("landing.previewSection")}</small>
+                        <b>{t("landing.previewSubject")}</b>
+                      </span>
+                      <ChevronRight aria-hidden="true" />
+                    </div>
+                    <div className="public-preview-lines" aria-hidden="true">
+                      <span />
+                      <span />
+                      <span />
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="public-float-card public-float-resources">
+                <span className="public-float-icon">
+                  <FileText aria-hidden="true" />
+                </span>
+                <span>
+                  <strong>{t("landing.floatExams")}</strong>
+                  <small>{t("landing.floatExamsDescription")}</small>
+                </span>
+              </div>
+              <div className="public-float-card public-float-learning">
+                <span className="public-float-icon">
+                  <GraduationCap aria-hidden="true" />
+                </span>
+                <span>
+                  <strong>{t("landing.floatCourses")}</strong>
+                  <small>{t("landing.floatCoursesDescription")}</small>
+                </span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="public-section public-mission" id="mission">
+          <div className="public-section-heading">
+            <span className="public-section-label">{t("landing.missionLabel")}</span>
+            <h2>{t("landing.missionTitle")}</h2>
+            <p>{t("landing.missionDescription")}</p>
+          </div>
+          <div className="public-feature-grid">
+            {[
+              {
+                icon: Library,
+                tone: "blue",
+                title: t("landing.featureArchiveTitle"),
+                text: t("landing.featureArchiveText"),
+              },
+              {
+                icon: GraduationCap,
+                tone: "cyan",
+                title: t("landing.featureLevelTitle"),
+                text: t("landing.featureLevelText"),
+              },
+              {
+                icon: BookOpen,
+                tone: "green",
+                title: t("landing.featureCoursesTitle"),
+                text: t("landing.featureCoursesText"),
+              },
+              {
+                icon: Languages,
+                tone: "orange",
+                title: t("landing.featureLanguagesTitle"),
+                text: t("landing.featureLanguagesText"),
+              },
+            ].map((item) => (
+              <article className="public-feature-card" key={item.title}>
+                <span className={`public-feature-icon ${item.tone}`}>
+                  <item.icon aria-hidden="true" />
+                </span>
+                <h3>{item.title}</h3>
+                <p>{item.text}</p>
+                <a href="#how">
+                  {t("landing.explore")} <ArrowRight aria-hidden="true" />
+                </a>
+              </article>
             ))}
-          </ol>
-          <p className="mt-10 text-sm text-muted-foreground">
-            {t("landing.teacherCta")}{" "}
-            <Link to="/auth" search={{ mode: "signup" }} className="font-semibold text-deep underline-offset-4 hover:underline">
-              {t("nav.signup")}
-            </Link>
-          </p>
-        </div>
-      </section>
+          </div>
+        </section>
 
-      <footer className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-4 py-8 text-sm text-muted-foreground sm:px-8">
-        <BrandLogo className="h-8" />
-        <span>© {new Date().getFullYear()} EXAMPRO · {t("brand.tagline")}</span>
+        <section className="public-steps-section" id="how">
+          <div className="public-steps-visual">
+            <div className="public-learning-card">
+              <div className="public-learning-card-header">
+                <BrandIcon className="h-10 w-10" />
+                <span>
+                  <small>{t("landing.pathLabel")}</small>
+                  <strong>{t("landing.pathTitle")}</strong>
+                </span>
+              </div>
+              <div className="public-learning-step">
+                <span className="complete">
+                  <CheckCircle2 aria-hidden="true" />
+                </span>
+                <span>
+                  <small>{t("landing.pathStepOne")}</small>
+                  <strong>{t("landing.pathStepOneText")}</strong>
+                </span>
+              </div>
+              <div className="public-learning-step">
+                <span>
+                  <BookOpen aria-hidden="true" />
+                </span>
+                <span>
+                  <small>{t("landing.pathStepTwo")}</small>
+                  <strong>{t("landing.pathStepTwoText")}</strong>
+                </span>
+              </div>
+              <div className="public-learning-step">
+                <span>
+                  <FileText aria-hidden="true" />
+                </span>
+                <span>
+                  <small>{t("landing.pathStepThree")}</small>
+                  <strong>{t("landing.pathStepThreeText")}</strong>
+                </span>
+              </div>
+            </div>
+            <div className="public-verification-note">
+              <CheckCircle2 aria-hidden="true" />
+              <span>
+                <strong>{t("landing.resourceAccessTitle")}</strong>
+                <small>{t("landing.resourceAccessText")}</small>
+              </span>
+            </div>
+          </div>
+          <div className="public-steps-copy">
+            <span className="public-section-label">{t("landing.howLabel")}</span>
+            <h2>{t("landing.howTitle")}</h2>
+            <p className="public-steps-intro">{t("landing.howDescription")}</p>
+            {[
+              ["01", t("landing.stepOneTitle"), t("landing.stepOneText")],
+              ["02", t("landing.stepTwoTitle"), t("landing.stepTwoText")],
+              ["03", t("landing.stepThreeTitle"), t("landing.stepThreeText")],
+            ].map(([number, title, description]) => (
+              <div className="public-step" key={number}>
+                <span>{number}</span>
+                <div>
+                  <h3>{title}</h3>
+                  <p>{description}</p>
+                </div>
+              </div>
+            ))}
+            <Button asChild variant="hero">
+              <Link to="/auth" search={{ mode: "signup" }}>
+                {t("landing.createProfile")} <ArrowRight aria-hidden="true" />
+              </Link>
+            </Button>
+          </div>
+        </section>
+
+        <section className="public-section public-audience" id="about">
+          <div className="public-section-heading">
+            <span className="public-section-label">{t("landing.aboutLabel")}</span>
+            <h2>{t("landing.aboutTitle")}</h2>
+            <p>{t("landing.aboutDescription")}</p>
+          </div>
+          <div className="public-audience-grid">
+            <article className="public-audience-card">
+              <span className="public-audience-icon">
+                <GraduationCap aria-hidden="true" />
+              </span>
+              <h3>{t("landing.studentTitle")}</h3>
+              <p>{t("landing.studentDescription")}</p>
+              <Link to="/auth" search={{ mode: "signup" }}>
+                {t("landing.studentAction")} <ChevronRight aria-hidden="true" />
+              </Link>
+            </article>
+            <article className="public-audience-card">
+              <span className="public-audience-icon">
+                <BookOpen aria-hidden="true" />
+              </span>
+              <h3>{t("landing.teacherTitle")}</h3>
+              <p>{t("landing.teacherDescription")}</p>
+              <Link to="/auth" search={{ mode: "signup" }}>
+                {t("landing.teacherAction")} <ChevronRight aria-hidden="true" />
+              </Link>
+            </article>
+          </div>
+        </section>
+
+        <section className="public-faq-section" id="faq">
+          <div className="public-faq-heading">
+            <span className="public-section-label">{t("landing.faqLabel")}</span>
+            <h2>{t("landing.faqTitle")}</h2>
+            <p>{t("landing.faqDescription")}</p>
+            <a href="#contact">
+              {t("landing.faqContact")} <ArrowRight aria-hidden="true" />
+            </a>
+          </div>
+          <div className="public-faq-list">
+            {[
+              [t("landing.faqOneQuestion"), t("landing.faqOneAnswer")],
+              [t("landing.faqTwoQuestion"), t("landing.faqTwoAnswer")],
+              [t("landing.faqThreeQuestion"), t("landing.faqThreeAnswer")],
+            ].map(([question, answer], index) => (
+              <details key={question} open={index === 0}>
+                <summary>
+                  {question}
+                  <Plus aria-hidden="true" />
+                </summary>
+                <p>{answer}</p>
+              </details>
+            ))}
+          </div>
+        </section>
+
+        <section className="public-final-cta">
+          <div>
+            <span className="public-section-label">{t("landing.ctaLabel")}</span>
+            <h2>{t("landing.ctaTitle")}</h2>
+            <p>{t("landing.ctaDescription")}</p>
+          </div>
+          <Button asChild variant="hero" size="lg">
+            <Link to="/auth" search={{ mode: "signup" }}>
+              {t("landing.ctaButton")} <ArrowRight aria-hidden="true" />
+            </Link>
+          </Button>
+        </section>
+      </main>
+
+      <footer className="public-footer" id="contact">
+        <div className="public-footer-main">
+          <div className="public-footer-brand">
+            <Link to="/" aria-label="EXAMPRO — Accueil">
+              <BrandLogo className="h-10" />
+            </Link>
+            <p>{t("landing.footerTagline")}</p>
+            <p>{t("landing.footerDescription")}</p>
+          </div>
+          <div className="public-footer-links">
+            <strong>{t("landing.footerPlatform")}</strong>
+            <a href="#mission">{t("landing.navFeatures")}</a>
+            <Link to="/exams">{t("landing.footerExams")}</Link>
+            <Link to="/subjects">{t("landing.footerCourses")}</Link>
+          </div>
+          <div className="public-footer-links">
+            <strong>{t("landing.footerAbout")}</strong>
+            <a href="#about">{t("landing.navAbout")}</a>
+            <a href="#how">{t("landing.navHow")}</a>
+            <a href="#faq">{t("landing.navFaq")}</a>
+          </div>
+          <div className="public-footer-links">
+            <strong>{t("landing.navContact")}</strong>
+            <p>{t("landing.footerContactNote")}</p>
+          </div>
+        </div>
+        <div className="public-footer-bottom">
+          <span>
+            © {new Date().getFullYear()} EXAMPRO · {t("brand.tagline")}
+          </span>
+          <span className="public-footer-language">
+            <Languages aria-hidden="true" /> Français · Kreyòl
+          </span>
+        </div>
       </footer>
     </div>
   );

@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable/index";
+import { signInWithGoogle } from "@/lib/oauth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -41,14 +41,28 @@ function AuthPage() {
   const [info, setInfo] = useState<string | null>(null);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session) navigate({ to: "/dashboard", replace: true });
-    });
+    let active = true;
     const { data } = supabase.auth.onAuthStateChange((_e, session) => {
       if (session) navigate({ to: "/dashboard", replace: true });
     });
-    return () => data.subscription.unsubscribe();
-  }, [navigate]);
+    const callbackError = new URLSearchParams(window.location.search).get("error_description");
+    void supabase.auth.getSession().then(({ data: sessionData, error }) => {
+      if (!active) return;
+      if (error) {
+        toast.error(errMsg(error));
+      } else if (sessionData.session) {
+        navigate({ to: "/dashboard", replace: true });
+      } else if (callbackError) {
+        toast.error(callbackError);
+      }
+    }).catch((error: unknown) => {
+      if (active) toast.error(errMsg(error));
+    });
+    return () => {
+      active = false;
+      data.subscription.unsubscribe();
+    };
+  }, [navigate, errMsg]);
 
   useEffect(() => setInfo(null), [mode]);
 
@@ -81,8 +95,15 @@ function AuthPage() {
   }
 
   async function google() {
-    const result = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin + "/auth" });
-    if (result.error) toast.error(errMsg(result.error));
+    setBusy(true);
+    try {
+      const { error } = await signInWithGoogle(window.location.origin);
+      if (error) throw error;
+    } catch (error) {
+      toast.error(errMsg(error));
+    } finally {
+      setBusy(false);
+    }
   }
 
   const title = mode === "login" ? t("auth.loginTitle") : mode === "signup" ? t("auth.signupTitle") : t("auth.forgotTitle");
@@ -135,7 +156,7 @@ function AuthPage() {
               <div className="my-5 flex items-center gap-3 text-xs uppercase text-muted-foreground">
                 <span className="h-px flex-1 bg-border" /> {t("auth.or")} <span className="h-px flex-1 bg-border" />
               </div>
-              <Button variant="outline" size="lg" onClick={google} type="button">{t("auth.google")}</Button>
+              <Button variant="outline" size="lg" onClick={google} type="button" disabled={busy}>{t("auth.google")}</Button>
             </>
           )}
           <p className="mt-6 text-center text-sm text-muted-foreground">

@@ -47,7 +47,8 @@ const fr = {
   "landing.heroEyebrow": "Pour les élèves de 9e AF et de Terminale",
   "landing.heroTitle": "Prépare-toi mieux.",
   "landing.heroTitleAccent": " Aborde tes examens avec confiance.",
-  "landing.heroDescription": "Accède aux cours et aux anciens examens classés par niveau, filière, matière et chapitre pour préparer les examens officiels en Haïti.",
+  "landing.heroDescription":
+    "Accède aux cours et aux anciens examens classés par niveau, filière, matière et chapitre pour préparer les examens officiels en Haïti.",
   "landing.heroPrimary": "Commencer à apprendre",
   "landing.heroSecondary": "Découvrir la plateforme",
   "landing.trustLevel": "Adapté à ton niveau",
@@ -65,13 +66,17 @@ const fr = {
   "landing.floatCoursesDescription": "Organisés par chapitre",
   "landing.missionLabel": "NOTRE MISSION",
   "landing.missionTitle": "Les ressources pour préparer tes examens, au même endroit.",
-  "landing.missionDescription": "Une préparation structurée autour des niveaux et des matières du parcours scolaire haïtien.",
+  "landing.missionDescription":
+    "Une préparation structurée autour des niveaux et des matières du parcours scolaire haïtien.",
   "landing.featureArchiveTitle": "Archives organisées",
-  "landing.featureArchiveText": "Parcours les anciens examens publiés et filtre-les par matière et année.",
+  "landing.featureArchiveText":
+    "Parcours les anciens examens publiés et filtre-les par matière et année.",
   "landing.featureLevelTitle": "Contenu adapté à ton niveau",
-  "landing.featureLevelText": "Retrouve les matières correspondant à ton niveau et, en Terminale, à ta filière.",
+  "landing.featureLevelText":
+    "Retrouve les matières correspondant à ton niveau et, en Terminale, à ta filière.",
   "landing.featureCoursesTitle": "Cours classés par chapitre",
-  "landing.featureCoursesText": "Consulte les cours publiés par les enseignants dans les matières de ton parcours.",
+  "landing.featureCoursesText":
+    "Consulte les cours publiés par les enseignants dans les matières de ton parcours.",
   "landing.featureLanguagesTitle": "Français et Kreyòl",
   "landing.featureLanguagesText": "Utilise l’interface dans la langue qui te convient.",
   "landing.explore": "En savoir plus",
@@ -87,36 +92,45 @@ const fr = {
   "landing.resourceAccessText": "Accès selon ton parcours académique",
   "landing.howLabel": "COMMENT ÇA MARCHE",
   "landing.howTitle": "Ton parcours, à ton rythme.",
-  "landing.howDescription": "Crée ton profil, retrouve les ressources de ton programme et avance étape par étape.",
+  "landing.howDescription":
+    "Crée ton profil, retrouve les ressources de ton programme et avance étape par étape.",
   "landing.stepOneTitle": "Crée ton profil académique",
   "landing.stepOneText": "Indique ton rôle, ton niveau et ta filière si tu es en Terminale.",
   "landing.stepTwoTitle": "Explore tes matières",
   "landing.stepTwoText": "Parcours les chapitres et notions disponibles pour ton niveau.",
   "landing.stepThreeTitle": "Étudie avec les ressources publiées",
-  "landing.stepThreeText": "Consulte les cours et les anciens examens accessibles dans ton parcours.",
+  "landing.stepThreeText":
+    "Consulte les cours et les anciens examens accessibles dans ton parcours.",
   "landing.createProfile": "Créer mon profil",
   "landing.aboutLabel": "À PROPOS D’EXAMPRO",
   "landing.aboutTitle": "Un espace d’apprentissage pour les élèves et les enseignants.",
-  "landing.aboutDescription": "EXAMPRO rassemble des ressources pédagogiques classées et permet aux enseignants de partager leurs cours et examens.",
+  "landing.aboutDescription":
+    "EXAMPRO rassemble des ressources pédagogiques classées et permet aux enseignants de partager leurs cours et examens.",
   "landing.studentTitle": "Élèves",
-  "landing.studentDescription": "Retrouve les matières et ressources publiées pour ton niveau et ta filière.",
+  "landing.studentDescription":
+    "Retrouve les matières et ressources publiées pour ton niveau et ta filière.",
   "landing.studentAction": "Créer un compte élève",
   "landing.teacherTitle": "Enseignants",
-  "landing.teacherDescription": "Crée des cours et examens, puis gère leur publication depuis ton espace.",
+  "landing.teacherDescription":
+    "Crée des cours et examens, puis gère leur publication depuis ton espace.",
   "landing.teacherAction": "Rejoindre EXAMPRO",
   "landing.faqLabel": "QUESTIONS FRÉQUENTES",
   "landing.faqTitle": "Des réponses simples.",
   "landing.faqDescription": "Quelques informations pour bien commencer sur EXAMPRO.",
   "landing.faqContact": "Voir les informations de contact",
   "landing.faqOneQuestion": "Quels niveaux sont disponibles ?",
-  "landing.faqOneAnswer": "EXAMPRO propose actuellement un parcours pour la 9e année fondamentale et la Terminale, avec les filières Terminale configurées dans le catalogue.",
+  "landing.faqOneAnswer":
+    "EXAMPRO propose actuellement un parcours pour la 9e année fondamentale et la Terminale, avec les filières Terminale configurées dans le catalogue.",
   "landing.faqTwoQuestion": "Comment les matières sont-elles sélectionnées ?",
-  "landing.faqTwoAnswer": "Les matières affichées dépendent du niveau choisi et, en Terminale, de la filière associée au profil.",
+  "landing.faqTwoAnswer":
+    "Les matières affichées dépendent du niveau choisi et, en Terminale, de la filière associée au profil.",
   "landing.faqThreeQuestion": "Quelles ressources puis-je consulter ?",
-  "landing.faqThreeAnswer": "Les élèves peuvent consulter les cours et les examens publiés qui correspondent à leur parcours académique.",
+  "landing.faqThreeAnswer":
+    "Les élèves peuvent consulter les cours et les examens publiés qui correspondent à leur parcours académique.",
   "landing.ctaLabel": "PRÊT À COMMENCER ?",
   "landing.ctaTitle": "Prépare tes examens avec méthode.",
-  "landing.ctaDescription": "Crée ton profil et retrouve les ressources correspondant à ton niveau.",
+  "landing.ctaDescription":
+    "Crée ton profil et retrouve les ressources correspondant à ton niveau.",
   "landing.ctaButton": "Créer mon compte",
   "landing.footerTagline": "Apprendre · Pratiquer · Réussir",
   "landing.footerDescription": "Une plateforme éducative pensée pour les élèves d’Haïti.",
@@ -144,6 +158,8 @@ const fr = {
   "auth.signupTitle": "Créer votre compte",
   "auth.email": "Adresse e-mail",
   "auth.password": "Mot de passe",
+  "auth.confirmPassword": "Confirmer le mot de passe",
+  "auth.passwordMismatch": "Les mots de passe ne correspondent pas.",
   "auth.fullName": "Nom complet",
   "auth.submitLogin": "Se connecter",
   "auth.submitSignup": "Créer mon compte",
@@ -164,7 +180,7 @@ const fr = {
   "onb.iam": "Je suis…",
   "onb.student": "Élève",
   "onb.studentD": "J'étudie et je prépare mes examens.",
-  "onb.teacher": "Enseignant",
+  "onb.teacher": "Professeur",
   "onb.teacherD": "Je publie des cours et des examens.",
   "onb.level": "Niveau",
   "onb.track": "Filière",
@@ -173,6 +189,33 @@ const fr = {
   "onb.school": "Établissement (facultatif)",
   "onb.department": "Département (facultatif)",
   "onb.submit": "Continuer",
+  "onb.back": "Retour",
+  "onb.progress": "Progression",
+  "onb.roleQuestion": "Vous êtes ?",
+  "onb.nameQuestion": "Comment vous appelez-vous ?",
+  "onb.nameHint": "Nous n’avons pas reçu votre nom depuis votre compte.",
+  "onb.levelQuestion": "Dans quelle classe êtes-vous ?",
+  "onb.studentDepartmentQuestion": "Dans quel département êtes-vous ?",
+  "onb.teacherSchoolQuestion": "Dans quelle école travaillez-vous ?",
+  "onb.teacherSchoolPlaceholder": "Nom de l’école",
+  "onb.teacherClassesQuestion": "Dans quelle(s) classe(s) enseignez-vous ?",
+  "onb.teacherClassesHint": "Vous pouvez choisir plusieurs classes.",
+  "onb.teacherDepartmentQuestion": "Dans quel département ou quelle filière enseignez-vous ?",
+  "onb.teacherDepartmentHint": "Choisissez une ou plusieurs filières pour chaque niveau concerné.",
+  "onb.phoneQuestion": "Quel est votre numéro de téléphone ?",
+  "onb.phoneHint": "Utilisez le format international, par exemple avec l’indicatif +509.",
+  "onb.phoneInvalid": "Entrez un numéro valide au format international.",
+  "onb.nameRequired": "Entrez votre nom complet.",
+  "onb.schoolRequired": "Entrez le nom de votre école.",
+  "onb.levelRequired": "Choisissez au moins une classe.",
+  "onb.trackRequired": "Choisissez une filière pour chaque niveau qui en demande une.",
+  "onb.selectRole": "Choisissez Élève ou Professeur pour continuer.",
+  "onb.completeTitle": "Votre profil est prêt",
+  "onb.studentComplete": "Votre parcours scolaire a été enregistré.",
+  "onb.teacherComplete": "Vos informations d’enseignant ont été enregistrées.",
+  "onb.goToDashboard": "Accéder à mon tableau de bord",
+  "onb.loadError": "Impossible de charger votre progression. Réessayez.",
+  "onb.saveError": "Impossible d’enregistrer cette étape. Réessayez.",
   "common.save": "Enregistrer",
   "common.cancel": "Annuler",
   "common.loading": "Chargement…",
@@ -310,7 +353,8 @@ const ht: Record<TKey, string> = {
   "landing.heroEyebrow": "Pou elèv 9e AF ak Tèminal",
   "landing.heroTitle": "Prepare w pi byen.",
   "landing.heroTitleAccent": " Abòde egzamen w yo avèk konfyans.",
-  "landing.heroDescription": "Jwenn kou ak ansyen egzamen ki klase pa nivo, filyè, matyè ak chapit pou prepare egzamen ofisyèl ann Ayiti.",
+  "landing.heroDescription":
+    "Jwenn kou ak ansyen egzamen ki klase pa nivo, filyè, matyè ak chapit pou prepare egzamen ofisyèl ann Ayiti.",
   "landing.heroPrimary": "Kòmanse aprann",
   "landing.heroSecondary": "Dekouvri platfòm nan",
   "landing.trustLevel": "Adapte ak nivo w",
@@ -328,9 +372,11 @@ const ht: Record<TKey, string> = {
   "landing.floatCoursesDescription": "Òganize pa chapit",
   "landing.missionLabel": "Misyon nou",
   "landing.missionTitle": "Resous pou prepare egzamen w yo, nan yon sèl kote.",
-  "landing.missionDescription": "Yon preparasyon ki òganize selon nivo ak matyè nan lekòl ann Ayiti.",
+  "landing.missionDescription":
+    "Yon preparasyon ki òganize selon nivo ak matyè nan lekòl ann Ayiti.",
   "landing.featureArchiveTitle": "Achiv ki òganize",
-  "landing.featureArchiveText": "Gade ansyen egzamen ki pibliye yo epi filtre yo dapre matyè ak ane.",
+  "landing.featureArchiveText":
+    "Gade ansyen egzamen ki pibliye yo epi filtre yo dapre matyè ak ane.",
   "landing.featureLevelTitle": "Kontni ki adapte ak nivo w",
   "landing.featureLevelText": "Jwenn matyè nivo w la epi, an Tèminal, matyè filyè w la.",
   "landing.featureCoursesTitle": "Kou klase pa chapit",
@@ -360,7 +406,8 @@ const ht: Record<TKey, string> = {
   "landing.createProfile": "Kreye pwofil mwen",
   "landing.aboutLabel": "SOU EXAMPRO",
   "landing.aboutTitle": "Yon espas aprantisaj pou elèv ak pwofesè.",
-  "landing.aboutDescription": "EXAMPRO rasanble resous pedagojik ki klase epi li pèmèt pwofesè pataje kou ak egzamen yo.",
+  "landing.aboutDescription":
+    "EXAMPRO rasanble resous pedagojik ki klase epi li pèmèt pwofesè pataje kou ak egzamen yo.",
   "landing.studentTitle": "Elèv",
   "landing.studentDescription": "Jwenn matyè ak resous ki pibliye pou nivo ak filyè pa w.",
   "landing.studentAction": "Kreye kont elèv",
@@ -372,11 +419,14 @@ const ht: Record<TKey, string> = {
   "landing.faqDescription": "Kèk enfòmasyon pou byen kòmanse sou EXAMPRO.",
   "landing.faqContact": "Gade enfòmasyon kontak",
   "landing.faqOneQuestion": "Ki nivo ki disponib yo?",
-  "landing.faqOneAnswer": "Kounye a EXAMPRO gen yon pakou pou 9e ane fondamantal ak Tèminal, epi filyè Tèminal yo nan katalòg la.",
+  "landing.faqOneAnswer":
+    "Kounye a EXAMPRO gen yon pakou pou 9e ane fondamantal ak Tèminal, epi filyè Tèminal yo nan katalòg la.",
   "landing.faqTwoQuestion": "Kijan yo chwazi matyè yo?",
-  "landing.faqTwoAnswer": "Matyè ki parèt yo depann de nivo ou chwazi a epi, an Tèminal, filyè ki sou pwofil ou a.",
+  "landing.faqTwoAnswer":
+    "Matyè ki parèt yo depann de nivo ou chwazi a epi, an Tèminal, filyè ki sou pwofil ou a.",
   "landing.faqThreeQuestion": "Ki resous mwen ka gade?",
-  "landing.faqThreeAnswer": "Elèv yo ka gade kou ak egzamen ki pibliye epi ki koresponn ak pakou akademik yo.",
+  "landing.faqThreeAnswer":
+    "Elèv yo ka gade kou ak egzamen ki pibliye epi ki koresponn ak pakou akademik yo.",
   "landing.ctaLabel": "PARE POU KÒMANSE?",
   "landing.ctaTitle": "Prepare egzamen w yo ak metòd.",
   "landing.ctaDescription": "Kreye pwofil ou epi jwenn resous ki koresponn ak nivo w.",
@@ -407,6 +457,8 @@ const ht: Record<TKey, string> = {
   "auth.signupTitle": "Kreye kont ou",
   "auth.email": "Adrès imèl",
   "auth.password": "Modpas",
+  "auth.confirmPassword": "Konfime modpas la",
+  "auth.passwordMismatch": "Modpas yo pa menm.",
   "auth.fullName": "Non konplè",
   "auth.submitLogin": "Konekte",
   "auth.submitSignup": "Kreye kont mwen",
@@ -436,6 +488,33 @@ const ht: Record<TKey, string> = {
   "onb.school": "Lekòl (opsyonèl)",
   "onb.department": "Depatman (opsyonèl)",
   "onb.submit": "Kontinye",
+  "onb.back": "Retounen",
+  "onb.progress": "Pwogrè",
+  "onb.roleQuestion": "Kiyès ou ye?",
+  "onb.nameQuestion": "Kijan ou rele?",
+  "onb.nameHint": "Nou pa jwenn non ou nan kont ou.",
+  "onb.levelQuestion": "Nan ki klas ou ye?",
+  "onb.studentDepartmentQuestion": "Nan ki depatman ou ye?",
+  "onb.teacherSchoolQuestion": "Nan ki lekòl ou travay?",
+  "onb.teacherSchoolPlaceholder": "Non lekòl la",
+  "onb.teacherClassesQuestion": "Nan ki klas ou anseye?",
+  "onb.teacherClassesHint": "Ou ka chwazi plizyè klas.",
+  "onb.teacherDepartmentQuestion": "Nan ki depatman oswa filyè ou anseye?",
+  "onb.teacherDepartmentHint": "Chwazi youn oswa plizyè filyè pou chak nivo ki konsène.",
+  "onb.phoneQuestion": "Ki nimewo telefòn ou?",
+  "onb.phoneHint": "Sèvi ak fòma entènasyonal la, pa egzanp avèk kòd +509.",
+  "onb.phoneInvalid": "Antre yon nimewo ki valab nan fòma entènasyonal la.",
+  "onb.nameRequired": "Antre non konplè ou.",
+  "onb.schoolRequired": "Antre non lekòl ou.",
+  "onb.levelRequired": "Chwazi omwen yon klas.",
+  "onb.trackRequired": "Chwazi yon filyè pou chak nivo ki mande sa.",
+  "onb.selectRole": "Chwazi Elèv oswa Pwofesè pou kontinye.",
+  "onb.completeTitle": "Pwofil ou pare",
+  "onb.studentComplete": "Nou anrejistre chemen akademik ou.",
+  "onb.teacherComplete": "Nou anrejistre enfòmasyon pwofesè ou.",
+  "onb.goToDashboard": "Ale nan tablo bò mwen",
+  "onb.loadError": "Nou pa t kapab chaje pwogrè ou. Eseye ankò.",
+  "onb.saveError": "Nou pa t kapab anrejistre etap sa a. Eseye ankò.",
   "common.save": "Anrejistre",
   "common.cancel": "Anile",
   "common.loading": "Ap chaje…",
@@ -528,7 +607,13 @@ const ht: Record<TKey, string> = {
 
 const dict: Record<Lang, Record<TKey, string>> = { fr, ht };
 
-type Ctx = { lang: Lang; setLang: (l: Lang) => void; t: (k: TKey) => string; name: (o: { name_fr: string; name_ht: string }) => string; errMsg: (e: unknown) => string };
+type Ctx = {
+  lang: Lang;
+  setLang: (l: Lang) => void;
+  t: (k: TKey) => string;
+  name: (o: { name_fr: string; name_ht: string }) => string;
+  errMsg: (e: unknown) => string;
+};
 const I18nContext = createContext<Ctx | null>(null);
 
 export function I18nProvider({ children }: { children: ReactNode }) {
@@ -545,16 +630,29 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     window.localStorage.setItem("exampro.lang", l);
   }, []);
   const t = useCallback((k: TKey) => dict[lang][k] ?? k, [lang]);
-  const name = useCallback((o: { name_fr: string; name_ht: string }) => (lang === "ht" ? o.name_ht : o.name_fr), [lang]);
+  const name = useCallback(
+    (o: { name_fr: string; name_ht: string }) => (lang === "ht" ? o.name_ht : o.name_fr),
+    [lang],
+  );
   const errMsg = useCallback(
     (e: unknown) => {
-      const msg = e instanceof Error ? e.message : typeof e === "object" && e && "message" in e ? String((e as { message: unknown }).message) : String(e);
-      const code = Object.keys(fr).find((k) => k.startsWith("err.") && msg.includes(k.slice(4))) as TKey | undefined;
+      const msg =
+        e instanceof Error
+          ? e.message
+          : typeof e === "object" && e && "message" in e
+            ? String((e as { message: unknown }).message)
+            : String(e);
+      const code = Object.keys(fr).find((k) => k.startsWith("err.") && msg.includes(k.slice(4))) as
+        TKey | undefined;
       return code ? dict[lang][code] : msg || dict[lang]["common.error"];
     },
     [lang],
   );
-  return <I18nContext.Provider value={{ lang, setLang, t, name, errMsg }}>{children}</I18nContext.Provider>;
+  return (
+    <I18nContext.Provider value={{ lang, setLang, t, name, errMsg }}>
+      {children}
+    </I18nContext.Provider>
+  );
 }
 
 export function useI18n() {

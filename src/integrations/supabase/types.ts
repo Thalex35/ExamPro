@@ -298,6 +298,7 @@ export type Database = {
           level_id: string | null
           onboarded: boolean
           school: string | null
+          phone: string | null
           track_id: string | null
           updated_at: string
         }
@@ -310,6 +311,7 @@ export type Database = {
           level_id?: string | null
           onboarded?: boolean
           school?: string | null
+          phone?: string | null
           track_id?: string | null
           updated_at?: string
         }
@@ -322,6 +324,7 @@ export type Database = {
           level_id?: string | null
           onboarded?: boolean
           school?: string | null
+          phone?: string | null
           track_id?: string | null
           updated_at?: string
         }
@@ -368,6 +371,52 @@ export type Database = {
           slug?: string
         }
         Relationships: []
+      }
+      teacher_academic_assignments: {
+        Row: {
+          created_at: string
+          id: string
+          level_id: string
+          teacher_id: string
+          track_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          level_id: string
+          teacher_id: string
+          track_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          level_id?: string
+          teacher_id?: string
+          track_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teacher_academic_assignments_level_id_fkey"
+            columns: ["level_id"]
+            isOneToOne: false
+            referencedRelation: "levels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "teacher_academic_assignments_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "teacher_academic_assignments_track_id_fkey"
+            columns: ["track_id"]
+            isOneToOne: false
+            referencedRelation: "tracks"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       teacher_subjects: {
         Row: {
@@ -522,13 +571,13 @@ export type Database = {
       }
       complete_onboarding: {
         Args: {
-          _department: string
-          _full_name: string
-          _level_id: string
+          _department: string | null
+          _full_name: string | null
+          _level_id: string | null
           _role: Database["public"]["Enums"]["app_role"]
-          _school: string
-          _subject_ids: string[]
-          _track_id: string
+          _school: string | null
+          _subject_ids: string[] | null
+          _track_id: string | null
         }
         Returns: undefined
       }
@@ -538,6 +587,32 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      finish_student_onboarding: { Args: never; Returns: undefined }
+      finish_teacher_onboarding: {
+        Args: { _phone: string }
+        Returns: undefined
+      }
+      save_onboarding_name: { Args: { _full_name: string }; Returns: undefined }
+      save_student_onboarding_level: {
+        Args: { _level_id: string }
+        Returns: undefined
+      }
+      save_student_onboarding_track: {
+        Args: { _track_id: string }
+        Returns: undefined
+      }
+      save_teacher_onboarding_levels: {
+        Args: { _level_ids: string[] }
+        Returns: undefined
+      }
+      save_teacher_onboarding_school: {
+        Args: { _school: string }
+        Returns: undefined
+      }
+      save_teacher_onboarding_tracks: {
+        Args: { _track_ids: string[] }
+        Returns: undefined
       }
     }
     Enums: {

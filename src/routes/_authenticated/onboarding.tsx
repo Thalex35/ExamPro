@@ -377,7 +377,7 @@ function Onboarding() {
         )}
         <StepActions
           onBack={continueBack}
-          showBack={step !== "role" && step !== "name"}
+          showBack={step !== "name"}
           busy={busy}
           continueLabel={t("onb.submit")}
           backLabel={t("onb.back")}
@@ -401,7 +401,10 @@ function Onboarding() {
             {validationError}
           </p>
         )}
-        <div className="flex justify-end">
+        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
+          <Button type="button" variant="outline" disabled={busy} onClick={() => setStep("name")}>
+            {t("onb.back")}
+          </Button>
           <Button type="button" size="lg" disabled={busy} onClick={() => void chooseRole()}>
             {t("onb.submit")}
           </Button>

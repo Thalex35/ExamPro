@@ -157,6 +157,9 @@ const fr = {
   "auth.loginTitle": "Bon retour",
   "auth.signupTitle": "Créer votre compte",
   "auth.email": "Adresse e-mail",
+  "auth.emailRejected":
+    "Supabase Auth a refusé cette adresse, bien qu’elle soit correctement formatée. Vérifiez les paramètres d’inscription par e-mail et les journaux d’authentification du projet.",
+  "auth.backHome": "Retour à l’accueil",
   "auth.password": "Mot de passe",
   "auth.confirmPassword": "Confirmer le mot de passe",
   "auth.passwordMismatch": "Les mots de passe ne correspondent pas.",
@@ -456,6 +459,9 @@ const ht: Record<TKey, string> = {
   "auth.loginTitle": "Byenvini ankò",
   "auth.signupTitle": "Kreye kont ou",
   "auth.email": "Adrès imèl",
+  "auth.emailRejected":
+    "Supabase Auth refize adrès sa a, menm lè fòma li sanble kòrèk. Verifye paramèt enskripsyon pa imèl ak jounal otantifikasyon pwojè a.",
+  "auth.backHome": "Retounen nan paj akèy la",
   "auth.password": "Modpas",
   "auth.confirmPassword": "Konfime modpas la",
   "auth.passwordMismatch": "Modpas yo pa menm.",

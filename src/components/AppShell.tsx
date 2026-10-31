@@ -1,7 +1,17 @@
 import { Link, useNavigate, useLocation } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState, type ReactNode } from "react";
-import { BookOpen, FileText, LayoutDashboard, LogOut, Menu, PenSquare, Shield, User, X } from "lucide-react";
+import {
+  BookOpen,
+  FileText,
+  LayoutDashboard,
+  LogOut,
+  Menu,
+  PenSquare,
+  Shield,
+  User,
+  X,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useMe } from "@/lib/session";
 import { useI18n, type TKey } from "@/lib/i18n";
@@ -10,9 +20,19 @@ import { LanguageSwitch } from "./LanguageSwitch";
 import { Loading } from "./States";
 import { cn } from "@/lib/utils";
 
-type NavItem = { to: "/dashboard" | "/subjects" | "/exams" | "/teacher" | "/admin" | "/profile"; key: TKey; icon: typeof BookOpen };
+type NavItem = {
+  to: "/dashboard" | "/subjects" | "/exams" | "/teacher" | "/admin" | "/profile";
+  key: TKey;
+  icon: typeof BookOpen;
+};
 
-export function AppShell({ children }: { children: ReactNode }) {
+export function AppShell({
+  children,
+  onboardingOnly = false,
+}: {
+  children: ReactNode;
+  onboardingOnly?: boolean;
+}) {
   const { data: me, isLoading } = useMe();
   const { t } = useI18n();
   const navigate = useNavigate();
@@ -22,7 +42,8 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   const needsOnboarding = !!me && !me.profile?.onboarded && !me.isAdmin;
   useEffect(() => {
-    if (needsOnboarding && location.pathname !== "/onboarding") navigate({ to: "/onboarding", replace: true });
+    if (needsOnboarding && location.pathname !== "/onboarding")
+      navigate({ to: "/onboarding", replace: true });
   }, [needsOnboarding, location.pathname, navigate]);
   useEffect(() => setOpen(false), [location.pathname]);
 
@@ -39,7 +60,8 @@ export function AppShell({ children }: { children: ReactNode }) {
     items.push({ to: "/subjects", key: "nav.subjects", icon: BookOpen });
     items.push({ to: "/exams", key: "nav.exams", icon: FileText });
   }
-  if (me?.isTeacher || me?.isAdmin) items.push({ to: "/teacher", key: "nav.teacher", icon: PenSquare });
+  if (me?.isTeacher || me?.isAdmin)
+    items.push({ to: "/teacher", key: "nav.teacher", icon: PenSquare });
   if (me?.isAdmin) items.push({ to: "/admin", key: "nav.admin", icon: Shield });
   items.push({ to: "/profile", key: "nav.profile", icon: User });
 
@@ -58,9 +80,39 @@ export function AppShell({ children }: { children: ReactNode }) {
     </nav>
   );
 
+  if (onboardingOnly) {
+    return (
+      <div className="min-h-screen bg-background">
+        <header className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-4 py-4 sm:px-8">
+          <Link to="/" aria-label="EXAMPRO">
+            <BrandLogo className="h-8" />
+          </Link>
+          <div className="flex items-center gap-4">
+            <LanguageSwitch />
+            <button
+              onClick={signOut}
+              className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
+            >
+              <LogOut className="h-4 w-4" />
+              {t("nav.logout")}
+            </button>
+          </div>
+        </header>
+        <main className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-8">
+          {isLoading ? <Loading /> : children}
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen lg:grid lg:grid-cols-[260px_1fr]">
-      <aside className={cn("fixed inset-y-0 left-0 z-40 flex w-64 flex-col gap-6 bg-sidebar p-5 transition-transform lg:static lg:w-auto lg:translate-x-0", open ? "translate-x-0" : "-translate-x-full")}>
+      <aside
+        className={cn(
+          "fixed inset-y-0 left-0 z-40 flex w-64 flex-col gap-6 bg-sidebar p-5 transition-transform lg:static lg:w-auto lg:translate-x-0",
+          open ? "translate-x-0" : "-translate-x-full",
+        )}
+      >
         <div className="flex items-center justify-between rounded-lg bg-card px-3 py-2">
           <Link to="/" aria-label="EXAMPRO">
             <BrandLogo className="h-8" />
@@ -72,21 +124,35 @@ export function AppShell({ children }: { children: ReactNode }) {
         {nav}
         <div className="mt-auto flex flex-col gap-3">
           <LanguageSwitch tone="light" />
-          <button onClick={signOut} className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground">
+          <button
+            onClick={signOut}
+            className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+          >
             <LogOut className="h-4 w-4" /> {t("nav.logout")}
           </button>
         </div>
       </aside>
-      {open && <div className="fixed inset-0 z-30 bg-primary/40 lg:hidden" onClick={() => setOpen(false)} />}
+      {open && (
+        <div
+          className="fixed inset-0 z-30 bg-primary/40 lg:hidden"
+          onClick={() => setOpen(false)}
+        />
+      )}
       <div className="min-w-0">
         <header className="sticky top-0 z-20 flex items-center justify-between border-b bg-card/90 px-4 py-3 backdrop-blur lg:hidden">
-          <button onClick={() => setOpen(true)} aria-label="Menu" className="rounded-md p-1.5 hover:bg-muted">
+          <button
+            onClick={() => setOpen(true)}
+            aria-label="Menu"
+            className="rounded-md p-1.5 hover:bg-muted"
+          >
             <Menu className="h-5 w-5" />
           </button>
           <BrandLogo className="h-7" />
           <LanguageSwitch />
         </header>
-        <main className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-8">{isLoading ? <Loading /> : children}</main>
+        <main className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-8">
+          {isLoading ? <Loading /> : children}
+        </main>
       </div>
     </div>
   );

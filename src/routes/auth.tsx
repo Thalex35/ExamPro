@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent } from "react";
 import { toast } from "sonner";
+import { ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { signInWithGoogle } from "@/lib/oauth";
 import { Button } from "@/components/ui/button";
@@ -41,6 +42,7 @@ function AuthPage() {
   const [busy, setBusy] = useState(false);
   const [info, setInfo] = useState<string | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -72,11 +74,14 @@ function AuthPage() {
   useEffect(() => {
     setInfo(null);
     setValidationError(null);
+    setFormError(null);
   }, [mode]);
 
   async function submit(e: FormEvent) {
     e.preventDefault();
     setValidationError(null);
+    setFormError(null);
+    const normalizedEmail = email.trim().toLowerCase();
     if (mode === "signup" && !name.trim()) {
       setValidationError(t("onb.nameRequired"));
       return;
@@ -85,7 +90,10 @@ function AuthPage() {
     setInfo(null);
     try {
       if (mode === "login") {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const { error } = await supabase.auth.signInWithPassword({
+          email: normalizedEmail,
+          password,
+        });
         if (error) throw error;
       } else if (mode === "signup") {
         if (password !== confirmPassword) {
@@ -93,7 +101,7 @@ function AuthPage() {
           return;
         }
         const { data, error } = await supabase.auth.signUp({
-          email: email.trim(),
+          email: normalizedEmail,
           password,
           options: {
             emailRedirectTo: window.location.origin + "/onboarding",
@@ -107,14 +115,20 @@ function AuthPage() {
           setInfo(t("auth.checkEmail"));
         }
       } else {
-        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
           redirectTo: window.location.origin + "/reset-password",
         });
         if (error) throw error;
         setInfo(t("auth.resetSent"));
       }
     } catch (err) {
-      toast.error(errMsg(err));
+      const errorCode =
+        typeof err === "object" && err !== null && "code" in err ? err.code : undefined;
+      if (errorCode === "email_address_invalid") {
+        setFormError(t("auth.emailRejected"));
+      } else {
+        toast.error(errMsg(err));
+      }
     } finally {
       setBusy(false);
     }
@@ -153,7 +167,18 @@ function AuthPage() {
           <Link to="/">
             <BrandLogo className="h-9" />
           </Link>
-          <LanguageSwitch />
+          <div className="flex items-center gap-4">
+            {mode === "signup" && (
+              <Link
+                to="/"
+                className="inline-flex items-center gap-1 text-sm font-medium text-deep hover:underline"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                {t("auth.backHome")}
+              </Link>
+            )}
+            <LanguageSwitch />
+          </div>
         </div>
         <div className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center py-10">
           <h1 className="text-2xl font-bold">{title}</h1>
@@ -166,6 +191,11 @@ function AuthPage() {
             </div>
           ) : null}
           <form onSubmit={submit} className="mt-6 flex flex-col gap-4">
+            {formError && (
+              <p className="text-sm text-destructive" role="alert">
+                {formError}
+              </p>
+            )}
             {mode === "signup" && (
               <div className="grid gap-1.5">
                 <Label htmlFor="name">{t("auth.fullName")}</Label>

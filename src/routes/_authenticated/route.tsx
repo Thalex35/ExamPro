@@ -1,4 +1,4 @@
-import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
+import { createFileRoute, Outlet, redirect, useLocation } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
 
@@ -49,9 +49,15 @@ export const Route = createFileRoute("/_authenticated")({
       throw redirect({ to: "/dashboard" });
     }
   },
-  component: () => (
-    <AppShell>
+  component: AuthenticatedLayout,
+});
+
+function AuthenticatedLayout() {
+  const { pathname } = useLocation();
+
+  return (
+    <AppShell onboardingOnly={pathname === "/onboarding"}>
       <Outlet />
     </AppShell>
-  ),
-});
+  );
+}

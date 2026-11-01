@@ -292,6 +292,7 @@ export type Database = {
         Row: {
           created_at: string
           department: string | null
+          geographical_department: string | null
           full_name: string | null
           id: string
           language: string
@@ -305,6 +306,7 @@ export type Database = {
         Insert: {
           created_at?: string
           department?: string | null
+          geographical_department?: string | null
           full_name?: string | null
           id: string
           language?: string
@@ -318,6 +320,7 @@ export type Database = {
         Update: {
           created_at?: string
           department?: string | null
+          geographical_department?: string | null
           full_name?: string | null
           id?: string
           language?: string
@@ -596,6 +599,10 @@ export type Database = {
       save_onboarding_name: { Args: { _full_name: string }; Returns: undefined }
       save_student_onboarding_level: {
         Args: { _level_id: string }
+        Returns: undefined
+      }
+      save_student_onboarding_department: {
+        Args: { _geographical_department: string }
         Returns: undefined
       }
       save_student_onboarding_track: {

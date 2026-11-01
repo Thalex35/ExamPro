@@ -11,7 +11,11 @@ export const Route = createFileRoute("/_authenticated")({
     if (!user) throw redirect({ to: "/auth" });
 
     const [profileResult, roleResult] = await Promise.all([
-      supabase.from("profiles").select("onboarded").eq("id", user.id).maybeSingle(),
+      supabase
+        .from("profiles")
+        .select("onboarded,geographical_department")
+        .eq("id", user.id)
+        .maybeSingle(),
       supabase.from("user_roles").select("role").eq("user_id", user.id),
     ]);
     if (profileResult.error) throw profileResult.error;
@@ -25,7 +29,9 @@ export const Route = createFileRoute("/_authenticated")({
 
     const isTeacher = roles.includes("teacher");
     const isStudent = roles.includes("student");
-    const isOnboarded = !!profileResult.data?.onboarded && (isTeacher || isStudent);
+    const isOnboarded =
+      !!profileResult.data?.onboarded &&
+      (isTeacher || (isStudent && !!profileResult.data.geographical_department));
     if (!isOnboarded) {
       if (location.pathname !== "/onboarding") throw redirect({ to: "/onboarding" });
       return;

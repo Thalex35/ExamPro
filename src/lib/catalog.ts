@@ -9,12 +9,17 @@ export type Subject = T["subjects"]["Row"];
 export type Chapter = T["chapters"]["Row"];
 export type Topic = T["topics"]["Row"];
 
-const prioritySubjectsByTrack: Readonly<Record<string, readonly string[]>> = {
-  SMP: ["mathematiques", "physique"],
-};
-
-export function isPrioritySubject(subject: Subject, track: Track | undefined) {
-  return track ? (prioritySubjectsByTrack[track.code]?.includes(subject.slug) ?? false) : false;
+export function isPrioritySubject(
+  subject: Subject,
+  track: Track | undefined,
+  trackSubjects: Catalog["trackSubjects"],
+) {
+  return (
+    !!track &&
+    trackSubjects.some(
+      (association) => association.track_id === track.id && association.subject_id === subject.id,
+    )
+  );
 }
 
 /** Whole academic catalog. Small and read-only for non-admins, so fetched once. */
@@ -47,19 +52,58 @@ export const catalogQuery = queryOptions({
 
 export type Catalog = Awaited<ReturnType<NonNullable<typeof catalogQuery.queryFn>>>;
 
+/** Every subject linked to a student's level, with the selected filière's subjects first. */
+export function subjectsForLevel(
+  c: Catalog,
+  levelId: string | null | undefined,
+  trackId?: string | null,
+): Subject[] {
+  if (!levelId) return [];
+  const level = c.levels.find((candidate) => candidate.id === levelId);
+  if (!level) return [];
+  const subjectIds = new Set(
+    c.levelSubjects
+      .filter((association) => association.level_id === levelId)
+      .map((x) => x.subject_id),
+  );
+  const track = c.tracks.find(
+    (candidate) =>
+      candidate.id === trackId && candidate.level_id === levelId && level.requires_track,
+  );
+
+  return c.subjects
+    .filter((subject) => subjectIds.has(subject.id))
+    .sort(
+      (a, b) =>
+        Number(isPrioritySubject(b, track, c.trackSubjects)) -
+          Number(isPrioritySubject(a, track, c.trackSubjects)) ||
+        a.name_fr.localeCompare(b.name_fr),
+    );
+}
+
 /** Subjects available for a level and (when the level requires one) a track. */
-export function subjectsFor(c: Catalog, levelId: string | null | undefined, trackId?: string | null): Subject[] {
+export function subjectsFor(
+  c: Catalog,
+  levelId: string | null | undefined,
+  trackId?: string | null,
+): Subject[] {
   if (!levelId) return [];
   const level = c.levels.find((l) => l.id === levelId);
   if (!level) return [];
-  const inLevel = new Set(c.levelSubjects.filter((x) => x.level_id === levelId).map((x) => x.subject_id));
+  const inLevel = new Set(
+    c.levelSubjects.filter((x) => x.level_id === levelId).map((x) => x.subject_id),
+  );
   let ids = inLevel;
   let track: Track | undefined;
   if (level.requires_track && trackId) {
-    const selectedTrack = c.tracks.find((candidate) => candidate.id === trackId && candidate.level_id === levelId);
+    const selectedTrack = c.tracks.find(
+      (candidate) => candidate.id === trackId && candidate.level_id === levelId,
+    );
     if (!selectedTrack) return [];
     track = selectedTrack;
-    const inTrack = new Set(c.trackSubjects.filter((x) => x.track_id === selectedTrack.id).map((x) => x.subject_id));
+    const inTrack = new Set(
+      c.trackSubjects.filter((x) => x.track_id === selectedTrack.id).map((x) => x.subject_id),
+    );
     ids = new Set([...inLevel].filter((id) => inTrack.has(id)));
   } else if (level.requires_track) {
     return [];
@@ -69,7 +113,8 @@ export function subjectsFor(c: Catalog, levelId: string | null | undefined, trac
     .filter((subject) => ids.has(subject.id))
     .sort(
       (a, b) =>
-        Number(isPrioritySubject(b, priorityTrack)) - Number(isPrioritySubject(a, priorityTrack)) ||
+        Number(isPrioritySubject(b, priorityTrack, c.trackSubjects)) -
+          Number(isPrioritySubject(a, priorityTrack, c.trackSubjects)) ||
         a.name_fr.localeCompare(b.name_fr),
     );
 }
@@ -78,7 +123,11 @@ export function tracksFor(c: Catalog, levelId: string | null | undefined) {
   return c.tracks.filter((t) => t.level_id === levelId);
 }
 
-export function chaptersFor(c: Catalog, subjectId: string | null | undefined, levelId: string | null | undefined) {
+export function chaptersFor(
+  c: Catalog,
+  subjectId: string | null | undefined,
+  levelId: string | null | undefined,
+) {
   return c.chapters.filter((ch) => ch.subject_id === subjectId && ch.level_id === levelId);
 }
 

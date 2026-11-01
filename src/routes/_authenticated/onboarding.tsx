@@ -6,6 +6,8 @@ import { GraduationCap, PenSquare } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { catalogQuery } from "@/lib/catalog";
 import {
+  haitiDepartments,
+  isHaitiDepartment,
   isValidInternationalPhone,
   nextOnboardingStep,
   normalizePhoneNumber,
@@ -56,6 +58,7 @@ function Onboarding() {
   const [roleChoice, setRoleChoice] = useState<OnboardingRole | null>(null);
   const [fullName, setFullName] = useState("");
   const [levelId, setLevelId] = useState("");
+  const [geographicalDepartment, setGeographicalDepartment] = useState("");
   const [trackId, setTrackId] = useState("");
   const [school, setSchool] = useState("");
   const [teacherLevelIds, setTeacherLevelIds] = useState<string[]>([]);
@@ -80,6 +83,7 @@ function Onboarding() {
     setRoleChoice(savedRole);
     setFullName(me.profile.full_name ?? "");
     setLevelId(me.profile.level_id ?? "");
+    setGeographicalDepartment(me.profile.geographical_department ?? "");
     setTrackId(me.profile.track_id ?? "");
     setSchool(me.profile.school ?? "");
     setTeacherLevelIds([...new Set(savedAssignments.map((assignment) => assignment.level_id))]);
@@ -191,7 +195,32 @@ function Onboarding() {
       await assertRpc(supabase.rpc("save_student_onboarding_level", { _level_id: levelId }));
       setTrackId("");
       await qc.invalidateQueries({ queryKey: ["me"] });
-      if (selectedLevel.requires_track) {
+      if (!isHaitiDepartment(profile.geographical_department)) {
+        setStep("student-department");
+      } else if (selectedLevel.requires_track) {
+        setStep("student-track");
+      } else {
+        await completeStudent();
+      }
+    });
+  }
+
+  async function saveStudentDepartment() {
+    if (!isHaitiDepartment(geographicalDepartment)) {
+      setValidationError(t("onb.geographicalDepartmentRequired"));
+      return;
+    }
+    await run(async () => {
+      await assertRpc(
+        supabase.rpc("save_student_onboarding_department", {
+          _geographical_department: geographicalDepartment,
+        }),
+      );
+      await qc.invalidateQueries({ queryKey: ["me"] });
+      if (
+        c.levels.find((level) => level.id === levelId)?.requires_track &&
+        !c.tracks.some((track) => track.id === trackId && track.level_id === levelId)
+      ) {
         setStep("student-track");
       } else {
         await completeStudent();
@@ -313,12 +342,13 @@ function Onboarding() {
   function continueBack() {
     if (step === "name" || step === "role") return;
     if (step === "student-level") setStep("role");
-    else if (step === "student-track") setStep("student-level");
+    else if (step === "student-department") setStep("student-level");
+    else if (step === "student-track") setStep("student-department");
     else if (step === "student-complete") {
       setStep(
         c.levels.find((level) => level.id === levelId)?.requires_track
           ? "student-track"
-          : "student-level",
+          : "student-department",
       );
     } else if (step === "teacher-school") setStep("role");
     else if (step === "teacher-levels") setStep("teacher-school");
@@ -453,9 +483,32 @@ function Onboarding() {
       </Field>,
       saveStudentLevel,
     );
+  } else if (step === "student-department") {
+    content = formQuestion(
+      t("onb.geographicalDepartmentQuestion"),
+      <Field label={t("onb.geographicalDepartment")} htmlFor="student-geographical-department">
+        <NativeSelect
+          id="student-geographical-department"
+          required
+          value={geographicalDepartment}
+          onChange={(event) => {
+            setGeographicalDepartment(event.target.value);
+            setValidationError(null);
+          }}
+        >
+          <option value="">{t("common.select")}</option>
+          {haitiDepartments.map((department) => (
+            <option key={department} value={department}>
+              {department}
+            </option>
+          ))}
+        </NativeSelect>
+      </Field>,
+      saveStudentDepartment,
+    );
   } else if (step === "student-track") {
     content = formQuestion(
-      t("onb.studentDepartmentQuestion"),
+      t("onb.studentTrackQuestion"),
       <Field label={t("onb.track")} htmlFor="student-track">
         <NativeSelect
           id="student-track"
@@ -621,6 +674,7 @@ function getFlowSteps(
     full_name: string | null;
     level_id: string | null;
     track_id: string | null;
+    geographical_department: string | null;
     school: string | null;
     phone: string | null;
   },

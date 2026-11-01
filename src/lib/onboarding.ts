@@ -3,6 +3,7 @@ export type OnboardingStep =
   | "name"
   | "role"
   | "student-level"
+  | "student-department"
   | "student-track"
   | "student-complete"
   | "teacher-school"
@@ -15,6 +16,7 @@ type OnboardingProfile = {
   full_name: string | null;
   level_id: string | null;
   track_id: string | null;
+  geographical_department: string | null;
   school: string | null;
   phone: string | null;
 };
@@ -22,6 +24,25 @@ type OnboardingProfile = {
 type CatalogLevel = { id: string; requires_track: boolean };
 type CatalogTrack = { id: string; level_id: string };
 type TeacherAssignment = { level_id: string; track_id: string | null };
+
+export const haitiDepartments = [
+  "Artibonite",
+  "Centre",
+  "Grand'Anse",
+  "Nippes",
+  "Nord",
+  "Nord-Est",
+  "Nord-Ouest",
+  "Ouest",
+  "Sud",
+  "Sud-Est",
+] as const;
+
+export function isHaitiDepartment(
+  value: string | null,
+): value is (typeof haitiDepartments)[number] {
+  return value !== null && haitiDepartments.some((department) => department === value);
+}
 
 export function normalizePhoneNumber(phone: string) {
   return phone.replace(/[\s().-]/g, "");
@@ -44,6 +65,9 @@ export function nextOnboardingStep(
   if (role === "student") {
     const level = levels.find((candidate) => candidate.id === profile.level_id);
     if (!level) return "student-level";
+    if (!isHaitiDepartment(profile.geographical_department)) {
+      return "student-department";
+    }
     if (
       level.requires_track &&
       !tracks.some((track) => track.id === profile.track_id && track.level_id === level.id)

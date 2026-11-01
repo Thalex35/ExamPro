@@ -2,14 +2,16 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { catalogQuery, chaptersFor, subjectsFor, topicsFor, trackFilter } from "@/lib/catalog";
+import { catalogQuery, chaptersFor, subjectsForLevel, topicsFor, trackFilter } from "@/lib/catalog";
 import { useMe } from "@/lib/session";
 import { useI18n } from "@/lib/i18n";
 import { Empty, ErrorState, Loading } from "@/components/States";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/subjects/$subjectId")({
-  validateSearch: (s: Record<string, unknown>): { chapter?: string | undefined; topic?: string | undefined } => ({
+  validateSearch: (
+    s: Record<string, unknown>,
+  ): { chapter?: string | undefined; topic?: string | undefined } => ({
     chapter: typeof s["chapter"] === "string" ? s["chapter"] : undefined,
     topic: typeof s["topic"] === "string" ? s["topic"] : undefined,
   }),
@@ -30,7 +32,13 @@ function SubjectDetail() {
     queryKey: ["subject-courses", subjectId, levelId, trackId, chapter, topic],
     enabled: !!levelId,
     queryFn: async () => {
-      let q = supabase.from("courses").select("id,title,summary,chapter_id,topic_id,published_at").eq("status", "published").eq("subject_id", subjectId).eq("level_id", levelId!).or(trackFilter(trackId));
+      let q = supabase
+        .from("courses")
+        .select("id,title,summary,chapter_id,topic_id,published_at")
+        .eq("status", "published")
+        .eq("subject_id", subjectId)
+        .eq("level_id", levelId!)
+        .or(trackFilter(trackId));
       if (topic) q = q.eq("topic_id", topic);
       else if (chapter) q = q.eq("chapter_id", chapter);
       const { data, error } = await q.order("published_at", { ascending: false });
@@ -43,7 +51,7 @@ function SubjectDetail() {
   if (cat.error || !cat.data) return <ErrorState error={cat.error} onRetry={() => cat.refetch()} />;
   const c = cat.data;
   const subject = c.subjects.find((s) => s.id === subjectId);
-  const allowed = subjectsFor(c, levelId, trackId).some((s) => s.id === subjectId);
+  const allowed = subjectsForLevel(c, levelId, trackId).some((s) => s.id === subjectId);
   if (!subject || !allowed) return <Empty>{t("subj.empty")}</Empty>;
   const chapters = chaptersFor(c, subjectId, levelId);
   const activeChapter = chapters.find((x) => x.id === chapter);
@@ -93,23 +101,46 @@ function SubjectDetail() {
           )}
         </aside>
         <section>
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">{t("subj.courses")}</h2>
-          {courses.isLoading ? <Loading /> : courses.error ? <ErrorState error={courses.error} onRetry={() => courses.refetch()} /> : !courses.data?.length ? <Empty>{t("subj.noCoursesHere")}</Empty> : (
+          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+            {t("subj.courses")}
+          </h2>
+          {courses.isLoading ? (
+            <Loading />
+          ) : courses.error ? (
+            <ErrorState error={courses.error} onRetry={() => courses.refetch()} />
+          ) : !courses.data?.length ? (
+            <Empty>{t("subj.noCoursesHere")}</Empty>
+          ) : (
             <div className="grid gap-3">
               {courses.data.map((x) => {
                 const ch = c.chapters.find((y) => y.id === x.chapter_id);
                 const tp = c.topics.find((y) => y.id === x.topic_id);
                 return (
-                  <Link key={x.id} to="/courses/$courseId" params={{ courseId: x.id }} className="card-surface block p-5 hover:shadow-brand">
+                  <Link
+                    key={x.id}
+                    to="/courses/$courseId"
+                    params={{ courseId: x.id }}
+                    className="card-surface block p-5 hover:shadow-brand"
+                  >
                     <p className="text-lg font-semibold text-heading">{x.title}</p>
-                    {x.summary && <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{x.summary}</p>}
-                    <p className="mt-2 text-xs text-deep">{[ch && name(ch), tp && name(tp)].filter(Boolean).join(" · ")}</p>
+                    {x.summary && (
+                      <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{x.summary}</p>
+                    )}
+                    <p className="mt-2 text-xs text-deep">
+                      {[ch && name(ch), tp && name(tp)].filter(Boolean).join(" · ")}
+                    </p>
                   </Link>
                 );
               })}
             </div>
           )}
-          <Link to="/exams" search={{ subject: subjectId }} className="mt-6 inline-block text-sm font-semibold text-deep hover:underline">{t("subj.exams")} →</Link>
+          <Link
+            to="/exams"
+            search={{ subject: subjectId }}
+            className="mt-6 inline-block text-sm font-semibold text-deep hover:underline"
+          >
+            {t("subj.exams")} →
+          </Link>
         </section>
       </div>
     </div>

@@ -25,14 +25,18 @@ function Admin() {
     <AdminGate>
       <PageHeader title={t("admin.title")} />
       <Tabs defaultValue="catalog">
-        <TabsList>
+        <TabsList className="flex h-auto flex-wrap">
           <TabsTrigger value="catalog">{t("admin.catalog")}</TabsTrigger>
           <TabsTrigger value="users">{t("admin.users")}</TabsTrigger>
           <TabsTrigger value="content">{t("admin.content")}</TabsTrigger>
+          <TabsTrigger value="schools">{t("admin.schools")}</TabsTrigger>
+          <TabsTrigger value="teacher-verification">{t("admin.teacherVerification")}</TabsTrigger>
         </TabsList>
         <TabsContent value="catalog" className="mt-6"><CatalogAdmin /></TabsContent>
         <TabsContent value="users" className="mt-6"><UsersAdmin /></TabsContent>
         <TabsContent value="content" className="mt-6"><ContentAdmin /></TabsContent>
+        <TabsContent value="schools" className="mt-6"><SchoolReviewAdmin /></TabsContent>
+        <TabsContent value="teacher-verification" className="mt-6"><TeacherVerificationAdmin /></TabsContent>
       </Tabs>
     </AdminGate>
   );
@@ -241,6 +245,230 @@ function ContentAdmin() {
           )}
         </li>
       ))}
+    </ul>
+  );
+}
+
+function SchoolReviewAdmin() {
+  const { t, errMsg } = useI18n();
+  const qc = useQueryClient();
+  const q = useQuery({
+    queryKey: ["admin-schools-review"],
+    queryFn: async () => {
+      const [schools, corrections, allSchools] = await Promise.all([
+        supabase
+          .from("schools")
+          .select("id,name,geographical_department,phone,email,created_at")
+          .eq("verification_status", "pending")
+          .order("created_at", { ascending: true }),
+        supabase
+          .from("school_contact_corrections")
+          .select("id,school_id,proposed_phone,proposed_email,created_at")
+          .eq("status", "pending")
+          .order("created_at", { ascending: true }),
+        supabase.from("schools").select("id,name,geographical_department"),
+      ]);
+      if (schools.error) throw schools.error;
+      if (corrections.error) throw corrections.error;
+      if (allSchools.error) throw allSchools.error;
+      return { schools: schools.data, corrections: corrections.data, allSchools: allSchools.data };
+    },
+  });
+
+  async function reviewSchool(id: string, status: "verified" | "rejected") {
+    const { error } = await supabase.rpc("admin_review_school", {
+      _school_id: id,
+      _status: status,
+    });
+    if (error) {
+      toast.error(errMsg(error));
+      return;
+    }
+    toast.success(t("admin.reviewed"));
+    await qc.invalidateQueries({ queryKey: ["admin-schools-review"] });
+  }
+
+  async function reviewCorrection(id: string, status: "approved" | "rejected") {
+    const { error } = await supabase.rpc("admin_review_school_contact_correction", {
+      _correction_id: id,
+      _status: status,
+      _review_note: null,
+    });
+    if (error) {
+      toast.error(errMsg(error));
+      return;
+    }
+    toast.success(t("admin.reviewed"));
+    await qc.invalidateQueries({ queryKey: ["admin-schools-review"] });
+  }
+
+  if (q.isLoading) return <Loading />;
+  if (q.error || !q.data) return <ErrorState error={q.error} />;
+  const schoolNames = new Map(q.data.allSchools.map((school) => [school.id, school]));
+
+  return (
+    <div className="grid gap-8">
+      <section>
+        <h2 className="mb-3 text-lg font-semibold">{t("admin.pendingSchools")}</h2>
+        {q.data.schools.length ? (
+          <ul className="card-surface divide-y">
+            {q.data.schools.map((school) => (
+              <li key={school.id} className="flex flex-wrap items-center gap-3 p-4">
+                <div className="min-w-0 flex-1">
+                  <p className="font-semibold text-heading">{school.name}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {school.geographical_department}
+                    {school.phone ? ` · ${school.phone}` : ""}
+                    {school.email ? ` · ${school.email}` : ""}
+                  </p>
+                </div>
+                <Button size="sm" onClick={() => void reviewSchool(school.id, "verified")}>
+                  {t("admin.approve")}
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => void reviewSchool(school.id, "rejected")}>
+                  {t("admin.reject")}
+                </Button>
+              </li>
+            ))}
+          </ul>
+        ) : <Empty>{t("admin.noPendingSchools")}</Empty>}
+      </section>
+
+      <section>
+        <h2 className="mb-3 text-lg font-semibold">{t("admin.contactCorrections")}</h2>
+        {q.data.corrections.length ? (
+          <ul className="card-surface divide-y">
+            {q.data.corrections.map((correction) => {
+              const school = schoolNames.get(correction.school_id);
+              return (
+                <li key={correction.id} className="flex flex-wrap items-center gap-3 p-4">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold text-heading">{school?.name ?? correction.school_id}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {correction.proposed_phone ?? "—"} · {correction.proposed_email ?? "—"}
+                    </p>
+                  </div>
+                  <Button size="sm" onClick={() => void reviewCorrection(correction.id, "approved")}>
+                    {t("admin.approve")}
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => void reviewCorrection(correction.id, "rejected")}>
+                    {t("admin.reject")}
+                  </Button>
+                </li>
+              );
+            })}
+          </ul>
+        ) : <Empty>{t("admin.noPendingCorrections")}</Empty>}
+      </section>
+    </div>
+  );
+}
+
+function TeacherVerificationAdmin() {
+  const { t, errMsg } = useI18n();
+  const qc = useQueryClient();
+  const [reviewNotes, setReviewNotes] = useState<Record<string, string>>({});
+  const q = useQuery({
+    queryKey: ["admin-teacher-verification"],
+    queryFn: async () => {
+      const { data: requests, error } = await supabase
+        .from("teacher_verification_requests")
+        .select("id,teacher_id,email,school_id,submitted_at")
+        .eq("status", "pending")
+        .order("submitted_at", { ascending: true });
+      if (error) throw error;
+      if (!requests.length) return { requests, profiles: [], schools: [] };
+      const [profiles, schools] = await Promise.all([
+        supabase
+          .from("profiles")
+          .select("id,first_name,last_name,full_name,phone")
+          .in("id", requests.map((request) => request.teacher_id)),
+        supabase
+          .from("schools")
+          .select("id,name,geographical_department,verification_status")
+          .in("id", requests.flatMap((request) => request.school_id ? [request.school_id] : [])),
+      ]);
+      if (profiles.error) throw profiles.error;
+      if (schools.error) throw schools.error;
+      return { requests, profiles: profiles.data, schools: schools.data };
+    },
+  });
+
+  async function review(id: string, status: "approved" | "rejected") {
+    const { error } = await supabase.rpc("admin_review_teacher_verification", {
+      _request_id: id,
+      _status: status,
+      _review_note: reviewNotes[id]?.trim() || null,
+    });
+    if (error) {
+      toast.error(errMsg(error));
+      return;
+    }
+    toast.success(t("admin.reviewed"));
+    await qc.invalidateQueries({ queryKey: ["admin-teacher-verification"] });
+    await qc.invalidateQueries({ queryKey: ["admin-users"] });
+  }
+
+  if (q.isLoading) return <Loading />;
+  if (q.error || !q.data) return <ErrorState error={q.error} />;
+  if (!q.data.requests.length) return <Empty>{t("admin.noPendingTeachers")}</Empty>;
+  const profilesById = new Map(q.data.profiles.map((profile) => [profile.id, profile]));
+  const schoolsById = new Map(q.data.schools.map((school) => [school.id, school]));
+
+  return (
+    <ul className="card-surface divide-y">
+      {q.data.requests.map((request) => {
+        const profile = profilesById.get(request.teacher_id);
+        const school = request.school_id ? schoolsById.get(request.school_id) : null;
+        const schoolStatusLabel = school
+          ? school.verification_status === "verified"
+            ? t("admin.schoolStatus.verified")
+            : school.verification_status === "rejected"
+              ? t("admin.schoolStatus.rejected")
+              : t("admin.schoolStatus.pending")
+          : null;
+        const teacherName =
+          [profile?.first_name, profile?.last_name].filter(Boolean).join(" ") ||
+          profile?.full_name ||
+          request.email;
+        return (
+          <li key={request.id} className="grid gap-3 p-4">
+            <div>
+              <p className="font-semibold text-heading">{teacherName}</p>
+              <p className="text-sm text-muted-foreground">
+                {request.email} · {profile?.phone ?? "—"}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                {school ? `${school.name} · ${school.geographical_department} · ${schoolStatusLabel}` : "—"}
+              </p>
+            </div>
+            {school?.verification_status !== "verified" && (
+              <p className="text-sm text-muted-foreground">{t("admin.schoolMustBeVerified")}</p>
+            )}
+            <Input
+              aria-label={t("admin.reviewNote")}
+              placeholder={t("admin.reviewNote")}
+              maxLength={500}
+              value={reviewNotes[request.id] ?? ""}
+              onChange={(event) =>
+                setReviewNotes((current) => ({ ...current, [request.id]: event.target.value }))
+              }
+            />
+            <div className="flex flex-wrap justify-end gap-2">
+              <Button
+                size="sm"
+                disabled={!school || school.verification_status !== "verified"}
+                onClick={() => void review(request.id, "approved")}
+              >
+                {t("admin.approve")}
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => void review(request.id, "rejected")}>
+                {t("admin.reject")}
+              </Button>
+            </div>
+          </li>
+        );
+      })}
     </ul>
   );
 }

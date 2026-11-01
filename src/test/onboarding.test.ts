@@ -8,34 +8,46 @@ import {
 } from "@/lib/onboarding";
 
 const levels = [
-  { id: "langue", requires_track: false },
-  { id: "ns4", requires_track: true },
+  { id: "9e-af", requires_track: false },
+  { id: "terminale", requires_track: true },
 ];
 const tracks = [
-  { id: "ses", level_id: "ns4" },
-  { id: "smb", level_id: "ns4" },
-  { id: "svd", level_id: "ns4" },
+  { id: "smp", level_id: "terminale" },
+  { id: "svt", level_id: "terminale" },
+  { id: "lla", level_id: "terminale" },
+  { id: "ses", level_id: "terminale" },
 ];
 const emptyProfile = {
-  full_name: "Jean Pierre",
+  full_name: null,
+  first_name: null,
+  last_name: null,
   level_id: null,
   track_id: null,
   geographical_department: null,
   school: null,
+  school_id: null,
+  teacher_school_contacts_confirmed: false,
   phone: null,
+};
+const namedProfile = {
+  ...emptyProfile,
+  full_name: "Jean Pierre",
+  first_name: "Jean",
+  last_name: "Pierre",
 };
 
 describe("role-based onboarding progress", () => {
-  it("requires a role before asking the student questions", () => {
-    expect(nextOnboardingStep(null, emptyProfile, levels, tracks, [])).toBe("role");
+  it("asks for names before the role selection", () => {
+    expect(nextOnboardingStep(null, emptyProfile, levels, tracks, [])).toBe("name");
+    expect(nextOnboardingStep(null, namedProfile, levels, tracks, [])).toBe("role");
   });
 
   it("asks for the student level and skips the track for a trackless level", () => {
-    expect(nextOnboardingStep("student", emptyProfile, levels, tracks, [])).toBe("student-level");
+    expect(nextOnboardingStep("student", namedProfile, levels, tracks, [])).toBe("student-level");
     expect(
       nextOnboardingStep(
         "student",
-        { ...emptyProfile, level_id: "langue", geographical_department: "Ouest" },
+        { ...namedProfile, level_id: "9e-af", geographical_department: "Ouest" },
         levels,
         tracks,
         [],
@@ -43,11 +55,11 @@ describe("role-based onboarding progress", () => {
     ).toBe("student-complete");
   });
 
-  it("requires a valid catalog track for NS4 students", () => {
+  it("requires a valid catalog track for Terminale students", () => {
     expect(
       nextOnboardingStep(
         "student",
-        { ...emptyProfile, level_id: "ns4", geographical_department: "Ouest" },
+        { ...namedProfile, level_id: "terminale", geographical_department: "Ouest" },
         levels,
         tracks,
         [],
@@ -57,8 +69,8 @@ describe("role-based onboarding progress", () => {
       nextOnboardingStep(
         "student",
         {
-          ...emptyProfile,
-          level_id: "ns4",
+          ...namedProfile,
+          level_id: "terminale",
           geographical_department: "Ouest",
           track_id: "ses",
         },
@@ -71,8 +83,8 @@ describe("role-based onboarding progress", () => {
       nextOnboardingStep(
         "student",
         {
-          ...emptyProfile,
-          level_id: "ns4",
+          ...namedProfile,
+          level_id: "terminale",
           geographical_department: "Ouest",
           track_id: "foreign-track",
         },
@@ -84,9 +96,9 @@ describe("role-based onboarding progress", () => {
   });
 
   it("requires a Haitian geographical department before a student filière", () => {
-    expect(nextOnboardingStep("student", emptyProfile, levels, tracks, [])).toBe("student-level");
+    expect(nextOnboardingStep("student", namedProfile, levels, tracks, [])).toBe("student-level");
     expect(
-      nextOnboardingStep("student", { ...emptyProfile, level_id: "ns4" }, levels, tracks, []),
+      nextOnboardingStep("student", { ...namedProfile, level_id: "terminale" }, levels, tracks, []),
     ).toBe("student-department");
     expect(isHaitiDepartment("Grand'Anse")).toBe(true);
     expect(isHaitiDepartment("SMP")).toBe(false);
@@ -95,35 +107,64 @@ describe("role-based onboarding progress", () => {
 
   it("requires a filière after geography only for levels that need one", () => {
     const geographySaved = {
-      ...emptyProfile,
+      ...namedProfile,
       geographical_department: "Ouest",
     };
     expect(nextOnboardingStep("student", geographySaved, levels, tracks, [])).toBe("student-level");
     expect(
-      nextOnboardingStep("student", { ...geographySaved, level_id: "langue" }, levels, tracks, []),
+      nextOnboardingStep("student", { ...geographySaved, level_id: "9e-af" }, levels, tracks, []),
     ).toBe("student-complete");
     expect(
-      nextOnboardingStep("student", { ...geographySaved, level_id: "ns4" }, levels, tracks, []),
+      nextOnboardingStep(
+        "student",
+        { ...geographySaved, level_id: "terminale" },
+        levels,
+        tracks,
+        [],
+      ),
     ).toBe("student-track");
   });
 
-  it("resumes teacher onboarding at the missing catalog assignment or phone step", () => {
-    const withSchool = { ...emptyProfile, school: "École EXAMPRO" };
-    expect(nextOnboardingStep("teacher", emptyProfile, levels, tracks, [])).toBe("teacher-school");
+  it("resumes teacher onboarding at the missing school, assignment, or phone step", () => {
+    const withDepartment = {
+      ...namedProfile,
+      geographical_department: "Ouest",
+    };
+    const withSchool = {
+      ...withDepartment,
+      school: "École EXAMPRO",
+      school_id: "school-id",
+      teacher_school_contacts_confirmed: true,
+    };
+    expect(nextOnboardingStep("teacher", namedProfile, levels, tracks, [])).toBe(
+      "teacher-department",
+    );
+    expect(nextOnboardingStep("teacher", withDepartment, levels, tracks, [])).toBe(
+      "teacher-school",
+    );
+    expect(
+      nextOnboardingStep(
+        "teacher",
+        { ...withSchool, teacher_school_contacts_confirmed: false },
+        levels,
+        tracks,
+        [],
+      ),
+    ).toBe("teacher-school-contact");
     expect(nextOnboardingStep("teacher", withSchool, levels, tracks, [])).toBe("teacher-levels");
     expect(
       nextOnboardingStep("teacher", withSchool, levels, tracks, [
-        { level_id: "ns4", track_id: null },
+        { level_id: "terminale", track_id: null },
       ]),
     ).toBe("teacher-tracks");
     expect(
       nextOnboardingStep("teacher", withSchool, levels, tracks, [
-        { level_id: "ns4", track_id: "smb" },
+        { level_id: "terminale", track_id: "smp" },
       ]),
     ).toBe("teacher-phone");
     expect(
       nextOnboardingStep("teacher", { ...withSchool, phone: "+509 3700-0000" }, levels, tracks, [
-        { level_id: "langue", track_id: null },
+        { level_id: "9e-af", track_id: null },
       ]),
     ).toBe("teacher-complete");
   });

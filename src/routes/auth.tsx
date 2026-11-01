@@ -38,7 +38,8 @@ function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [name, setName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [busy, setBusy] = useState(false);
   const [info, setInfo] = useState<string | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
@@ -114,8 +115,12 @@ function AuthPage() {
     setValidationError(null);
     setFormError(null);
     const normalizedEmail = email.trim().toLowerCase();
-    if (mode === "signup" && !name.trim()) {
+    if (mode === "signup" && (!firstName.trim() || !lastName.trim())) {
       setValidationError(t("onb.nameRequired"));
+      return;
+    }
+    if (mode === "signup" && `${firstName.trim()} ${lastName.trim()}`.length > 120) {
+      setValidationError(t("auth.nameTooLong"));
       return;
     }
     setBusy(true);
@@ -137,7 +142,12 @@ function AuthPage() {
           password,
           options: {
             emailRedirectTo: window.location.origin + "/onboarding",
-            data: { full_name: name.trim(), language: lang },
+            data: {
+              first_name: firstName.trim(),
+              last_name: lastName.trim(),
+              full_name: `${firstName.trim()} ${lastName.trim()}`,
+              language: lang,
+            },
           },
         });
         if (error) throw error;
@@ -229,16 +239,29 @@ function AuthPage() {
               </p>
             )}
             {mode === "signup" && (
-              <div className="grid gap-1.5">
-                <Label htmlFor="name">{t("auth.fullName")}</Label>
-                <Input
-                  id="name"
-                  required
-                  maxLength={120}
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  autoComplete="name"
-                />
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="grid gap-1.5">
+                  <Label htmlFor="first-name">{t("auth.firstName")}</Label>
+                  <Input
+                    id="first-name"
+                    required
+                    maxLength={80}
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    autoComplete="given-name"
+                  />
+                </div>
+                <div className="grid gap-1.5">
+                  <Label htmlFor="last-name">{t("auth.lastName")}</Label>
+                  <Input
+                    id="last-name"
+                    required
+                    maxLength={80}
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    autoComplete="family-name"
+                  />
+                </div>
               </div>
             )}
             <div className="grid gap-1.5">

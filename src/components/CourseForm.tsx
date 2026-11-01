@@ -33,6 +33,7 @@ export function CourseForm({ course }: { course?: Course }) {
     topic_id: course?.topic_id ?? "",
   });
   const [busy, setBusy] = useState(false);
+  const isVerified = me?.profile?.teacher_verification_status === "approved" || me?.isAdmin;
 
   if (cat.isLoading) return <Loading />;
   if (cat.error || !cat.data) return <ErrorState error={cat.error} />;
@@ -56,27 +57,69 @@ export function CourseForm({ course }: { course?: Course }) {
       ? await supabase.from("courses").update(row).eq("id", course.id)
       : await supabase.from("courses").insert({ ...row, author_id: me.user.id });
     setBusy(false);
-    if (res.error) { toast.error(errMsg(res.error)); return; }
+    if (res.error) {
+      toast.error(errMsg(res.error));
+      return;
+    }
     toast.success(t("common.saved"));
     qc.invalidateQueries();
     navigate({ to: "/teacher" });
   }
 
   return (
-    <form onSubmit={(e) => save("published", e)} className="card-surface flex flex-col gap-5 p-6">
+    <form
+      onSubmit={(e) => save(isVerified ? "published" : "draft", e)}
+      className="card-surface flex flex-col gap-5 p-6"
+    >
+      {!isVerified && (
+        <p className="rounded-lg border border-brand/30 bg-brand/5 p-3 text-sm text-muted-foreground">
+          {me?.profile?.teacher_verification_status === "rejected"
+            ? t("teacher.verificationRejected")
+            : t("teacher.verificationPending")}
+        </p>
+      )}
       <Field label={t("form.title")} htmlFor="c-title">
-        <Input id="c-title" required minLength={3} maxLength={200} value={title} onChange={(e) => setTitle(e.target.value)} />
+        <Input
+          id="c-title"
+          required
+          minLength={3}
+          maxLength={200}
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+        />
       </Field>
       <ClassificationFields c={cat.data} value={cls} onChange={setCls} />
       <Field label={t("form.summary")} htmlFor="c-summary">
-        <Textarea id="c-summary" rows={2} value={summary} onChange={(e) => setSummary(e.target.value)} />
+        <Textarea
+          id="c-summary"
+          rows={2}
+          value={summary}
+          onChange={(e) => setSummary(e.target.value)}
+        />
       </Field>
       <Field label={t("form.body")} htmlFor="c-body">
-        <Textarea id="c-body" rows={14} required value={body} onChange={(e) => setBody(e.target.value)} />
+        <Textarea
+          id="c-body"
+          rows={14}
+          required
+          value={body}
+          onChange={(e) => setBody(e.target.value)}
+        />
       </Field>
       <div className="flex flex-wrap justify-end gap-3">
-        <Button type="button" variant="outline" disabled={busy || !title || !cls.subject_id} onClick={() => save("draft")}>{course?.status === "published" ? t("form.unpublish") : t("form.saveDraft")}</Button>
-        <Button type="submit" variant="hero" disabled={busy}>{t("form.publish")}</Button>
+        <Button
+          type="button"
+          variant="outline"
+          disabled={busy || !title || !cls.subject_id}
+          onClick={() => save("draft")}
+        >
+          {course?.status === "published" ? t("form.unpublish") : t("form.saveDraft")}
+        </Button>
+        {isVerified && (
+          <Button type="submit" variant="hero" disabled={busy}>
+            {t("form.publish")}
+          </Button>
+        )}
       </div>
     </form>
   );

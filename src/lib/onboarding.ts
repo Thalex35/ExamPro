@@ -6,7 +6,9 @@ export type OnboardingStep =
   | "student-department"
   | "student-track"
   | "student-complete"
+  | "teacher-department"
   | "teacher-school"
+  | "teacher-school-contact"
   | "teacher-levels"
   | "teacher-tracks"
   | "teacher-phone"
@@ -14,10 +16,14 @@ export type OnboardingStep =
 
 type OnboardingProfile = {
   full_name: string | null;
+  first_name: string | null;
+  last_name: string | null;
   level_id: string | null;
   track_id: string | null;
   geographical_department: string | null;
   school: string | null;
+  school_id: string | null;
+  teacher_school_contacts_confirmed: boolean;
   phone: string | null;
 };
 
@@ -59,8 +65,8 @@ export function nextOnboardingStep(
   tracks: CatalogTrack[],
   teacherAssignments: TeacherAssignment[],
 ): OnboardingStep {
+  if (!profile.first_name?.trim() || !profile.last_name?.trim()) return "name";
   if (!role) return "role";
-  if (!profile.full_name?.trim()) return "name";
 
   if (role === "student") {
     const level = levels.find((candidate) => candidate.id === profile.level_id);
@@ -77,7 +83,9 @@ export function nextOnboardingStep(
     return "student-complete";
   }
 
-  if (!profile.school?.trim()) return "teacher-school";
+  if (!isHaitiDepartment(profile.geographical_department)) return "teacher-department";
+  if (!profile.school_id) return "teacher-school";
+  if (!profile.teacher_school_contacts_confirmed) return "teacher-school-contact";
   if (!teacherAssignments.length) return "teacher-levels";
 
   const missingTrack = teacherAssignments.some((assignment) => {

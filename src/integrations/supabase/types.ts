@@ -292,46 +292,71 @@ export type Database = {
         Row: {
           created_at: string
           department: string | null
+          first_name: string | null
           geographical_department: string | null
           full_name: string | null
           id: string
           language: string
+          last_name: string | null
           level_id: string | null
           onboarded: boolean
           school: string | null
+          school_id: string | null
           phone: string | null
+          teacher_school_contacts_confirmed: boolean
+          teacher_verification_note: string | null
+          teacher_verification_status: string
           track_id: string | null
           updated_at: string
         }
         Insert: {
           created_at?: string
           department?: string | null
+          first_name?: string | null
           geographical_department?: string | null
           full_name?: string | null
           id: string
           language?: string
+          last_name?: string | null
           level_id?: string | null
           onboarded?: boolean
           school?: string | null
+          school_id?: string | null
           phone?: string | null
+          teacher_school_contacts_confirmed?: boolean
+          teacher_verification_note?: string | null
+          teacher_verification_status?: string
           track_id?: string | null
           updated_at?: string
         }
         Update: {
           created_at?: string
           department?: string | null
+          first_name?: string | null
           geographical_department?: string | null
           full_name?: string | null
           id?: string
           language?: string
+          last_name?: string | null
           level_id?: string | null
           onboarded?: boolean
           school?: string | null
+          school_id?: string | null
           phone?: string | null
+          teacher_school_contacts_confirmed?: boolean
+          teacher_verification_note?: string | null
+          teacher_verification_status?: string
           track_id?: string | null
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "profiles_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "profiles_level_id_fkey"
             columns: ["level_id"]
@@ -347,6 +372,92 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      school_contact_corrections: {
+        Row: {
+          created_at: string
+          id: string
+          proposed_email: string | null
+          proposed_phone: string | null
+          review_note: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          school_id: string
+          status: string
+          submitted_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          proposed_email?: string | null
+          proposed_phone?: string | null
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          school_id: string
+          status?: string
+          submitted_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          proposed_email?: string | null
+          proposed_phone?: string | null
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          school_id?: string
+          status?: string
+          submitted_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "school_contact_corrections_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      schools: {
+        Row: {
+          created_at: string
+          email: string | null
+          geographical_department: string
+          id: string
+          name: string
+          normalized_name: string
+          phone: string | null
+          submitted_by: string | null
+          updated_at: string
+          verification_status: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          geographical_department: string
+          id?: string
+          name: string
+          normalized_name?: never
+          phone?: string | null
+          submitted_by?: string | null
+          updated_at?: string
+          verification_status?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          geographical_department?: string
+          id?: string
+          name?: string
+          normalized_name?: never
+          phone?: string | null
+          submitted_by?: string | null
+          updated_at?: string
+          verification_status?: string
+        }
+        Relationships: []
       }
       subjects: {
         Row: {
@@ -417,6 +528,50 @@ export type Database = {
             columns: ["track_id"]
             isOneToOne: false
             referencedRelation: "tracks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      teacher_verification_requests: {
+        Row: {
+          email: string
+          id: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          review_note: string | null
+          school_id: string | null
+          status: string
+          submitted_at: string
+          teacher_id: string
+        }
+        Insert: {
+          email: string
+          id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          review_note?: string | null
+          school_id?: string | null
+          status?: string
+          submitted_at?: string
+          teacher_id: string
+        }
+        Update: {
+          email?: string
+          id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          review_note?: string | null
+          school_id?: string | null
+          status?: string
+          submitted_at?: string
+          teacher_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teacher_verification_requests_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
             referencedColumns: ["id"]
           },
         ]
@@ -564,6 +719,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_review_school: {
+        Args: { _school_id: string; _status: string }
+        Returns: undefined
+      }
+      admin_review_school_contact_correction: {
+        Args: { _correction_id: string; _review_note?: string | null; _status: string }
+        Returns: undefined
+      }
+      admin_review_teacher_verification: {
+        Args: { _request_id: string; _review_note?: string | null; _status: string }
+        Returns: undefined
+      }
       admin_set_role: {
         Args: {
           _enabled: boolean
@@ -596,6 +763,23 @@ export type Database = {
         Args: { _phone: string }
         Returns: undefined
       }
+      register_onboarding_school: {
+        Args: { _name: string }
+        Returns: string
+      }
+      resubmit_teacher_verification: { Args: never; Returns: undefined }
+      save_onboarding_names: {
+        Args: { _first_name: string; _last_name: string }
+        Returns: undefined
+      }
+      save_onboarding_school: {
+        Args: { _school_id: string }
+        Returns: undefined
+      }
+      save_teacher_school_contacts: {
+        Args: { _email: string | null; _phone: string | null }
+        Returns: undefined
+      }
       save_onboarding_name: { Args: { _full_name: string }; Returns: undefined }
       save_student_onboarding_level: {
         Args: { _level_id: string }
@@ -611,6 +795,10 @@ export type Database = {
       }
       save_teacher_onboarding_levels: {
         Args: { _level_ids: string[] }
+        Returns: undefined
+      }
+      save_teacher_onboarding_department: {
+        Args: { _department: string }
         Returns: undefined
       }
       save_teacher_onboarding_school: {

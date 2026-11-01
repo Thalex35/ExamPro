@@ -75,7 +75,7 @@ function NewExam() {
   }
 
   return (
-    <TeacherGate>
+    <TeacherGate requireVerified>
       <PageHeader title={t("teacher.newExam")} />
       <form onSubmit={submit} className="card-surface flex flex-col gap-5 p-6">
         <Field label={t("form.title")} htmlFor="e-title">

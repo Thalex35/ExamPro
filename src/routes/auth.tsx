@@ -46,25 +46,57 @@ function AuthPage() {
 
   useEffect(() => {
     let active = true;
-    const { data } = supabase.auth.onAuthStateChange((_e, session) => {
-      if (session) navigate({ to: "/onboarding", replace: true });
-    });
+    let redirected = false;
     const callbackError = new URLSearchParams(window.location.search).get("error_description");
-    void supabase.auth
-      .getSession()
-      .then(({ data: sessionData, error }) => {
+
+    async function verifySession() {
+      try {
+        const { data, error } = await supabase.auth.getSession();
         if (!active) return;
         if (error) {
           toast.error(errMsg(error));
-        } else if (sessionData.session) {
-          navigate({ to: "/onboarding", replace: true });
-        } else if (callbackError) {
-          toast.error(callbackError);
+          return;
         }
-      })
-      .catch((error: unknown) => {
+        if (!data.session) {
+          if (callbackError) toast.error(callbackError);
+          return;
+        }
+
+        const { data: userData, error: userError } = await supabase.auth.getUser();
+        if (!active) return;
+        if (userError) {
+          const code = "code" in userError ? String(userError.code) : "";
+          if (
+            userError.status === 401 ||
+            userError.status === 403 ||
+            userError.status === 404 ||
+            ["user_not_found", "session_not_found", "refresh_token_not_found", "bad_jwt"].includes(
+              code,
+            )
+          ) {
+            await supabase.auth.signOut({ scope: "local" });
+            return;
+          }
+          toast.error(errMsg(userError));
+          return;
+        }
+
+        if (userData.user && !redirected) {
+          redirected = true;
+          await navigate({ to: "/onboarding", replace: true });
+        }
+      } catch (error) {
         if (active) toast.error(errMsg(error));
-      });
+      }
+    }
+
+    const { data } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session && event === "SIGNED_IN") {
+        window.setTimeout(() => void verifySession(), 0);
+      }
+    });
+    void verifySession();
+
     return () => {
       active = false;
       data.subscription.unsubscribe();

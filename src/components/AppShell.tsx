@@ -539,28 +539,6 @@ export function AppShell({
               {t("dash.sidebarFooter")}
             </p>
           </div>
-          <div className="mt-3 flex items-center justify-between gap-2 border-t border-sidebar-border pt-3">
-            <div className={sidebarTextClass}>
-              <LanguageSwitch tone="light" />
-            </div>
-            <Link
-              to="/profile"
-              aria-label={t("nav.profile")}
-              title={studentSidebarCollapsed ? t("nav.profile") : undefined}
-              className="rounded-md p-2 text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
-            >
-              <User className="h-4 w-4" />
-            </Link>
-            <button
-              type="button"
-              onClick={signOut}
-              aria-label={t("nav.logout")}
-              title={studentSidebarCollapsed ? t("nav.logout") : undefined}
-              className="rounded-md p-2 text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
-            >
-              <LogOut className="h-4 w-4" />
-            </button>
-          </div>
         </aside>
 
         {open && (
@@ -606,7 +584,6 @@ export function AppShell({
                 </div>
               )}
             </div>
-            <LanguageSwitch />
           </header>
           <main className="mx-auto w-full max-w-[1440px] px-4 py-7 sm:px-8 sm:py-9">
             {isLoading ? <Loading /> : children}

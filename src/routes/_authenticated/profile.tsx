@@ -1,6 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState, type FormEvent } from "react";
+import { LogOut } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { catalogQuery, tracksFor } from "@/lib/catalog";
@@ -21,12 +22,14 @@ function ProfilePage() {
   const { data: me } = useMe();
   const cat = useQuery(catalogQuery);
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const [fullName, setFullName] = useState("");
   const [school, setSchool] = useState("");
   const [language, setLanguage] = useState<Lang>("fr");
   const [levelId, setLevelId] = useState("");
   const [trackId, setTrackId] = useState("");
   const [busy, setBusy] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
 
   useEffect(() => {
     if (!me?.profile) return;
@@ -56,6 +59,19 @@ function ProfilePage() {
     setLang(language);
     toast.success(t("common.saved"));
     qc.invalidateQueries();
+  }
+
+  async function signOut() {
+    setSigningOut(true);
+    const { error } = await supabase.auth.signOut();
+    setSigningOut(false);
+    if (error) {
+      toast.error(errMsg(error));
+      return;
+    }
+    await qc.cancelQueries();
+    qc.clear();
+    navigate({ to: "/auth", replace: true });
   }
 
   return (
@@ -89,6 +105,12 @@ function ProfilePage() {
         )}
         <div className="flex justify-end"><Button type="submit" disabled={busy}>{t("common.save")}</Button></div>
       </form>
+      <div className="mt-5 flex justify-end">
+        <Button type="button" variant="outline" onClick={() => void signOut()} disabled={signingOut}>
+          <LogOut className="mr-2 h-4 w-4" />
+          {t("nav.logout")}
+        </Button>
+      </div>
     </div>
   );
 }

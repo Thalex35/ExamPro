@@ -105,6 +105,42 @@ export function AppShell({
     );
   }
 
+  if (me?.isStudent && location.pathname === "/dashboard") {
+    return (
+      <div className="min-h-screen bg-background">
+        <header className="sticky top-0 z-20 border-b bg-card/95 backdrop-blur">
+          <div className="mx-auto flex w-full max-w-[1440px] items-center justify-between gap-4 px-4 py-3 sm:px-8">
+            <Link to="/" aria-label="EXAMPRO">
+              <BrandLogo className="h-8" />
+            </Link>
+            <div className="flex items-center gap-2 sm:gap-4">
+              <LanguageSwitch />
+              <Link
+                to="/profile"
+                aria-label={t("nav.profile")}
+                className="flex h-9 items-center gap-2 rounded-lg px-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground sm:px-3"
+              >
+                <User className="h-4 w-4" />
+                <span className="hidden sm:inline">{t("nav.profile")}</span>
+              </Link>
+              <button
+                onClick={signOut}
+                aria-label={t("nav.logout")}
+                className="flex h-9 items-center gap-2 rounded-lg px-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground sm:px-3"
+              >
+                <LogOut className="h-4 w-4" />
+                <span className="hidden sm:inline">{t("nav.logout")}</span>
+              </button>
+            </div>
+          </div>
+        </header>
+        <main className="mx-auto w-full max-w-[1440px] px-4 py-7 sm:px-8 sm:py-9">
+          {isLoading ? <Loading /> : children}
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen lg:grid lg:grid-cols-[260px_1fr]">
       <aside

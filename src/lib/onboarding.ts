@@ -52,6 +52,11 @@ export function isHaitiDepartment(
   return value !== null && haitiDepartments.some((department) => department === value);
 }
 
+export function isValidSchoolName(value: string | null | undefined) {
+  const name = value?.trim() ?? "";
+  return name.length >= 2 && name.length <= 200;
+}
+
 export function normalizePhoneNumber(phone: string) {
   return phone.replace(/[\s().-]/g, "");
 }
@@ -82,7 +87,7 @@ export function nextOnboardingStep(
     ) {
       return "student-track";
     }
-    if (!profile.school?.trim()) return "student-school";
+    if (!isValidSchoolName(profile.school)) return "student-school";
     return "student-complete";
   }
 

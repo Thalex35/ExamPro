@@ -155,6 +155,8 @@ const fr = {
   "contact.submitError": "Nous n’avons pas pu envoyer votre message. Veuillez réessayer.",
   "contact.footerLink": "Écrivez-nous",
   "auth.loginTitle": "Bon retour",
+  "auth.unauthorized":
+    "Vous n’avez pas accès à cet espace. Connectez-vous avec un compte autorisé.",
   "auth.signupTitle": "Créer votre compte",
   "auth.email": "Adresse e-mail",
   "auth.emailRejected":
@@ -602,6 +604,7 @@ const ht: Record<TKey, string> = {
   "contact.submitError": "Nou pa t kapab voye mesaj ou a. Tanpri eseye ankò.",
   "contact.footerLink": "Ekri nou",
   "auth.loginTitle": "Byenvini ankò",
+  "auth.unauthorized": "Ou pa gen aksè nan espas sa a. Konekte avèk yon kont ki gen otorizasyon.",
   "auth.signupTitle": "Kreye kont ou",
   "auth.email": "Adrès imèl",
   "auth.emailRejected":

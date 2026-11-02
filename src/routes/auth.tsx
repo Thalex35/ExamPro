@@ -12,10 +12,14 @@ import { LanguageSwitch } from "@/components/LanguageSwitch";
 import { useI18n } from "@/lib/i18n";
 
 type Mode = "login" | "signup" | "forgot";
+type AuthReason = "unauthorized";
 
 export const Route = createFileRoute("/auth")({
-  validateSearch: (s: Record<string, unknown>): { mode?: Mode | undefined } => ({
+  validateSearch: (
+    s: Record<string, unknown>,
+  ): { mode?: Mode | undefined; reason?: AuthReason | undefined } => ({
     mode: s["mode"] === "signup" || s["mode"] === "forgot" ? s["mode"] : undefined,
+    reason: s["reason"] === "unauthorized" ? "unauthorized" : undefined,
   }),
   head: () => ({
     meta: [
@@ -33,6 +37,7 @@ export const Route = createFileRoute("/auth")({
 function AuthPage() {
   const { t, lang, errMsg } = useI18n();
   const search = Route.useSearch();
+  const isUnauthorized = search.reason === "unauthorized";
   const navigate = useNavigate();
   const mode: Mode = search.mode ?? "login";
   const [email, setEmail] = useState("");
@@ -82,7 +87,7 @@ function AuthPage() {
           return;
         }
 
-        if (userData.user && !redirected) {
+        if (userData.user && !redirected && !isUnauthorized) {
           redirected = true;
           await navigate({ to: "/onboarding", replace: true });
         }
@@ -102,7 +107,7 @@ function AuthPage() {
       active = false;
       data.subscription.unsubscribe();
     };
-  }, [navigate, errMsg]);
+  }, [navigate, errMsg, isUnauthorized]);
 
   useEffect(() => {
     setInfo(null);
@@ -224,6 +229,14 @@ function AuthPage() {
         </div>
         <div className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center py-10">
           <h1 className="text-2xl font-bold">{title}</h1>
+          {isUnauthorized ? (
+            <p
+              className="mt-4 rounded-lg border border-destructive/30 bg-card p-4 text-sm text-destructive"
+              role="alert"
+            >
+              {t("auth.unauthorized")}
+            </p>
+          ) : null}
           {info ? (
             <div
               className="mt-6 rounded-lg border border-success/30 bg-card p-4 text-sm text-success"

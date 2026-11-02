@@ -1,6 +1,7 @@
 import { createFileRoute, Outlet, redirect, useLocation } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
+import { canAccessRolePath, type AppAreaRole } from "@/lib/route-access";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -21,7 +22,15 @@ export const Route = createFileRoute("/_authenticated")({
     if (profileResult.error) throw profileResult.error;
     if (roleResult.error) throw roleResult.error;
 
-    const roles = (roleResult.data ?? []).map((entry) => entry.role);
+    const roles = (roleResult.data ?? [])
+      .map((entry) => entry.role)
+      .filter(
+        (role): role is AppAreaRole => role === "admin" || role === "student" || role === "teacher",
+      );
+    if (!canAccessRolePath(location.pathname, roles)) {
+      throw redirect({ to: "/auth", search: { reason: "unauthorized" } });
+    }
+
     if (roles.includes("admin")) {
       if (location.pathname === "/onboarding") throw redirect({ to: "/admin" });
       return;
@@ -39,20 +48,6 @@ export const Route = createFileRoute("/_authenticated")({
 
     if (location.pathname === "/onboarding") {
       throw redirect({ to: isTeacher ? "/teacher" : "/dashboard" });
-    }
-    if (
-      isTeacher &&
-      ["/dashboard", "/subjects", "/exams", "/admin"].some(
-        (path) => location.pathname === path || location.pathname.startsWith(`${path}/`),
-      )
-    ) {
-      throw redirect({ to: "/teacher" });
-    }
-    if (isStudent && location.pathname.startsWith("/teacher")) {
-      throw redirect({ to: "/dashboard" });
-    }
-    if (isStudent && location.pathname.startsWith("/admin")) {
-      throw redirect({ to: "/dashboard" });
     }
   },
   component: AuthenticatedLayout,

@@ -9,6 +9,7 @@ import { catalogQuery } from "@/lib/catalog";
 import {
   haitiDepartments,
   isHaitiDepartment,
+  isValidSchoolName,
   isValidInternationalPhone,
   nextOnboardingStep,
   normalizePhoneNumber,
@@ -310,7 +311,7 @@ function Onboarding() {
   }
 
   async function continueStudentAfterAcademics() {
-    if (school.trim()) await completeStudent();
+    if (isValidSchoolName(school)) await completeStudent();
     else setStep("student-school");
   }
 
@@ -419,6 +420,11 @@ function Onboarding() {
   }
 
   async function completeStudent() {
+    if (!isValidSchoolName(school)) {
+      setStep("student-school");
+      setValidationError(t("onb.schoolRequired"));
+      return;
+    }
     await assertRpc(supabase.rpc("finish_student_onboarding"));
     await qc.invalidateQueries({ queryKey: ["me"] });
     setStep("student-complete");
@@ -427,6 +433,11 @@ function Onboarding() {
   async function submitStudentCompletion() {
     await run(async () => {
       if (!profile.onboarded) await completeStudent();
+      if (!isValidSchoolName(school)) {
+        setStep("student-school");
+        setValidationError(t("onb.schoolRequired"));
+        return;
+      }
       await navigate({ to: "/dashboard", replace: true });
     });
   }
@@ -942,7 +953,7 @@ function getFlowSteps(
         steps.push("student-track");
       }
     }
-    if (!profile.school?.trim()) steps.push("student-school");
+    if (!isValidSchoolName(profile.school)) steps.push("student-school");
     return [...steps, "student-complete"];
   }
   if (!isHaitiDepartment(profile.geographical_department)) steps.push("teacher-department");

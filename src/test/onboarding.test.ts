@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   haitiDepartments,
   isHaitiDepartment,
+  isValidSchoolName,
   isValidInternationalPhone,
   nextOnboardingStep,
   normalizePhoneNumber,
@@ -191,6 +192,14 @@ describe("role-based onboarding progress", () => {
         [],
       ),
     ).toBe("student-complete");
+  });
+
+  it("only treats school names accepted by the database as complete", () => {
+    expect(isValidSchoolName(null)).toBe(false);
+    expect(isValidSchoolName(" ")).toBe(false);
+    expect(isValidSchoolName("A")).toBe(false);
+    expect(isValidSchoolName("École")).toBe(true);
+    expect(isValidSchoolName("a".repeat(201))).toBe(false);
   });
 
   it("normalizes separators and validates international phone numbers", () => {

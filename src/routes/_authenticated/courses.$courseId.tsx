@@ -6,6 +6,8 @@ import { useI18n } from "@/lib/i18n";
 import { Empty, ErrorState, Loading } from "@/components/States";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/Field";
+import { DemoBadge } from "@/components/DemoBadge";
+import { useMe } from "@/lib/session";
 
 export const Route = createFileRoute("/_authenticated/courses/$courseId")({
   head: () => ({ meta: [{ title: "Cours — EXAMPRO" }] }),
@@ -15,12 +17,17 @@ export const Route = createFileRoute("/_authenticated/courses/$courseId")({
 function CourseView() {
   const { courseId } = Route.useParams();
   const { t, name, lang } = useI18n();
+  const { data: me } = useMe();
   const router = useRouter();
   const cat = useQuery(catalogQuery);
   const q = useQuery({
     queryKey: ["course", courseId],
     queryFn: async () => {
-      const { data, error } = await supabase.from("courses").select("*").eq("id", courseId).maybeSingle();
+      const { data, error } = await supabase
+        .from("courses")
+        .select("*")
+        .eq("id", courseId)
+        .maybeSingle();
       if (error) throw error;
       return data;
     },
@@ -30,18 +37,48 @@ function CourseView() {
   if (!q.data) return <Empty>{t("404.title")}</Empty>;
   const x = q.data;
   const c = cat.data;
-  const crumbs = c ? [c.subjects.find((s) => s.id === x.subject_id), c.chapters.find((s) => s.id === x.chapter_id), c.topics.find((s) => s.id === x.topic_id)].filter(Boolean).map((o) => name(o!)) : [];
+  const profile = me?.profile;
+  const isOutOfScope =
+    !!me?.isStudent &&
+    (profile?.level_id !== x.level_id ||
+      (!!profile?.track_id && !!x.track_id && profile.track_id !== x.track_id) ||
+      (!!x.track_id && !profile?.track_id));
+  if (isOutOfScope) return <Empty>{t("course.notAvailableForProfile")}</Empty>;
+  const crumbs = c
+    ? [
+        c.subjects.find((s) => s.id === x.subject_id),
+        c.chapters.find((s) => s.id === x.chapter_id),
+        c.topics.find((s) => s.id === x.topic_id),
+      ]
+        .filter(Boolean)
+        .map((o) => name(o!))
+    : [];
 
   return (
     <article className="mx-auto max-w-3xl">
-      <Button variant="ghost" size="sm" onClick={() => router.history.back()} className="mb-4">← {t("common.back")}</Button>
+      <Button variant="ghost" size="sm" onClick={() => router.history.back()} className="mb-4">
+        ← {t("common.back")}
+      </Button>
       <p className="text-sm font-medium text-deep">{crumbs.join(" · ")}</p>
       <h1 className="mt-2 text-3xl font-bold">{x.title}</h1>
-      <div className="mt-3 flex items-center gap-3 text-xs text-muted-foreground">
-        {x.status !== "published" && <StatusBadge status={x.status} label={t(`status.${x.status}`)} />}
-        {x.published_at && <span>{t("course.by")} {new Date(x.published_at).toLocaleDateString(lang === "ht" ? "fr-HT" : "fr-FR")}</span>}
+      <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+        {x.status !== "published" && (
+          <StatusBadge status={x.status} label={t(`status.${x.status}`)} />
+        )}
+        {x.is_demo && <DemoBadge />}
+        {x.published_at && (
+          <span>
+            {t("course.by")}{" "}
+            {new Date(x.published_at).toLocaleDateString(lang === "ht" ? "fr-HT" : "fr-FR")}
+          </span>
+        )}
       </div>
       {x.summary && <p className="mt-6 text-lg text-muted-foreground">{x.summary}</p>}
+      {x.is_demo && (
+        <p className="mt-4 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm font-medium text-amber-900">
+          {t("demo.warning")}
+        </p>
+      )}
       <div className="card-surface mt-6 whitespace-pre-wrap p-6 leading-relaxed">{x.body}</div>
     </article>
   );

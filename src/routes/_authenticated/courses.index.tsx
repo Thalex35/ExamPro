@@ -1,0 +1,136 @@
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { BookOpen, Search } from "lucide-react";
+import { useState } from "react";
+import { NativeSelect } from "@/components/Field";
+import { DemoBadge } from "@/components/DemoBadge";
+import { Empty, ErrorState, Loading, PageHeader } from "@/components/States";
+import { Input } from "@/components/ui/input";
+import { supabase } from "@/integrations/supabase/client";
+import { catalogQuery, subjectsForLevel, trackFilter } from "@/lib/catalog";
+import { useI18n } from "@/lib/i18n";
+import { useMe } from "@/lib/session";
+
+export const Route = createFileRoute("/_authenticated/courses/")({
+  head: () => ({ meta: [{ title: "Cours — EXAMPRO" }] }),
+  component: CoursesPage,
+});
+
+function CoursesPage() {
+  const { t, name } = useI18n();
+  const { data: me } = useMe();
+  const catalog = useQuery(catalogQuery);
+  const levelId = me?.profile?.level_id;
+  const trackId = me?.profile?.track_id;
+  const [search, setSearch] = useState("");
+  const [subjectId, setSubjectId] = useState("");
+
+  const courses = useQuery({
+    queryKey: ["all-student-courses", levelId, trackId],
+    enabled: !!levelId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("courses")
+        .select("id,title,summary,subject_id,chapter_id,topic_id,published_at,is_demo")
+        .eq("status", "published")
+        .eq("level_id", levelId!)
+        .or(trackFilter(trackId))
+        .order("published_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  if (catalog.isLoading) return <Loading />;
+  if (catalog.error || !catalog.data) return <ErrorState error={catalog.error} />;
+  const subjects = subjectsForLevel(catalog.data, levelId, trackId);
+  const term = search.trim().toLocaleLowerCase();
+  const results = (courses.data ?? []).filter((course) => {
+    const subject = catalog.data!.subjects.find((entry) => entry.id === course.subject_id);
+    const chapter = catalog.data!.chapters.find((entry) => entry.id === course.chapter_id);
+    return (
+      (!subjectId || course.subject_id === subjectId) &&
+      [
+        course.title,
+        course.summary ?? "",
+        subject ? name(subject) : "",
+        chapter ? name(chapter) : "",
+      ]
+        .join(" ")
+        .toLocaleLowerCase()
+        .includes(term)
+    );
+  });
+
+  return (
+    <div>
+      <PageHeader title={t("course.all")} subtitle={t("course.allDescription")} />
+      <div className="card-surface mb-6 grid gap-3 p-3 sm:grid-cols-[minmax(0,1fr)_minmax(200px,280px)]">
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            type="search"
+            aria-label={t("course.search")}
+            placeholder={t("course.searchPlaceholder")}
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            className="h-11 pl-10"
+          />
+        </div>
+        <NativeSelect
+          aria-label={t("exams.subject")}
+          className="h-11"
+          value={subjectId}
+          onChange={(event) => setSubjectId(event.target.value)}
+        >
+          <option value="">{t("course.allSubjects")}</option>
+          {subjects.map((subject) => (
+            <option key={subject.id} value={subject.id}>
+              {name(subject)}
+            </option>
+          ))}
+        </NativeSelect>
+      </div>
+      {courses.isLoading ? (
+        <Loading />
+      ) : courses.error ? (
+        <ErrorState error={courses.error} onRetry={() => void courses.refetch()} />
+      ) : results.length === 0 ? (
+        <Empty>{t("course.noResults")}</Empty>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {results.map((course) => {
+            const subject = catalog.data!.subjects.find((entry) => entry.id === course.subject_id);
+            const chapter = catalog.data!.chapters.find((entry) => entry.id === course.chapter_id);
+            return (
+              <Link
+                key={course.id}
+                to="/courses/$courseId"
+                params={{ courseId: course.id }}
+                className="card-surface group flex min-h-52 flex-col p-5 transition-shadow hover:shadow-brand"
+              >
+                <span className="flex items-start justify-between gap-2">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent text-deep">
+                    <BookOpen className="h-5 w-5" />
+                  </span>
+                  {course.is_demo && <DemoBadge />}
+                </span>
+                <span className="mt-4 text-base font-semibold text-heading group-hover:text-deep">
+                  {course.title}
+                </span>
+                {course.summary && (
+                  <span className="mt-1 line-clamp-2 text-sm text-muted-foreground">
+                    {course.summary}
+                  </span>
+                )}
+                <span className="mt-auto pt-4 text-xs text-deep">
+                  {[subject && name(subject), chapter && name(chapter)].filter(Boolean).join(" · ")}
+                </span>
+              </Link>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}

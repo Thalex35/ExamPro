@@ -7,6 +7,7 @@ import { useMe } from "@/lib/session";
 import { useI18n } from "@/lib/i18n";
 import { Empty, ErrorState, Loading } from "@/components/States";
 import { cn } from "@/lib/utils";
+import { DemoBadge } from "@/components/DemoBadge";
 
 export const Route = createFileRoute("/_authenticated/subjects/$subjectId")({
   validateSearch: (
@@ -34,7 +35,7 @@ function SubjectDetail() {
     queryFn: async () => {
       let q = supabase
         .from("courses")
-        .select("id,title,summary,chapter_id,topic_id,published_at")
+        .select("id,title,summary,chapter_id,topic_id,published_at,is_demo")
         .eq("status", "published")
         .eq("subject_id", subjectId)
         .eq("level_id", levelId!)
@@ -59,35 +60,91 @@ function SubjectDetail() {
 
   return (
     <div>
-      <nav className="mb-4 flex flex-wrap items-center gap-1 text-sm text-muted-foreground" aria-label="breadcrumb">
-        <Link to="/subjects" className="hover:text-foreground">{t("subj.title")}</Link>
+      <nav
+        className="mb-4 flex flex-wrap items-center gap-1 text-sm text-muted-foreground"
+        aria-label="breadcrumb"
+      >
+        <Link to="/subjects" className="hover:text-foreground">
+          {t("subj.title")}
+        </Link>
         <ChevronRight className="h-3 w-3" />
-        <Link to="/subjects/$subjectId" params={{ subjectId }} search={{}} className="hover:text-foreground">{name(subject)}</Link>
-        {activeChapter && (<><ChevronRight className="h-3 w-3" /><span>{name(activeChapter)}</span></>)}
-        {activeTopic && (<><ChevronRight className="h-3 w-3" /><span>{name(activeTopic)}</span></>)}
+        <Link
+          to="/subjects/$subjectId"
+          params={{ subjectId }}
+          search={{}}
+          className="hover:text-foreground"
+        >
+          {name(subject)}
+        </Link>
+        {activeChapter && (
+          <>
+            <ChevronRight className="h-3 w-3" />
+            <span>{name(activeChapter)}</span>
+          </>
+        )}
+        {activeTopic && (
+          <>
+            <ChevronRight className="h-3 w-3" />
+            <span>{name(activeTopic)}</span>
+          </>
+        )}
       </nav>
       <h1 className="mb-8 text-2xl font-bold sm:text-3xl">{name(subject)}</h1>
 
       <div className="grid gap-8 lg:grid-cols-[300px_1fr]">
         <aside>
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">{t("subj.chapters")}</h2>
-          {chapters.length === 0 ? <Empty>{t("subj.noChapters")}</Empty> : (
+          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+            {t("subj.chapters")}
+          </h2>
+          {chapters.length === 0 ? (
+            <Empty>{t("subj.noChapters")}</Empty>
+          ) : (
             <div className="card-surface divide-y overflow-hidden">
-              <Link to="/subjects/$subjectId" params={{ subjectId }} search={{}} className={cn("block px-4 py-3 text-sm font-medium hover:bg-muted", !chapter && "bg-accent text-accent-foreground")}>{t("subj.allCourses")}</Link>
+              <Link
+                to="/subjects/$subjectId"
+                params={{ subjectId }}
+                search={{}}
+                className={cn(
+                  "block px-4 py-3 text-sm font-medium hover:bg-muted",
+                  !chapter && "bg-accent text-accent-foreground",
+                )}
+              >
+                {t("subj.allCourses")}
+              </Link>
               {chapters.map((ch) => {
                 const topics = topicsFor(c, ch.id);
                 const open = ch.id === chapter;
                 return (
                   <div key={ch.id}>
-                    <Link to="/subjects/$subjectId" params={{ subjectId }} search={{ chapter: ch.id }} className={cn("flex items-center justify-between px-4 py-3 text-sm font-medium hover:bg-muted", open && !topic && "bg-accent text-accent-foreground")}>
+                    <Link
+                      to="/subjects/$subjectId"
+                      params={{ subjectId }}
+                      search={{ chapter: ch.id }}
+                      className={cn(
+                        "flex items-center justify-between px-4 py-3 text-sm font-medium hover:bg-muted",
+                        open && !topic && "bg-accent text-accent-foreground",
+                      )}
+                    >
                       {name(ch)}
-                      {!ch.verified && <span className="text-[10px] font-semibold uppercase text-warning">{t("common.toVerify")}</span>}
+                      {!ch.verified && (
+                        <span className="text-[10px] font-semibold uppercase text-warning">
+                          {t("common.toVerify")}
+                        </span>
+                      )}
                     </Link>
                     {open && topics.length > 0 && (
                       <ul className="bg-muted/50 pb-2">
                         {topics.map((tp) => (
                           <li key={tp.id}>
-                            <Link to="/subjects/$subjectId" params={{ subjectId }} search={{ chapter: ch.id, topic: tp.id }} className={cn("block py-2 pl-8 pr-4 text-sm text-muted-foreground hover:text-foreground", topic === tp.id && "font-semibold text-deep")}>
+                            <Link
+                              to="/subjects/$subjectId"
+                              params={{ subjectId }}
+                              search={{ chapter: ch.id, topic: tp.id }}
+                              className={cn(
+                                "block py-2 pl-8 pr-4 text-sm text-muted-foreground hover:text-foreground",
+                                topic === tp.id && "font-semibold text-deep",
+                              )}
+                            >
                               {name(tp)}
                             </Link>
                           </li>
@@ -123,6 +180,7 @@ function SubjectDetail() {
                     className="card-surface block p-5 hover:shadow-brand"
                   >
                     <p className="text-lg font-semibold text-heading">{x.title}</p>
+                    {x.is_demo && <DemoBadge />}
                     {x.summary && (
                       <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{x.summary}</p>
                     )}

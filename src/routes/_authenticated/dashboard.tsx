@@ -22,6 +22,8 @@ import { catalogQuery, subjectsForLevel, trackFilter } from "@/lib/catalog";
 import { useI18n } from "@/lib/i18n";
 import { useMe } from "@/lib/session";
 import { openExamFile } from "@/lib/files";
+import { demoRecordsQuery } from "@/lib/demo-data";
+import { DemoBadge } from "@/components/DemoBadge";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({ meta: [{ title: "Tableau de bord — EXAMPRO" }] }),
@@ -32,7 +34,7 @@ type QuickActionProps = {
   icon: LucideIcon;
   title: string;
   description: string;
-  to?: "/subjects" | "/exams";
+  to?: "/subjects" | "/exams" | "/courses" | "/evaluations";
   unavailable?: boolean;
 };
 
@@ -84,6 +86,8 @@ function Dashboard() {
   const cat = useQuery(catalogQuery);
   const levelId = me?.profile?.level_id;
   const trackId = me?.profile?.track_id;
+  const recentActivity = useQuery(demoRecordsQuery(levelId, trackId, "progress"));
+  const demoEvaluations = useQuery(demoRecordsQuery(levelId, trackId, "evaluation"));
 
   const recommendations = useQuery({
     queryKey: ["dashboard-recommendations", levelId, trackId],
@@ -92,7 +96,7 @@ function Dashboard() {
       const [coursesResult, examsResult] = await Promise.all([
         supabase
           .from("courses")
-          .select("id,title,summary,subject_id,track_id,published_at")
+          .select("id,title,summary,subject_id,track_id,published_at,is_demo")
           .eq("status", "published")
           .eq("level_id", levelId!)
           .or(trackFilter(trackId))
@@ -100,7 +104,7 @@ function Dashboard() {
           .limit(6),
         supabase
           .from("exams")
-          .select("id,title,exam_year,subject_id,track_id,file_path")
+          .select("id,title,exam_year,subject_id,track_id,file_path,demo_content,is_demo")
           .eq("status", "published")
           .eq("level_id", levelId!)
           .or(trackFilter(trackId))
@@ -225,22 +229,49 @@ function Dashboard() {
                 {t("dash.browseSubjects")} <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
-            <div className="card-surface flex flex-col items-start gap-4 p-5 sm:flex-row sm:items-center sm:p-6">
-              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-accent text-accent-foreground">
-                <Clock3 className="h-6 w-6" />
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="font-semibold text-heading">{t("dash.noRecentLearning")}</p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {t("dash.noRecentLearningHint")}
-                </p>
+            {recentActivity.isLoading ? (
+              <Loading />
+            ) : recentActivity.error ? (
+              <ErrorState
+                error={recentActivity.error}
+                onRetry={() => void recentActivity.refetch()}
+              />
+            ) : recentActivity.data?.length ? (
+              <div className="card-surface divide-y">
+                {recentActivity.data.slice(0, 3).map((activity) => (
+                  <Link
+                    key={activity.id}
+                    to="/courses/$courseId"
+                    params={{ courseId: activity.course_id! }}
+                    className="flex flex-wrap items-center gap-3 p-4 hover:bg-muted/40"
+                  >
+                    <Clock3 className="h-4 w-4 text-deep" />
+                    <span className="min-w-0 flex-1 font-medium text-heading">
+                      {activity.title}
+                    </span>
+                    <DemoBadge />
+                    <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                  </Link>
+                ))}
               </div>
-              <Button asChild variant="hero">
-                <Link to="/subjects">
-                  {t("dash.startLearning")} <ArrowRight />
-                </Link>
-              </Button>
-            </div>
+            ) : (
+              <div className="card-surface flex flex-col items-start gap-4 p-5 sm:flex-row sm:items-center sm:p-6">
+                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-accent text-accent-foreground">
+                  <Clock3 className="h-6 w-6" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="font-semibold text-heading">{t("dash.noRecentLearning")}</p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {t("dash.noRecentLearningHint")}
+                  </p>
+                </div>
+                <Button asChild variant="hero">
+                  <Link to="/subjects">
+                    {t("dash.startLearning")} <ArrowRight />
+                  </Link>
+                </Button>
+              </div>
+            )}
           </section>
 
           <section aria-labelledby="recommendations-title">
@@ -281,6 +312,7 @@ function Dashboard() {
                     <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent text-accent-foreground">
                       <BookOpen className="h-5 w-5" />
                     </span>
+                    {course.is_demo && <DemoBadge />}
                     <span className="mt-4 block">
                       <span className="block font-semibold text-heading group-hover:text-deep">
                         {course.title}
@@ -306,7 +338,10 @@ function Dashboard() {
                       </span>
                       <div className="mt-4 flex items-end justify-between gap-3">
                         <div className="min-w-0">
-                          <h3 className="font-semibold text-heading">{exam.title}</h3>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h3 className="font-semibold text-heading">{exam.title}</h3>
+                            {exam.is_demo && <DemoBadge />}
+                          </div>
                           <p className="mt-1 text-sm text-muted-foreground">
                             {subjectName(exam.subject_id)} · {exam.exam_year}
                             {exam.track_id === trackId && track
@@ -318,7 +353,7 @@ function Dashboard() {
                           size="sm"
                           variant="outline"
                           onClick={() =>
-                            void openExamFile(exam.file_path).catch((error) =>
+                            void openExamFile(exam.file_path, exam.demo_content).catch((error) =>
                               toast.error(errMsg(error)),
                             )
                           }
@@ -342,19 +377,48 @@ function Dashboard() {
               <h2 id="performance-title" className="text-xl font-semibold text-heading">
                 {t("dash.performance")}
               </h2>
-              <p className="mt-1 text-sm text-muted-foreground">{t("dash.performanceHint")}</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {t("demo.evaluationsDescription")}
+              </p>
             </div>
-            <div className="card-surface flex items-start gap-4 p-5 sm:p-6">
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand/10 text-deep">
-                <Trophy className="h-5 w-5" />
-              </span>
-              <div>
-                <p className="font-semibold text-heading">{t("dash.noPerformanceData")}</p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {t("dash.noPerformanceDataHint")}
-                </p>
+            {demoEvaluations.isLoading ? (
+              <Loading />
+            ) : demoEvaluations.error ? (
+              <ErrorState
+                error={demoEvaluations.error}
+                onRetry={() => void demoEvaluations.refetch()}
+              />
+            ) : demoEvaluations.data?.length ? (
+              <Link
+                to="/evaluations"
+                className="card-surface flex items-center gap-4 p-5 transition-shadow hover:shadow-brand sm:p-6"
+              >
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand/10 text-deep">
+                  <Trophy className="h-5 w-5" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="font-semibold text-heading">
+                    {demoEvaluations.data.length} {t("dash.evaluations")}
+                  </p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {t("demo.notRealPerformance")}
+                  </p>
+                </div>
+                <DemoBadge />
+              </Link>
+            ) : (
+              <div className="card-surface flex items-start gap-4 p-5 sm:p-6">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand/10 text-deep">
+                  <Trophy className="h-5 w-5" />
+                </span>
+                <div>
+                  <p className="font-semibold text-heading">{t("dash.noPerformanceData")}</p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {t("dash.noPerformanceDataHint")}
+                  </p>
+                </div>
               </div>
-            </div>
+            )}
           </section>
         </div>
 
@@ -367,6 +431,12 @@ function Dashboard() {
               </h2>
             </div>
             <div className="divide-y">
+              <QuickAction
+                icon={BookOpen}
+                title={t("course.all")}
+                description={t("course.allDescription")}
+                to="/courses"
+              />
               <QuickAction
                 icon={FileText}
                 title={t("dash.findExam")}

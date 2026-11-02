@@ -35,7 +35,17 @@ import { ErrorState, Loading } from "./States";
 import { cn } from "@/lib/utils";
 
 type NavItem = {
-  to: "/dashboard" | "/subjects" | "/exams" | "/teacher" | "/admin" | "/profile";
+  to:
+    | "/dashboard"
+    | "/subjects"
+    | "/courses"
+    | "/exams"
+    | "/favorites"
+    | "/evaluations"
+    | "/progress"
+    | "/teacher"
+    | "/admin"
+    | "/profile";
   key: TKey;
   icon: typeof BookOpen;
 };
@@ -80,7 +90,7 @@ function StudentSearch({ levelId, trackId }: { levelId: string | null; trackId: 
           .limit(5),
         supabase
           .from("exams")
-          .select("id,title,subject_id,exam_year,file_path")
+          .select("id,title,subject_id,exam_year,file_path,demo_content")
           .eq("status", "published")
           .eq("level_id", levelId!)
           .or(filter)
@@ -94,10 +104,10 @@ function StudentSearch({ levelId, trackId }: { levelId: string | null; trackId: 
     },
   });
 
-  async function openExam(path: string, id: string) {
+  async function openExam(path: string, id: string, demoContent: string | null) {
     setBusyExam(id);
     try {
-      await openExamFile(path);
+      await openExamFile(path, demoContent);
       setFocused(false);
     } catch (error) {
       toast.error(errMsg(error));
@@ -176,7 +186,7 @@ function StudentSearch({ levelId, trackId }: { levelId: string | null; trackId: 
                   key={`exam-${exam.id}`}
                   type="button"
                   onMouseDown={(event) => event.preventDefault()}
-                  onClick={() => void openExam(exam.file_path, exam.id)}
+                  onClick={() => void openExam(exam.file_path, exam.id, exam.demo_content)}
                   disabled={busyExam === exam.id}
                   className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left hover:bg-muted disabled:opacity-60"
                 >
@@ -300,7 +310,11 @@ export function AppShell({
     const studentNavigationItems = [
       { to: "/dashboard" as const, label: t("nav.dashboard"), icon: LayoutDashboard },
       { to: "/subjects" as const, label: t("nav.subjects"), icon: BookOpen },
+      { to: "/courses" as const, label: t("course.all"), icon: BookOpen },
       { to: "/exams" as const, label: t("dash.examArchive"), icon: Archive },
+      { to: "/favorites" as const, label: t("dash.favorites"), icon: Bookmark },
+      { to: "/evaluations" as const, label: t("dash.evaluations"), icon: FileCheck2 },
+      { to: "/progress" as const, label: t("dash.performance"), icon: BarChart3 },
     ];
 
     return (
@@ -398,7 +412,8 @@ export function AppShell({
                 const isActive =
                   location.pathname === to ||
                   (to !== "/dashboard" && location.pathname.startsWith(`${to}/`)) ||
-                  (to === "/subjects" && location.pathname.startsWith("/courses/"));
+                  (to === "/courses" && location.pathname.startsWith("/courses")) ||
+                  (to === "/subjects" && location.pathname.startsWith("/subjects/"));
                 return (
                   <Link
                     key={to}
@@ -415,56 +430,6 @@ export function AppShell({
                   </Link>
                 );
               })}
-              <span
-                aria-disabled="true"
-                title={t("dash.featureUnavailable")}
-                className={cn(
-                  "flex cursor-not-allowed items-center gap-3 rounded-lg px-2 py-2.5 text-xs font-semibold text-sidebar-foreground/50",
-                  studentSidebarCollapsed && "lg:justify-center lg:px-0",
-                )}
-              >
-                <FileCheck2 className="h-4 w-4 shrink-0" />
-                <span className={cn("flex-1", sidebarTextClass)}>{t("dash.evaluations")}</span>
-                <span
-                  className={cn(
-                    "rounded-full bg-sidebar-primary px-2 py-0.5 text-[8px] font-bold uppercase text-sidebar-primary-foreground",
-                    sidebarTextClass,
-                  )}
-                >
-                  {t("dash.comingSoon")}
-                </span>
-              </span>
-              <a
-                href="/dashboard#performance-title"
-                title={studentSidebarCollapsed ? t("dash.performance") : undefined}
-                onClick={() => setOpen(false)}
-                className={cn(
-                  "flex items-center gap-3 rounded-lg px-2 py-2.5 text-xs font-semibold text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground",
-                  studentSidebarCollapsed && "lg:justify-center lg:px-0",
-                )}
-              >
-                <BarChart3 className="h-4 w-4 shrink-0" />
-                <span className={sidebarTextClass}>{t("dash.performance")}</span>
-              </a>
-              <span
-                aria-disabled="true"
-                title={t("dash.featureUnavailable")}
-                className={cn(
-                  "flex cursor-not-allowed items-center gap-3 rounded-lg px-2 py-2.5 text-xs font-semibold text-sidebar-foreground/50",
-                  studentSidebarCollapsed && "lg:justify-center lg:px-0",
-                )}
-              >
-                <Bookmark className="h-4 w-4 shrink-0" />
-                <span className={cn("flex-1", sidebarTextClass)}>{t("dash.favorites")}</span>
-                <span
-                  className={cn(
-                    "rounded-full bg-sidebar-primary px-2 py-0.5 text-[8px] font-bold uppercase text-sidebar-primary-foreground",
-                    sidebarTextClass,
-                  )}
-                >
-                  {t("dash.comingSoon")}
-                </span>
-              </span>
             </div>
             <p
               className={cn(

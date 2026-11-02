@@ -13,6 +13,7 @@ import { NativeSelect } from "@/components/Field";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { DemoBadge } from "@/components/DemoBadge";
 
 export const Route = createFileRoute("/_authenticated/exams")({
   validateSearch: (
@@ -43,7 +44,7 @@ function Exams() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("exams")
-        .select("id,title,description,exam_year,session,subject_id,file_path")
+        .select("id,title,description,exam_year,session,subject_id,file_path,is_demo,demo_content")
         .eq("status", "published")
         .eq("level_id", levelId!)
         .or(trackFilter(trackId))
@@ -260,8 +261,8 @@ function Exams() {
                         view === "list" && "sm:h-auto sm:w-48 sm:shrink-0",
                       )}
                     >
-                      <span className="rounded-md bg-card px-2 py-1 text-[9px] font-bold uppercase tracking-wide text-deep">
-                        PDF
+                      <span className="flex items-center gap-2 rounded-md bg-card px-2 py-1 text-[9px] font-bold uppercase tracking-wide text-deep">
+                        PDF {exam.is_demo && <DemoBadge />}
                       </span>
                       <FileText className="h-10 w-10 self-center" strokeWidth={1.8} />
                       <span className="self-center text-[10px] font-medium">
@@ -293,7 +294,9 @@ function Exams() {
                         variant="outline"
                         className="mt-4 w-full justify-center gap-2"
                         onClick={() =>
-                          openExamFile(exam.file_path).catch((error) => toast.error(errMsg(error)))
+                          openExamFile(exam.file_path, exam.demo_content).catch((error) =>
+                            toast.error(errMsg(error)),
+                          )
                         }
                       >
                         {t("exams.view")}

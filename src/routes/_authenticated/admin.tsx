@@ -32,11 +32,21 @@ function Admin() {
           <TabsTrigger value="schools">{t("admin.schools")}</TabsTrigger>
           <TabsTrigger value="teacher-verification">{t("admin.teacherVerification")}</TabsTrigger>
         </TabsList>
-        <TabsContent value="catalog" className="mt-6"><CatalogAdmin /></TabsContent>
-        <TabsContent value="users" className="mt-6"><UsersAdmin /></TabsContent>
-        <TabsContent value="content" className="mt-6"><ContentAdmin /></TabsContent>
-        <TabsContent value="schools" className="mt-6"><SchoolReviewAdmin /></TabsContent>
-        <TabsContent value="teacher-verification" className="mt-6"><TeacherVerificationAdmin /></TabsContent>
+        <TabsContent value="catalog" className="mt-6">
+          <CatalogAdmin />
+        </TabsContent>
+        <TabsContent value="users" className="mt-6">
+          <UsersAdmin />
+        </TabsContent>
+        <TabsContent value="content" className="mt-6">
+          <ContentAdmin />
+        </TabsContent>
+        <TabsContent value="schools" className="mt-6">
+          <SchoolReviewAdmin />
+        </TabsContent>
+        <TabsContent value="teacher-verification" className="mt-6">
+          <TeacherVerificationAdmin />
+        </TabsContent>
       </Tabs>
     </AdminGate>
   );
@@ -48,13 +58,29 @@ function NameInputs({ onSubmit }: { onSubmit: (fr: string, ht: string) => Promis
   const [ht, setHt] = useState("");
   async function submit(e: FormEvent) {
     e.preventDefault();
-    if (await onSubmit(fr.trim(), (ht || fr).trim())) { setFr(""); setHt(""); }
+    if (await onSubmit(fr.trim(), (ht || fr).trim())) {
+      setFr("");
+      setHt("");
+    }
   }
   return (
     <form onSubmit={submit} className="flex flex-wrap gap-2">
-      <Input required placeholder={t("admin.nameFr")} value={fr} onChange={(e) => setFr(e.target.value)} className="w-44" />
-      <Input placeholder={t("admin.nameHt")} value={ht} onChange={(e) => setHt(e.target.value)} className="w-44" />
-      <Button type="submit" size="sm" className="h-9">{t("admin.add")}</Button>
+      <Input
+        required
+        placeholder={t("admin.nameFr")}
+        value={fr}
+        onChange={(e) => setFr(e.target.value)}
+        className="w-44"
+      />
+      <Input
+        placeholder={t("admin.nameHt")}
+        value={ht}
+        onChange={(e) => setHt(e.target.value)}
+        className="w-44"
+      />
+      <Button type="submit" size="sm" className="h-9">
+        {t("admin.add")}
+      </Button>
     </form>
   );
 }
@@ -72,14 +98,19 @@ function CatalogAdmin() {
   const refresh = () => qc.invalidateQueries({ queryKey: ["catalog"] });
   const run = async (p: PromiseLike<{ error: unknown }>) => {
     const { error } = await p;
-    if (error) { toast.error(errMsg(error)); return false; }
+    if (error) {
+      toast.error(errMsg(error));
+      return false;
+    }
     toast.success(t("common.saved"));
     refresh();
     return true;
   };
   const lvl = levelId || c.levels[0]?.id;
   const level = c.levels.find((l) => l.id === lvl);
-  const linked = new Set(c.levelSubjects.filter((x) => x.level_id === lvl).map((x) => x.subject_id));
+  const linked = new Set(
+    c.levelSubjects.filter((x) => x.level_id === lvl).map((x) => x.subject_id),
+  );
   const chapters = chaptersFor(c, subjectId, lvl);
   const topics = topicsFor(c, chapterId);
 
@@ -88,8 +119,20 @@ function CatalogAdmin() {
       <div className="card-surface p-5">
         <div className="mb-4 flex flex-wrap items-center gap-3">
           <span className="text-sm font-semibold">{t("form.level")}</span>
-          <NativeSelect className="w-auto" value={lvl} onChange={(e) => { setLevelId(e.target.value); setSubjectId(""); setChapterId(""); }}>
-            {c.levels.map((l) => <option key={l.id} value={l.id}>{name(l)}</option>)}
+          <NativeSelect
+            className="w-auto"
+            value={lvl}
+            onChange={(e) => {
+              setLevelId(e.target.value);
+              setSubjectId("");
+              setChapterId("");
+            }}
+          >
+            {c.levels.map((l) => (
+              <option key={l.id} value={l.id}>
+                {name(l)}
+              </option>
+            ))}
           </NativeSelect>
         </div>
         <h3 className="mb-2 font-semibold">{t("nav.subjects")}</h3>
@@ -97,67 +140,196 @@ function CatalogAdmin() {
           {c.subjects.map((s) => (
             <div key={s.id} className="rounded-lg border p-3 text-sm">
               <label className="flex items-center gap-2 font-medium">
-                <input type="checkbox" checked={linked.has(s.id)} onChange={(e) => run(e.target.checked ? supabase.from("level_subjects").insert({ level_id: lvl!, subject_id: s.id }) : supabase.from("level_subjects").delete().eq("level_id", lvl!).eq("subject_id", s.id))} />
+                <input
+                  type="checkbox"
+                  checked={linked.has(s.id)}
+                  onChange={(e) =>
+                    run(
+                      e.target.checked
+                        ? supabase
+                            .from("level_subjects")
+                            .insert({ level_id: lvl!, subject_id: s.id })
+                        : supabase
+                            .from("level_subjects")
+                            .delete()
+                            .eq("level_id", lvl!)
+                            .eq("subject_id", s.id),
+                    )
+                  }
+                />
                 {name(s)}
               </label>
               {level?.requires_track && linked.has(s.id) && (
                 <div className="mt-2 flex flex-wrap gap-2 pl-6">
-                  {c.tracks.filter((tr) => tr.level_id === lvl).map((tr) => {
-                    const on = c.trackSubjects.some((x) => x.track_id === tr.id && x.subject_id === s.id);
-                    return (
-                      <label key={tr.id} className="flex items-center gap-1 text-xs">
-                        <input type="checkbox" checked={on} onChange={(e) => run(e.target.checked ? supabase.from("track_subjects").insert({ track_id: tr.id, subject_id: s.id }) : supabase.from("track_subjects").delete().eq("track_id", tr.id).eq("subject_id", s.id))} />
-                        {tr.code}
-                      </label>
-                    );
-                  })}
+                  {c.tracks
+                    .filter((tr) => tr.level_id === lvl)
+                    .map((tr) => {
+                      const on = c.trackSubjects.some(
+                        (x) => x.track_id === tr.id && x.subject_id === s.id,
+                      );
+                      return (
+                        <label key={tr.id} className="flex items-center gap-1 text-xs">
+                          <input
+                            type="checkbox"
+                            checked={on}
+                            onChange={(e) =>
+                              run(
+                                e.target.checked
+                                  ? supabase
+                                      .from("track_subjects")
+                                      .insert({ track_id: tr.id, subject_id: s.id })
+                                  : supabase
+                                      .from("track_subjects")
+                                      .delete()
+                                      .eq("track_id", tr.id)
+                                      .eq("subject_id", s.id),
+                              )
+                            }
+                          />
+                          {tr.code}
+                        </label>
+                      );
+                    })}
                 </div>
               )}
             </div>
           ))}
         </div>
         <div className="mt-4">
-          <p className="mb-2 text-sm text-muted-foreground">{t("admin.add")} — {t("form.subject")}</p>
-          <NameInputs onSubmit={(fr, ht) => run(supabase.from("subjects").insert({ name_fr: fr, name_ht: ht, slug: fr.toLowerCase().normalize("NFD").replace(/[^\w]+/g, "-") + "-" + Date.now().toString(36) }))} />
+          <p className="mb-2 text-sm text-muted-foreground">
+            {t("admin.add")} — {t("form.subject")}
+          </p>
+          <NameInputs
+            onSubmit={(fr, ht) =>
+              run(
+                supabase.from("subjects").insert({
+                  name_fr: fr,
+                  name_ht: ht,
+                  slug:
+                    fr
+                      .toLowerCase()
+                      .normalize("NFD")
+                      .replace(/[^\w]+/g, "-") +
+                    "-" +
+                    Date.now().toString(36),
+                }),
+              )
+            }
+          />
         </div>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="card-surface p-5">
           <h3 className="mb-3 font-semibold">{t("subj.chapters")}</h3>
-          <NativeSelect value={subjectId} onChange={(e) => { setSubjectId(e.target.value); setChapterId(""); }} className="mb-3">
+          <NativeSelect
+            value={subjectId}
+            onChange={(e) => {
+              setSubjectId(e.target.value);
+              setChapterId("");
+            }}
+            className="mb-3"
+          >
             <option value="">{t("form.subject")}…</option>
-            {c.subjects.filter((s) => linked.has(s.id)).map((s) => <option key={s.id} value={s.id}>{name(s)}</option>)}
+            {c.subjects
+              .filter((s) => linked.has(s.id))
+              .map((s) => (
+                <option key={s.id} value={s.id}>
+                  {name(s)}
+                </option>
+              ))}
           </NativeSelect>
           {subjectId && (
             <>
               <ul className="mb-3 divide-y rounded-lg border">
-                {chapters.length === 0 && <li className="p-3 text-sm text-muted-foreground">{t("subj.noChapters")}</li>}
+                {chapters.length === 0 && (
+                  <li className="p-3 text-sm text-muted-foreground">{t("subj.noChapters")}</li>
+                )}
                 {chapters.map((ch) => (
                   <li key={ch.id} className="flex items-center gap-2 p-2 text-sm">
-                    <button className={`flex-1 text-left ${chapterId === ch.id ? "font-semibold text-deep" : ""}`} onClick={() => setChapterId(ch.id)}>{name(ch)}</button>
-                    <label className="flex items-center gap-1 text-xs"><input type="checkbox" checked={ch.verified} onChange={(e) => run(supabase.from("chapters").update({ verified: e.target.checked }).eq("id", ch.id))} />✓</label>
-                    <button aria-label={t("common.delete")} onClick={() => confirm(t("common.delete") + " ?") && run(supabase.from("chapters").delete().eq("id", ch.id))}><Trash2 className="h-4 w-4 text-destructive" /></button>
+                    <button
+                      className={`flex-1 text-left ${chapterId === ch.id ? "font-semibold text-deep" : ""}`}
+                      onClick={() => setChapterId(ch.id)}
+                    >
+                      {name(ch)}
+                    </button>
+                    <label className="flex items-center gap-1 text-xs">
+                      <input
+                        type="checkbox"
+                        checked={ch.verified}
+                        onChange={(e) =>
+                          run(
+                            supabase
+                              .from("chapters")
+                              .update({ verified: e.target.checked })
+                              .eq("id", ch.id),
+                          )
+                        }
+                      />
+                      ✓
+                    </label>
+                    <button
+                      aria-label={t("common.delete")}
+                      onClick={() =>
+                        confirm(t("common.delete") + " ?") &&
+                        run(supabase.from("chapters").delete().eq("id", ch.id))
+                      }
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </button>
                   </li>
                 ))}
               </ul>
-              <NameInputs onSubmit={(fr, ht) => run(supabase.from("chapters").insert({ subject_id: subjectId, level_id: lvl!, name_fr: fr, name_ht: ht, sort_order: chapters.length + 1 }))} />
+              <NameInputs
+                onSubmit={(fr, ht) =>
+                  run(
+                    supabase.from("chapters").insert({
+                      subject_id: subjectId,
+                      level_id: lvl!,
+                      name_fr: fr,
+                      name_ht: ht,
+                      sort_order: chapters.length + 1,
+                    }),
+                  )
+                }
+              />
             </>
           )}
         </div>
         <div className="card-surface p-5">
           <h3 className="mb-3 font-semibold">{t("form.topic")}</h3>
-          {!chapterId ? <p className="text-sm text-muted-foreground">{t("form.chapter")}…</p> : (
+          {!chapterId ? (
+            <p className="text-sm text-muted-foreground">{t("form.chapter")}…</p>
+          ) : (
             <>
               <ul className="mb-3 divide-y rounded-lg border">
                 {topics.map((tp) => (
                   <li key={tp.id} className="flex items-center gap-2 p-2 text-sm">
                     <span className="flex-1">{name(tp)}</span>
-                    <button aria-label={t("common.delete")} onClick={() => confirm(t("common.delete") + " ?") && run(supabase.from("topics").delete().eq("id", tp.id))}><Trash2 className="h-4 w-4 text-destructive" /></button>
+                    <button
+                      aria-label={t("common.delete")}
+                      onClick={() =>
+                        confirm(t("common.delete") + " ?") &&
+                        run(supabase.from("topics").delete().eq("id", tp.id))
+                      }
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </button>
                   </li>
                 ))}
               </ul>
-              <NameInputs onSubmit={(fr, ht) => run(supabase.from("topics").insert({ chapter_id: chapterId, name_fr: fr, name_ht: ht, sort_order: topics.length + 1 }))} />
+              <NameInputs
+                onSubmit={(fr, ht) =>
+                  run(
+                    supabase.from("topics").insert({
+                      chapter_id: chapterId,
+                      name_fr: fr,
+                      name_ht: ht,
+                      sort_order: topics.length + 1,
+                    }),
+                  )
+                }
+              />
             </>
           )}
         </div>
@@ -173,15 +345,31 @@ function UsersAdmin() {
   const q = useQuery({
     queryKey: ["admin-users"],
     queryFn: async () => {
-      const [p, r] = await Promise.all([supabase.from("profiles").select("id,full_name,school,created_at").order("created_at", { ascending: false }), supabase.from("user_roles").select("user_id,role")]);
+      const [p, r] = await Promise.all([
+        supabase
+          .from("profiles")
+          .select("id,full_name,school,created_at")
+          .order("created_at", { ascending: false }),
+        supabase.from("user_roles").select("user_id,role"),
+      ]);
       if (p.error) throw p.error;
       if (r.error) throw r.error;
-      return p.data.map((u) => ({ ...u, roles: r.data.filter((x) => x.user_id === u.id).map((x) => x.role as Role) }));
+      return p.data.map((u) => ({
+        ...u,
+        roles: r.data.filter((x) => x.user_id === u.id).map((x) => x.role as Role),
+      }));
     },
   });
   async function toggle(userId: string, role: Role, enabled: boolean) {
-    const { error } = await supabase.rpc("admin_set_role", { _user_id: userId, _role: role, _enabled: enabled });
-    if (error) { toast.error(errMsg(error)); return; }
+    const { error } = await supabase.rpc("admin_set_role", {
+      _user_id: userId,
+      _role: role,
+      _enabled: enabled,
+    });
+    if (error) {
+      toast.error(errMsg(error));
+      return;
+    }
     qc.invalidateQueries({ queryKey: ["admin-users"] });
   }
   if (q.isLoading) return <Loading />;
@@ -189,16 +377,29 @@ function UsersAdmin() {
   return (
     <div className="card-surface overflow-x-auto">
       <table className="w-full text-sm">
-        <thead className="border-b text-left text-muted-foreground"><tr><th className="p-3">{t("auth.fullName")}</th><th className="p-3">{t("admin.roles")}</th></tr></thead>
+        <thead className="border-b text-left text-muted-foreground">
+          <tr>
+            <th className="p-3">{t("auth.fullName")}</th>
+            <th className="p-3">{t("admin.roles")}</th>
+          </tr>
+        </thead>
         <tbody className="divide-y">
           {q.data!.map((u) => (
             <tr key={u.id}>
-              <td className="p-3 font-medium text-heading">{u.full_name ?? "—"}{u.id === me?.user.id ? " (vous)" : ""}</td>
+              <td className="p-3 font-medium text-heading">
+                {u.full_name ?? "—"}
+                {u.id === me?.user.id ? " (vous)" : ""}
+              </td>
               <td className="p-3">
                 <div className="flex flex-wrap gap-3">
                   {(["student", "teacher", "admin"] as Role[]).map((r) => (
                     <label key={r} className="flex items-center gap-1">
-                      <input type="checkbox" checked={u.roles.includes(r)} onChange={(e) => toggle(u.id, r, e.target.checked)} /> {r}
+                      <input
+                        type="checkbox"
+                        checked={u.roles.includes(r)}
+                        onChange={(e) => toggle(u.id, r, e.target.checked)}
+                      />{" "}
+                      {r}
                     </label>
                   ))}
                 </div>
@@ -214,38 +415,121 @@ function UsersAdmin() {
 function ContentAdmin() {
   const { t, errMsg } = useI18n();
   const qc = useQueryClient();
+  const [demoBusy, setDemoBusy] = useState(false);
   const q = useQuery({
     queryKey: ["admin-content"],
     queryFn: async () => {
-      const [c, e] = await Promise.all([supabase.from("courses").select("id,title,status,updated_at").order("updated_at", { ascending: false }).limit(100), supabase.from("exams").select("id,title,status,exam_year").order("created_at", { ascending: false }).limit(100)]);
+      const [c, e] = await Promise.all([
+        supabase
+          .from("courses")
+          .select("id,title,status,updated_at,is_demo")
+          .order("updated_at", { ascending: false })
+          .limit(100),
+        supabase
+          .from("exams")
+          .select("id,title,status,exam_year,is_demo")
+          .order("created_at", { ascending: false })
+          .limit(100),
+      ]);
       if (c.error) throw c.error;
       if (e.error) throw e.error;
-      return [...c.data.map((x) => ({ ...x, kind: "courses" as const })), ...e.data.map((x) => ({ ...x, kind: "exams" as const }))];
+      return [
+        ...c.data.map((x) => ({ ...x, kind: "courses" as const })),
+        ...e.data.map((x) => ({ ...x, kind: "exams" as const })),
+      ];
     },
   });
-  async function setStatus(kind: "courses" | "exams", id: string, status: "draft" | "published" | "archived") {
+  async function manageDemoContent(action: "seed" | "delete") {
+    if (action === "delete" && !confirm(t("admin.demoConfirmDelete"))) return;
+    setDemoBusy(true);
+    const { error } = await supabase.rpc(
+      action === "seed" ? "admin_seed_demo_content" : "admin_delete_demo_content",
+    );
+    setDemoBusy(false);
+    if (error) {
+      toast.error(errMsg(error));
+      return;
+    }
+    toast.success(t(action === "seed" ? "admin.demoSeeded" : "admin.demoDeleted"));
+    await qc.invalidateQueries();
+  }
+  async function setStatus(
+    kind: "courses" | "exams",
+    id: string,
+    status: "draft" | "published" | "archived",
+  ) {
     const { error } = await supabase.from(kind).update({ status }).eq("id", id);
-    if (error) { toast.error(errMsg(error)); return; }
+    if (error) {
+      toast.error(errMsg(error));
+      return;
+    }
     qc.invalidateQueries();
   }
   if (q.isLoading) return <Loading />;
   if (q.error) return <ErrorState error={q.error} />;
-  if (!q.data!.length) return <Empty>{t("teacher.empty")}</Empty>;
   return (
-    <ul className="card-surface divide-y">
-      {q.data!.map((x) => (
-        <li key={x.kind + x.id} className="flex flex-wrap items-center gap-3 p-4">
-          <span className="w-16 text-xs uppercase text-muted-foreground">{x.kind === "courses" ? t("subj.courses") : t("nav.exams")}</span>
-          <span className="flex-1 font-medium text-heading">{x.title}</span>
-          <StatusBadge status={x.status} label={t(`status.${x.status}`)} />
-          {x.status === "published" ? (
-            <Button size="sm" variant="outline" onClick={() => setStatus(x.kind, x.id, "archived")}>{t("form.unpublish")}</Button>
-          ) : (
-            <Button size="sm" variant="outline" onClick={() => setStatus(x.kind, x.id, "published")}>{t("form.publish")}</Button>
-          )}
-        </li>
-      ))}
-    </ul>
+    <div className="space-y-5">
+      <section className="card-surface flex flex-wrap items-center gap-3 p-5">
+        <div className="min-w-0 flex-1">
+          <h2 className="font-semibold text-heading">{t("admin.demoContent")}</h2>
+          <p className="mt-1 text-sm text-muted-foreground">{t("admin.demoContentDescription")}</p>
+        </div>
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={demoBusy}
+          onClick={() => void manageDemoContent("seed")}
+        >
+          {t("admin.seedDemo")}
+        </Button>
+        <Button
+          size="sm"
+          variant="destructive"
+          disabled={demoBusy}
+          onClick={() => void manageDemoContent("delete")}
+        >
+          <Trash2 className="mr-2 h-4 w-4" />
+          {t("admin.deleteDemo")}
+        </Button>
+      </section>
+      {q.data!.length ? (
+        <ul className="card-surface divide-y">
+          {q.data!.map((x) => (
+            <li key={x.kind + x.id} className="flex flex-wrap items-center gap-3 p-4">
+              <span className="w-16 text-xs uppercase text-muted-foreground">
+                {x.kind === "courses" ? t("subj.courses") : t("nav.exams")}
+              </span>
+              <span className="flex-1 font-medium text-heading">{x.title}</span>
+              {x.is_demo && (
+                <span className="rounded-full bg-amber-100 px-2 py-1 text-[10px] font-bold uppercase text-amber-800">
+                  {t("demo.badge")}
+                </span>
+              )}
+              <StatusBadge status={x.status} label={t(`status.${x.status}`)} />
+              {x.status === "published" ? (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setStatus(x.kind, x.id, "archived")}
+                >
+                  {t("form.unpublish")}
+                </Button>
+              ) : (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setStatus(x.kind, x.id, "published")}
+                >
+                  {t("form.publish")}
+                </Button>
+              )}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <Empty>{t("teacher.empty")}</Empty>
+      )}
+    </div>
   );
 }
 
@@ -325,13 +609,19 @@ function SchoolReviewAdmin() {
                 <Button size="sm" onClick={() => void reviewSchool(school.id, "verified")}>
                   {t("admin.approve")}
                 </Button>
-                <Button size="sm" variant="outline" onClick={() => void reviewSchool(school.id, "rejected")}>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => void reviewSchool(school.id, "rejected")}
+                >
                   {t("admin.reject")}
                 </Button>
               </li>
             ))}
           </ul>
-        ) : <Empty>{t("admin.noPendingSchools")}</Empty>}
+        ) : (
+          <Empty>{t("admin.noPendingSchools")}</Empty>
+        )}
       </section>
 
       <section>
@@ -343,22 +633,33 @@ function SchoolReviewAdmin() {
               return (
                 <li key={correction.id} className="flex flex-wrap items-center gap-3 p-4">
                   <div className="min-w-0 flex-1">
-                    <p className="font-semibold text-heading">{school?.name ?? correction.school_id}</p>
+                    <p className="font-semibold text-heading">
+                      {school?.name ?? correction.school_id}
+                    </p>
                     <p className="text-sm text-muted-foreground">
                       {correction.proposed_phone ?? "—"} · {correction.proposed_email ?? "—"}
                     </p>
                   </div>
-                  <Button size="sm" onClick={() => void reviewCorrection(correction.id, "approved")}>
+                  <Button
+                    size="sm"
+                    onClick={() => void reviewCorrection(correction.id, "approved")}
+                  >
                     {t("admin.approve")}
                   </Button>
-                  <Button size="sm" variant="outline" onClick={() => void reviewCorrection(correction.id, "rejected")}>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => void reviewCorrection(correction.id, "rejected")}
+                  >
                     {t("admin.reject")}
                   </Button>
                 </li>
               );
             })}
           </ul>
-        ) : <Empty>{t("admin.noPendingCorrections")}</Empty>}
+        ) : (
+          <Empty>{t("admin.noPendingCorrections")}</Empty>
+        )}
       </section>
     </div>
   );
@@ -382,11 +683,17 @@ function TeacherVerificationAdmin() {
         supabase
           .from("profiles")
           .select("id,first_name,last_name,full_name,phone")
-          .in("id", requests.map((request) => request.teacher_id)),
+          .in(
+            "id",
+            requests.map((request) => request.teacher_id),
+          ),
         supabase
           .from("schools")
           .select("id,name,geographical_department,verification_status")
-          .in("id", requests.flatMap((request) => request.school_id ? [request.school_id] : [])),
+          .in(
+            "id",
+            requests.flatMap((request) => (request.school_id ? [request.school_id] : [])),
+          ),
       ]);
       if (profiles.error) throw profiles.error;
       if (schools.error) throw schools.error;
@@ -439,7 +746,9 @@ function TeacherVerificationAdmin() {
                 {request.email} · {profile?.phone ?? "—"}
               </p>
               <p className="text-sm text-muted-foreground">
-                {school ? `${school.name} · ${school.geographical_department} · ${schoolStatusLabel}` : "—"}
+                {school
+                  ? `${school.name} · ${school.geographical_department} · ${schoolStatusLabel}`
+                  : "—"}
               </p>
             </div>
             {school?.verification_status !== "verified" && (
@@ -462,7 +771,11 @@ function TeacherVerificationAdmin() {
               >
                 {t("admin.approve")}
               </Button>
-              <Button size="sm" variant="outline" onClick={() => void review(request.id, "rejected")}>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => void review(request.id, "rejected")}
+              >
                 {t("admin.reject")}
               </Button>
             </div>

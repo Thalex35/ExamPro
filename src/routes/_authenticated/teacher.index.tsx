@@ -23,7 +23,7 @@ function TeacherHome() {
   const { data: me } = useMe();
   const qc = useQueryClient();
   const [resubmitting, setResubmitting] = useState(false);
-  const isVerified = me?.profile?.teacher_verification_status === "approved";
+  const isVerified = me?.isAdmin || me?.profile?.teacher_verification_status === "approved";
   const verificationStatus = me?.profile?.teacher_verification_status;
   const cat = useQuery(catalogQuery);
   const uid = me?.user.id;
@@ -91,7 +91,9 @@ function TeacherHome() {
         title={t("teacher.title")}
         action={
           <div className="flex flex-wrap gap-2">
-            <Button asChild variant="hero"><Link to="/teacher/courses/new"><PenSquare /> {t("teacher.newCourse")}</Link></Button>
+            {isVerified && (
+              <Button asChild variant="hero"><Link to="/teacher/courses/new"><PenSquare /> {t("teacher.newCourse")}</Link></Button>
+            )}
             {isVerified && (
               <Button asChild variant="outline"><Link to="/teacher/exams/new"><FilePlus /> {t("teacher.newExam")}</Link></Button>
             )}
@@ -123,8 +125,12 @@ function TeacherHome() {
                     <p className="text-xs text-muted-foreground">{label(x.subject_id, x.level_id)}</p>
                   </div>
                   <StatusBadge status={x.status} label={t(`status.${x.status}`)} />
-                  <Button asChild size="sm" variant="ghost"><Link to="/teacher/courses/$courseId" params={{ courseId: x.id }}>{t("common.edit")}</Link></Button>
-                  <Button size="sm" variant="ghost" className="text-destructive" onClick={() => confirm(t("common.delete") + " ?") && deleteCourse(x.id)}>{t("common.delete")}</Button>
+                  {isVerified && (
+                    <>
+                      <Button asChild size="sm" variant="ghost"><Link to="/teacher/courses/$courseId" params={{ courseId: x.id }}>{t("common.edit")}</Link></Button>
+                      <Button size="sm" variant="ghost" className="text-destructive" onClick={() => confirm(t("common.delete") + " ?") && deleteCourse(x.id)}>{t("common.delete")}</Button>
+                    </>
+                  )}
                 </li>
               ))}
             </ul>
@@ -147,7 +153,9 @@ function TeacherHome() {
                       {x.status === "published" ? t("form.unpublish") : t("form.publish")}
                     </Button>
                   )}
-                  <Button size="sm" variant="ghost" className="text-destructive" onClick={() => confirm(t("common.delete") + " ?") && deleteExam(x.id, x.file_path)}>{t("common.delete")}</Button>
+                  {isVerified && (
+                    <Button size="sm" variant="ghost" className="text-destructive" onClick={() => confirm(t("common.delete") + " ?") && deleteExam(x.id, x.file_path)}>{t("common.delete")}</Button>
+                  )}
                 </li>
               ))}
             </ul>

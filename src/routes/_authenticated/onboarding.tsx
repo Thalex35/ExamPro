@@ -431,10 +431,6 @@ function Onboarding() {
       setValidationError(t("onb.phoneInvalid"));
       return;
     }
-    if (selectedSchool.data?.verification_status !== "verified") {
-      setValidationError(t("onb.schoolMustBeVerified"));
-      return;
-    }
     await run(async () => {
       await assertRpc(supabase.rpc("finish_teacher_onboarding", { _phone: normalizedPhone }));
       await qc.invalidateQueries({ queryKey: ["me"] });

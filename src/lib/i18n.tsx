@@ -215,8 +215,6 @@ const fr = {
   "onb.schoolNotListed": "Votre école n’est pas dans la liste ? Ajoutez son nom",
   "onb.schoolChooseAnother": "Choisir une autre école",
   "onb.schoolPending": "En attente de vérification",
-  "onb.schoolMustBeVerified":
-    "L’école choisie doit être vérifiée pour terminer votre inscription. Vous pouvez revenir en arrière et en choisir une autre.",
   "onb.schoolContactQuestion": "Confirmez les coordonnées de l’école",
   "onb.schoolConfirmContactHint": "Vérifiez ces coordonnées ou proposez une correction à examiner.",
   "onb.schoolPendingContactHint":
@@ -241,7 +239,7 @@ const fr = {
   "onb.completeTitle": "Votre profil est prêt",
   "onb.studentComplete": "Votre parcours scolaire a été enregistré.",
   "onb.teacherComplete":
-    "Votre profil est enregistré. Votre accès aux outils de publication sera activé après vérification par l’administration.",
+    "Votre profil est enregistré. Vous pouvez accéder à votre espace dès maintenant ; la création et la gestion de contenu seront activées après vérification.",
   "onb.goToDashboard": "Accéder à mon tableau de bord",
   "onb.loadError": "Impossible de charger votre progression. Réessayez.",
   "onb.saveError": "Impossible d’enregistrer cette étape. Réessayez.",
@@ -293,7 +291,7 @@ const fr = {
   "teacher.myCourses": "Mes cours",
   "teacher.myExams": "Mes examens",
   "teacher.verificationPending":
-    "Votre compte enseignant est en attente de vérification. Vous pouvez consulter votre espace et préparer des brouillons de cours, mais la publication et le téléversement d’examens sont désactivés.",
+    "Votre compte enseignant est en attente de vérification. Vous pouvez consulter votre espace, mais vous ne pouvez pas créer, modifier ou supprimer des cours ou des examens.",
   "teacher.verificationRejected": "Votre demande de vérification a été refusée.",
   "teacher.verificationApproved": "Votre compte enseignant est vérifié.",
   "teacher.resubmitVerification": "Renvoyer ma demande",
@@ -565,8 +563,6 @@ const ht: Record<TKey, string> = {
   "onb.schoolNotListed": "Lekòl ou pa nan lis la? Ajoute non li",
   "onb.schoolChooseAnother": "Chwazi yon lòt lekòl",
   "onb.schoolPending": "Ap tann verifikasyon",
-  "onb.schoolMustBeVerified":
-    "Lekòl ou chwazi a dwe verifye pou w fini enskripsyon an. Ou ka retounen pou chwazi yon lòt lekòl.",
   "onb.schoolContactQuestion": "Konfime enfòmasyon pou kontakte lekòl la",
   "onb.schoolConfirmContactHint":
     "Verifye enfòmasyon sa yo oswa pwopoze yon koreksyon pou yo egzamine.",
@@ -592,7 +588,7 @@ const ht: Record<TKey, string> = {
   "onb.completeTitle": "Pwofil ou pare",
   "onb.studentComplete": "Nou anrejistre chemen akademik ou.",
   "onb.teacherComplete":
-    "Pwofil ou anrejistre. Administrasyon an dwe verifye kont ou anvan ou kapab pibliye oswa telechaje egzamen.",
+    "Pwofil ou anrejistre. Ou ka antre nan espas ou depi kounye a; w ap kapab kreye epi jere kontni apre verifikasyon.",
   "onb.goToDashboard": "Ale nan tablo bò mwen",
   "onb.loadError": "Nou pa t kapab chaje pwogrè ou. Eseye ankò.",
   "onb.saveError": "Nou pa t kapab anrejistre etap sa a. Eseye ankò.",
@@ -644,7 +640,7 @@ const ht: Record<TKey, string> = {
   "teacher.myCourses": "Kou mwen",
   "teacher.myExams": "Egzamen mwen",
   "teacher.verificationPending":
-    "Kont pwofesè ou ap tann verifikasyon. Ou ka wè espas ou epi prepare bouyon kou, men ou pa kapab pibliye ni telechaje egzamen.",
+    "Kont pwofesè ou ap tann verifikasyon. Ou ka wè espas ou, men ou pa kapab kreye, modifye oswa efase kou ni egzamen.",
   "teacher.verificationRejected": "Yo refize demann verifikasyon ou a.",
   "teacher.verificationApproved": "Yo verifye kont pwofesè ou.",
   "teacher.resubmitVerification": "Voye demann mwen ankò",

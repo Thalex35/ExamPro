@@ -23,7 +23,7 @@ function EditCourse() {
     },
   });
   return (
-    <TeacherGate>
+    <TeacherGate requireVerified>
       <PageHeader title={t("common.edit")} />
       {q.isLoading ? <Loading /> : q.error ? <ErrorState error={q.error} /> : !q.data ? <Empty>{t("404.title")}</Empty> : <CourseForm course={q.data} />}
     </TeacherGate>

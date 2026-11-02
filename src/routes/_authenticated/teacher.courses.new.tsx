@@ -12,7 +12,7 @@ export const Route = createFileRoute("/_authenticated/teacher/courses/new")({
 function NewCourse() {
   const { t } = useI18n();
   return (
-    <TeacherGate>
+    <TeacherGate requireVerified>
       <PageHeader title={t("teacher.newCourse")} />
       <CourseForm />
     </TeacherGate>

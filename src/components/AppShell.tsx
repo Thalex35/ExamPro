@@ -1,9 +1,10 @@
 import { Link, useNavigate, useLocation } from "@tanstack/react-router";
-import { useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState, type ReactNode } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   Archive,
   BarChart3,
+  Bell,
   Bookmark,
   BookOpen,
   Bot,
@@ -16,17 +17,21 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   PenSquare,
+  Search,
   Shield,
   Sparkles,
   User,
   X,
 } from "lucide-react";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { trackFilter } from "@/lib/catalog";
+import { openExamFile } from "@/lib/files";
 import { useMe } from "@/lib/session";
 import { useI18n, type TKey } from "@/lib/i18n";
 import { BrandIcon, BrandLogo } from "./Brand";
 import { LanguageSwitch } from "./LanguageSwitch";
-import { Loading } from "./States";
+import { ErrorState, Loading } from "./States";
 import { cn } from "@/lib/utils";
 
 type NavItem = {
@@ -34,6 +39,169 @@ type NavItem = {
   key: TKey;
   icon: typeof BookOpen;
 };
+
+function StudentSearch({ levelId, trackId }: { levelId: string | null; trackId: string | null }) {
+  const { t, errMsg } = useI18n();
+  const [value, setValue] = useState("");
+  const [term, setTerm] = useState("");
+  const [focused, setFocused] = useState(false);
+  const [busyExam, setBusyExam] = useState<string | null>(null);
+  const searchContainer = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setTerm(value.trim()), 250);
+    return () => window.clearTimeout(timer);
+  }, [value]);
+  useEffect(() => {
+    if (!focused) return;
+    const closeOnOutsideClick = (event: PointerEvent) => {
+      if (event.target instanceof Node && !searchContainer.current?.contains(event.target)) {
+        setFocused(false);
+      }
+    };
+    document.addEventListener("pointerdown", closeOnOutsideClick);
+    return () => document.removeEventListener("pointerdown", closeOnOutsideClick);
+  }, [focused]);
+
+  const results = useQuery({
+    queryKey: ["student-header-search", levelId, trackId, term],
+    enabled: !!levelId && term.length >= 2,
+    queryFn: async () => {
+      const filter = trackFilter(trackId);
+      const [courseResult, examResult] = await Promise.all([
+        supabase
+          .from("courses")
+          .select("id,title,subject_id")
+          .eq("status", "published")
+          .eq("level_id", levelId!)
+          .or(filter)
+          .ilike("title", `%${term}%`)
+          .order("published_at", { ascending: false })
+          .limit(5),
+        supabase
+          .from("exams")
+          .select("id,title,subject_id,exam_year,file_path")
+          .eq("status", "published")
+          .eq("level_id", levelId!)
+          .or(filter)
+          .ilike("title", `%${term}%`)
+          .order("exam_year", { ascending: false })
+          .limit(5),
+      ]);
+      if (courseResult.error) throw courseResult.error;
+      if (examResult.error) throw examResult.error;
+      return { courses: courseResult.data, exams: examResult.data };
+    },
+  });
+
+  async function openExam(path: string, id: string) {
+    setBusyExam(id);
+    try {
+      await openExamFile(path);
+      setFocused(false);
+    } catch (error) {
+      toast.error(errMsg(error));
+    } finally {
+      setBusyExam(null);
+    }
+  }
+
+  const hasResults = !!results.data?.courses.length || !!results.data?.exams.length;
+  const quizSearch = /quiz|quizzes|egzamen pratik/i.test(term);
+
+  return (
+    <div ref={searchContainer} className="relative min-w-0 flex-1">
+      <form
+        role="search"
+        onSubmit={(event) => {
+          event.preventDefault();
+          setTerm(value.trim());
+          setFocused(true);
+        }}
+        className="flex h-10 items-center gap-2 rounded-lg border border-border bg-muted/60 px-3 text-muted-foreground focus-within:border-brand focus-within:ring-2 focus-within:ring-brand/20"
+      >
+        <Search className="h-4 w-4 shrink-0" />
+        <input
+          type="search"
+          value={value}
+          onChange={(event) => setValue(event.target.value)}
+          onFocus={() => setFocused(true)}
+          onKeyDown={(event) => {
+            if (event.key === "Escape") setFocused(false);
+          }}
+          aria-label={t("dash.search")}
+          placeholder={t("dash.searchPlaceholder")}
+          className="min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
+        />
+        {value && (
+          <button
+            type="button"
+            aria-label={t("common.clear")}
+            onClick={() => {
+              setValue("");
+              setTerm("");
+            }}
+            className="rounded p-1 hover:bg-muted"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        )}
+      </form>
+
+      {focused && term.length >= 2 && (
+        <div className="absolute left-0 right-0 top-12 z-40 max-h-[min(70vh,28rem)] overflow-y-auto rounded-xl border bg-card p-2 shadow-xl sm:min-w-[26rem]">
+          {results.isLoading || term !== value.trim() ? (
+            <p className="px-3 py-4 text-sm text-muted-foreground">{t("common.loading")}</p>
+          ) : results.error ? (
+            <ErrorState error={results.error} onRetry={() => void results.refetch()} />
+          ) : hasResults ? (
+            <div className="space-y-1">
+              {results.data?.courses.map((course) => (
+                <Link
+                  key={`course-${course.id}`}
+                  to="/courses/$courseId"
+                  params={{ courseId: course.id }}
+                  onClick={() => setFocused(false)}
+                  className="flex items-center gap-3 rounded-lg px-3 py-2.5 hover:bg-muted"
+                >
+                  <BookOpen className="h-4 w-4 shrink-0 text-deep" />
+                  <span className="min-w-0 flex-1 truncate text-sm font-medium text-heading">
+                    {course.title}
+                  </span>
+                  <span className="text-xs text-muted-foreground">{t("dash.courseResult")}</span>
+                </Link>
+              ))}
+              {results.data?.exams.map((exam) => (
+                <button
+                  key={`exam-${exam.id}`}
+                  type="button"
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => void openExam(exam.file_path, exam.id)}
+                  disabled={busyExam === exam.id}
+                  className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left hover:bg-muted disabled:opacity-60"
+                >
+                  <FileText className="h-4 w-4 shrink-0 text-deep" />
+                  <span className="min-w-0 flex-1 truncate text-sm font-medium text-heading">
+                    {exam.title}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {busyExam === exam.id ? t("common.loading") : t("dash.examResult")}
+                    {" · "}
+                    {exam.exam_year}
+                  </span>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <p className="px-3 py-4 text-sm text-muted-foreground">
+              {quizSearch ? t("dash.searchQuizUnavailable") : t("dash.noSearchResults")}
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function AppShell({
   children,
@@ -49,6 +217,7 @@ export function AppShell({
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [studentSidebarCollapsed, setStudentSidebarCollapsed] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
 
   const needsOnboarding = !!me && !me.profile?.onboarded && !me.isAdmin;
   useEffect(() => {
@@ -115,7 +284,7 @@ export function AppShell({
     );
   }
 
-  if (me?.isStudent && location.pathname === "/dashboard") {
+  if (me?.isStudent && !me.isTeacher && !me.isAdmin) {
     const fullName =
       [me.profile?.first_name, me.profile?.last_name].filter(Boolean).join(" ") ||
       me.profile?.full_name ||
@@ -128,6 +297,11 @@ export function AppShell({
       .map((part) => part[0]?.toLocaleUpperCase())
       .join("");
     const sidebarTextClass = studentSidebarCollapsed ? "lg:hidden" : "";
+    const studentNavigationItems = [
+      { to: "/dashboard" as const, label: t("nav.dashboard"), icon: LayoutDashboard },
+      { to: "/subjects" as const, label: t("nav.subjects"), icon: BookOpen },
+      { to: "/exams" as const, label: t("dash.examArchive"), icon: Archive },
+    ];
 
     return (
       <div
@@ -151,9 +325,8 @@ export function AppShell({
               studentSidebarCollapsed && "lg:justify-center",
             )}
           >
-            <Link to="/" aria-label="EXAMPRO" className="flex min-w-0 items-center gap-2">
-              <BrandIcon className="h-8 w-8 shrink-0" />
-              <BrandLogo className={cn("h-7", sidebarTextClass)} />
+            <Link to="/" aria-label="EXAMPRO" className="flex min-w-0 items-center">
+              <BrandIcon className="h-9 w-9 shrink-0" />
             </Link>
             <button
               type="button"
@@ -221,31 +394,27 @@ export function AppShell({
               {t("dash.workspace")}
             </p>
             <div className="flex flex-col gap-1">
-              <Link
-                to="/dashboard"
-                title={studentSidebarCollapsed ? t("nav.dashboard") : undefined}
-                className={cn(
-                  "flex items-center gap-3 rounded-lg border-l-[3px] border-transparent px-2 py-2.5 text-xs font-semibold text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground",
-                  studentSidebarCollapsed && "lg:justify-center lg:px-0",
-                )}
-                activeProps={{
-                  className: "border-l-brand bg-sidebar-accent text-sidebar-foreground shadow-sm",
-                }}
-              >
-                <LayoutDashboard className="h-4 w-4 shrink-0 text-sidebar-primary" />
-                <span className={sidebarTextClass}>{t("nav.dashboard")}</span>
-              </Link>
-              <Link
-                to="/exams"
-                title={studentSidebarCollapsed ? t("dash.examArchive") : undefined}
-                className={cn(
-                  "flex items-center gap-3 rounded-lg border-l-[3px] border-transparent px-2 py-2.5 text-xs font-semibold text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground",
-                  studentSidebarCollapsed && "lg:justify-center lg:px-0",
-                )}
-              >
-                <Archive className="h-4 w-4 shrink-0" />
-                <span className={sidebarTextClass}>{t("dash.examArchive")}</span>
-              </Link>
+              {studentNavigationItems.map(({ to, label, icon: Icon }) => {
+                const isActive =
+                  location.pathname === to ||
+                  (to !== "/dashboard" && location.pathname.startsWith(`${to}/`)) ||
+                  (to === "/subjects" && location.pathname.startsWith("/courses/"));
+                return (
+                  <Link
+                    key={to}
+                    to={to}
+                    title={studentSidebarCollapsed ? label : undefined}
+                    className={cn(
+                      "flex items-center gap-3 rounded-lg border-l-[3px] border-transparent px-2 py-2.5 text-xs font-semibold text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground",
+                      studentSidebarCollapsed && "lg:justify-center lg:px-0",
+                      isActive && "border-l-brand bg-sidebar-accent text-sidebar-foreground",
+                    )}
+                  >
+                    <Icon className={cn("h-4 w-4 shrink-0", isActive && "text-sidebar-primary")} />
+                    <span className={sidebarTextClass}>{label}</span>
+                  </Link>
+                );
+              })}
               <span
                 aria-disabled="true"
                 title={t("dash.featureUnavailable")}
@@ -266,7 +435,7 @@ export function AppShell({
                 </span>
               </span>
               <a
-                href="#performance-title"
+                href="/dashboard#performance-title"
                 title={studentSidebarCollapsed ? t("dash.performance") : undefined}
                 onClick={() => setOpen(false)}
                 className={cn(
@@ -404,16 +573,39 @@ export function AppShell({
         )}
 
         <div className="min-w-0">
-          <header className="sticky top-0 z-20 flex items-center justify-between border-b bg-card/95 px-4 py-3 backdrop-blur lg:hidden">
+          <header className="sticky top-0 z-20 flex items-center gap-2 border-b bg-card/95 px-3 py-3 backdrop-blur sm:gap-4 sm:px-5 lg:px-8">
             <button
               type="button"
               onClick={() => setOpen(true)}
               aria-label={t("dash.openSidebar")}
-              className="rounded-md p-1.5 hover:bg-muted"
+              className="shrink-0 rounded-md p-1.5 hover:bg-muted lg:hidden"
             >
               <Menu className="h-5 w-5" />
             </button>
-            <BrandLogo className="h-7" />
+            <StudentSearch
+              levelId={me.profile?.level_id ?? null}
+              trackId={me.profile?.track_id ?? null}
+            />
+            <div className="relative shrink-0">
+              <button
+                type="button"
+                onClick={() => setNotificationsOpen((shown) => !shown)}
+                aria-label={t("dash.notifications")}
+                aria-expanded={notificationsOpen}
+                className="flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              >
+                <Bell className="h-4 w-4" />
+              </button>
+              {notificationsOpen && (
+                <div
+                  className="absolute right-0 top-12 z-50 w-72 rounded-xl border bg-card p-4 shadow-lg"
+                  role="status"
+                >
+                  <p className="font-semibold text-heading">{t("dash.notifications")}</p>
+                  <p className="mt-2 text-sm text-muted-foreground">{t("dash.noNotifications")}</p>
+                </div>
+              )}
+            </div>
             <LanguageSwitch />
           </header>
           <main className="mx-auto w-full max-w-[1440px] px-4 py-7 sm:px-8 sm:py-9">

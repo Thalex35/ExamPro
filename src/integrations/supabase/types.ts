@@ -520,7 +520,13 @@ export type Database =
             school:
               | string
               | null
+            school_email:
+              | string
+              | null
             school_id:
+              | string
+              | null
+            school_phone:
               | string
               | null
             phone:
@@ -562,7 +568,13 @@ export type Database =
             school?:
               | string
               | null
+            school_email?:
+              | string
+              | null
             school_id?:
+              | string
+              | null
+            school_phone?:
               | string
               | null
             phone?:
@@ -604,7 +616,13 @@ export type Database =
             school?:
               | string
               | null
+            school_email?:
+              | string
+              | null
             school_id?:
+              | string
+              | null
+            school_phone?:
               | string
               | null
             phone?:
@@ -1273,6 +1291,14 @@ export type Database =
         save_student_onboarding_department: {
           Args: {
             _geographical_department: string
+          }
+          Returns: undefined
+        }
+        save_student_school_information: {
+          Args: {
+            _email: string | null
+            _name: string
+            _phone: string | null
           }
           Returns: undefined
         }

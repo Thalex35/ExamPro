@@ -26,6 +26,8 @@ const emptyProfile = {
   geographical_department: null,
   school: null,
   school_id: null,
+  school_email: null,
+  school_phone: null,
   teacher_school_contacts_confirmed: false,
   phone: null,
 };
@@ -52,7 +54,7 @@ describe("role-based onboarding progress", () => {
         tracks,
         [],
       ),
-    ).toBe("student-complete");
+    ).toBe("student-school");
   });
 
   it("requires a valid catalog track for Terminale students", () => {
@@ -78,7 +80,7 @@ describe("role-based onboarding progress", () => {
         tracks,
         [],
       ),
-    ).toBe("student-complete");
+    ).toBe("student-school");
     expect(
       nextOnboardingStep(
         "student",
@@ -113,7 +115,7 @@ describe("role-based onboarding progress", () => {
     expect(nextOnboardingStep("student", geographySaved, levels, tracks, [])).toBe("student-level");
     expect(
       nextOnboardingStep("student", { ...geographySaved, level_id: "9e-af" }, levels, tracks, []),
-    ).toBe("student-complete");
+    ).toBe("student-school");
     expect(
       nextOnboardingStep(
         "student",
@@ -134,6 +136,8 @@ describe("role-based onboarding progress", () => {
       ...withDepartment,
       school: "École EXAMPRO",
       school_id: "school-id",
+      school_email: "contact@exampro.ht",
+      school_phone: "+509 3700-0000",
       teacher_school_contacts_confirmed: true,
     };
     expect(nextOnboardingStep("teacher", namedProfile, levels, tracks, [])).toBe(
@@ -150,7 +154,7 @@ describe("role-based onboarding progress", () => {
         tracks,
         [],
       ),
-    ).toBe("teacher-school-contact");
+    ).toBe("teacher-school");
     expect(nextOnboardingStep("teacher", withSchool, levels, tracks, [])).toBe("teacher-levels");
     expect(
       nextOnboardingStep("teacher", withSchool, levels, tracks, [
@@ -167,6 +171,26 @@ describe("role-based onboarding progress", () => {
         { level_id: "9e-af", track_id: null },
       ]),
     ).toBe("teacher-complete");
+  });
+
+  it("asks students for school information after their academic selections", () => {
+    const academicProfile = {
+      ...namedProfile,
+      level_id: "9e-af",
+      geographical_department: "Ouest",
+    };
+    expect(nextOnboardingStep("student", academicProfile, levels, tracks, [])).toBe(
+      "student-school",
+    );
+    expect(
+      nextOnboardingStep(
+        "student",
+        { ...academicProfile, school: "École EXAMPRO" },
+        levels,
+        tracks,
+        [],
+      ),
+    ).toBe("student-complete");
   });
 
   it("normalizes separators and validates international phone numbers", () => {

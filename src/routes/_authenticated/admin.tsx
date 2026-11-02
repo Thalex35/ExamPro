@@ -682,7 +682,7 @@ function TeacherVerificationAdmin() {
       const [profiles, schools] = await Promise.all([
         supabase
           .from("profiles")
-          .select("id,first_name,last_name,full_name,phone")
+          .select("id,first_name,last_name,full_name,phone,school_email,school_phone")
           .in(
             "id",
             requests.map((request) => request.teacher_id),
@@ -749,6 +749,10 @@ function TeacherVerificationAdmin() {
                 {school
                   ? `${school.name} · ${school.geographical_department} · ${schoolStatusLabel}`
                   : "—"}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                {t("admin.schoolEmail")}: {profile?.school_email ?? "—"} · {t("admin.schoolPhone")}:{" "}
+                {profile?.school_phone ?? "—"}
               </p>
             </div>
             {school?.verification_status !== "verified" && (

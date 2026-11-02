@@ -5,10 +5,10 @@ export type OnboardingStep =
   | "student-level"
   | "student-department"
   | "student-track"
+  | "student-school"
   | "student-complete"
   | "teacher-department"
   | "teacher-school"
-  | "teacher-school-contact"
   | "teacher-levels"
   | "teacher-tracks"
   | "teacher-phone"
@@ -23,6 +23,8 @@ type OnboardingProfile = {
   geographical_department: string | null;
   school: string | null;
   school_id: string | null;
+  school_email: string | null;
+  school_phone: string | null;
   teacher_school_contacts_confirmed: boolean;
   phone: string | null;
 };
@@ -80,12 +82,19 @@ export function nextOnboardingStep(
     ) {
       return "student-track";
     }
+    if (!profile.school?.trim()) return "student-school";
     return "student-complete";
   }
 
   if (!isHaitiDepartment(profile.geographical_department)) return "teacher-department";
-  if (!profile.school_id) return "teacher-school";
-  if (!profile.teacher_school_contacts_confirmed) return "teacher-school-contact";
+  if (
+    !profile.school_id ||
+    !profile.teacher_school_contacts_confirmed ||
+    !profile.school_email?.trim() ||
+    !profile.school_phone?.trim()
+  ) {
+    return "teacher-school";
+  }
   if (!teacherAssignments.length) return "teacher-levels";
 
   const missingTrack = teacherAssignments.some((assignment) => {

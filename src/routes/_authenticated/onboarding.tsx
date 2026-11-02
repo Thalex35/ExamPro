@@ -24,8 +24,6 @@ import { ErrorState, Loading } from "@/components/States";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 
-type School = Database["public"]["Tables"]["schools"]["Row"];
-
 async function assertRpc(request: PromiseLike<{ error: { message: string } | null }>) {
   const { error } = await request;
   if (error) throw error;
@@ -65,8 +63,6 @@ function Onboarding() {
   const [geographicalDepartment, setGeographicalDepartment] = useState("");
   const [trackId, setTrackId] = useState("");
   const [school, setSchool] = useState("");
-  const [schoolId, setSchoolId] = useState("");
-  const [schoolSearch, setSchoolSearch] = useState("");
   const [schoolPhone, setSchoolPhone] = useState("");
   const [schoolEmail, setSchoolEmail] = useState("");
   const [teacherLevelIds, setTeacherLevelIds] = useState<string[]>([]);
@@ -75,38 +71,6 @@ function Onboarding() {
   const [busy, setBusy] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
   const initialized = useRef(false);
-
-  const schoolResults = useQuery({
-    queryKey: ["onboarding-school-search", geographicalDepartment, schoolSearch],
-    enabled:
-      step === "teacher-school" &&
-      isHaitiDepartment(geographicalDepartment) &&
-      schoolSearch.trim().length >= 2,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("schools")
-        .select("*")
-        .eq("geographical_department", geographicalDepartment)
-        .ilike("name", `%${schoolSearch.trim()}%`)
-        .order("name")
-        .limit(10);
-      if (error) throw error;
-      return data;
-    },
-  });
-  const selectedSchool = useQuery({
-    queryKey: ["onboarding-school", schoolId],
-    enabled: !!schoolId,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("schools")
-        .select("*")
-        .eq("id", schoolId)
-        .single();
-      if (error) throw error;
-      return data as School;
-    },
-  });
 
   useEffect(() => {
     if (initialized.current || meLoading || catalog.isLoading || !me?.profile || !catalog.data)
@@ -146,9 +110,8 @@ function Onboarding() {
     setGeographicalDepartment(me.profile.geographical_department ?? "");
     setTrackId(me.profile.track_id ?? "");
     setSchool(me.profile.school ?? "");
-    setSchoolId(me.profile.school_id ?? "");
-    setSchoolPhone("");
-    setSchoolEmail("");
+    setSchoolPhone(me.profile.school_phone ?? "");
+    setSchoolEmail(me.profile.school_email ?? "");
     setTeacherLevelIds([...new Set(savedAssignments.map((assignment) => assignment.level_id))]);
     setTeacherTrackIds(
       savedAssignments.flatMap((assignment) => (assignment.track_id ? [assignment.track_id] : [])),
@@ -165,13 +128,6 @@ function Onboarding() {
     );
     initialized.current = true;
   }, [assignments.data, assignments.isLoading, catalog.data, catalog.isLoading, me, meLoading]);
-
-  useEffect(() => {
-    if (!selectedSchool.data) return;
-    setSchool(selectedSchool.data.name);
-    setSchoolPhone(selectedSchool.data.phone ?? "");
-    setSchoolEmail(selectedSchool.data.email ?? "");
-  }, [selectedSchool.data]);
 
   if (meLoading || catalog.isLoading || (me?.isTeacher && assignments.isLoading)) {
     return <Loading />;
@@ -284,7 +240,7 @@ function Onboarding() {
       } else if (selectedLevel.requires_track) {
         setStep("student-track");
       } else {
-        await completeStudent();
+        await continueStudentAfterAcademics();
       }
     });
   }
@@ -307,7 +263,7 @@ function Onboarding() {
       ) {
         setStep("student-track");
       } else {
-        await completeStudent();
+        await continueStudentAfterAcademics();
       }
     });
   }
@@ -320,8 +276,42 @@ function Onboarding() {
     await run(async () => {
       await assertRpc(supabase.rpc("save_student_onboarding_track", { _track_id: trackId }));
       await qc.invalidateQueries({ queryKey: ["me"] });
+      await continueStudentAfterAcademics();
+    });
+  }
+
+  async function saveStudentSchoolInformation() {
+    const schoolName = school.trim();
+    const emailValue = schoolEmail.trim();
+    const phoneValue = schoolPhone.trim();
+    if (schoolName.length < 2 || schoolName.length > 200) {
+      setValidationError(t("onb.schoolRequired"));
+      return;
+    }
+    if (emailValue && (emailValue.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailValue))) {
+      setValidationError(t("onb.schoolEmailInvalid"));
+      return;
+    }
+    if (phoneValue && (phoneValue.length > 32 || !/^\+?[0-9][0-9 ()-]{6,23}$/.test(phoneValue))) {
+      setValidationError(t("onb.schoolPhoneInvalid"));
+      return;
+    }
+    await run(async () => {
+      await assertRpc(
+        supabase.rpc("save_student_school_information", {
+          _name: schoolName,
+          _email: emailValue || null,
+          _phone: phoneValue || null,
+        }),
+      );
+      await qc.invalidateQueries({ queryKey: ["me"] });
       await completeStudent();
     });
+  }
+
+  async function continueStudentAfterAcademics() {
+    if (school.trim()) await completeStudent();
+    else setStep("student-school");
   }
 
   async function saveTeacherDepartment() {
@@ -336,49 +326,39 @@ function Onboarding() {
         }),
       );
       await qc.invalidateQueries({ queryKey: ["me"] });
+      setSchool("");
+      setSchoolPhone("");
+      setSchoolEmail("");
       setStep("teacher-school");
     });
   }
 
   async function saveTeacherSchool() {
     const value = school.trim();
-    if (!schoolId && (!value || value.length < 2 || value.length > 200)) {
+    const phoneValue = schoolPhone.trim();
+    const emailValue = schoolEmail.trim();
+    if (value.length < 2 || value.length > 200) {
       setValidationError(t("onb.schoolRequired"));
       return;
     }
-    await run(async () => {
-      let selectedId = schoolId;
-      if (!selectedId) {
-        const { data, error } = await supabase.rpc("register_onboarding_school", {
-          _name: value,
-        });
-        if (error) throw error;
-        selectedId = data;
-      }
-      await assertRpc(supabase.rpc("save_onboarding_school", { _school_id: selectedId }));
-      setSchoolId(selectedId);
-      await qc.invalidateQueries({ queryKey: ["me"] });
-      await qc.invalidateQueries({ queryKey: ["onboarding-school", selectedId] });
-      setStep("teacher-school-contact");
-    });
-  }
-
-  async function saveTeacherSchoolContacts() {
-    const phoneValue = schoolPhone.trim();
-    const emailValue = schoolEmail.trim();
-    if (phoneValue && !/^\+?[0-9][0-9 ()-]{6,23}$/.test(phoneValue)) {
-      setValidationError(t("onb.schoolPhoneInvalid"));
-      return;
-    }
-    if (emailValue && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailValue)) {
+    if (emailValue.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailValue)) {
       setValidationError(t("onb.schoolEmailInvalid"));
       return;
     }
+    if (phoneValue.length > 32 || !/^\+?[0-9][0-9 ()-]{6,23}$/.test(phoneValue)) {
+      setValidationError(t("onb.schoolPhoneInvalid"));
+      return;
+    }
     await run(async () => {
+      const { data: selectedId, error } = await supabase.rpc("register_onboarding_school", {
+        _name: value,
+      });
+      if (error) throw error;
+      await assertRpc(supabase.rpc("save_onboarding_school", { _school_id: selectedId }));
       await assertRpc(
         supabase.rpc("save_teacher_school_contacts", {
-          _phone: phoneValue || null,
-          _email: emailValue || null,
+          _phone: phoneValue,
+          _email: emailValue,
         }),
       );
       await qc.invalidateQueries({ queryKey: ["me"] });
@@ -477,16 +457,17 @@ function Onboarding() {
     if (step === "student-level") setStep("role");
     else if (step === "student-department") setStep("student-level");
     else if (step === "student-track") setStep("student-department");
-    else if (step === "student-complete") {
+    else if (step === "student-school") {
       setStep(
         c.levels.find((level) => level.id === levelId)?.requires_track
           ? "student-track"
           : "student-department",
       );
+    } else if (step === "student-complete") {
+      setStep("student-school");
     } else if (step === "teacher-department") setStep("role");
     else if (step === "teacher-school") setStep("teacher-department");
-    else if (step === "teacher-school-contact") setStep("teacher-school");
-    else if (step === "teacher-levels") setStep("teacher-school-contact");
+    else if (step === "teacher-levels") setStep("teacher-school");
     else if (step === "teacher-tracks") setStep("teacher-levels");
     else if (step === "teacher-phone") {
       setStep(requiredTeacherLevels.length ? "teacher-tracks" : "teacher-levels");
@@ -676,6 +657,53 @@ function Onboarding() {
       </Field>,
       saveStudentTrack,
     );
+  } else if (step === "student-school") {
+    content = formQuestion(
+      t("onb.studentSchoolQuestion"),
+      <div className="grid gap-4">
+        <Field label={t("onb.schoolName")} htmlFor="student-school-name">
+          <Input
+            id="student-school-name"
+            autoComplete="organization"
+            maxLength={200}
+            required
+            value={school}
+            placeholder={t("onb.teacherSchoolPlaceholder")}
+            onChange={(event) => {
+              setSchool(event.target.value);
+              setValidationError(null);
+            }}
+          />
+        </Field>
+        <Field
+          label={t("onb.schoolEmail")}
+          htmlFor="student-school-email"
+          hint={t("onb.schoolContactOptional")}
+        >
+          <Input
+            id="student-school-email"
+            type="email"
+            maxLength={254}
+            value={schoolEmail}
+            onChange={(event) => setSchoolEmail(event.target.value)}
+          />
+        </Field>
+        <Field
+          label={t("onb.schoolPhone")}
+          htmlFor="student-school-phone"
+          hint={t("onb.schoolContactOptional")}
+        >
+          <Input
+            id="student-school-phone"
+            type="tel"
+            maxLength={32}
+            value={schoolPhone}
+            onChange={(event) => setSchoolPhone(event.target.value)}
+          />
+        </Field>
+      </div>,
+      saveStudentSchoolInformation,
+    );
   } else if (step === "teacher-department") {
     content = formQuestion(
       t("onb.teacherGeographicalDepartmentQuestion"),
@@ -686,9 +714,7 @@ function Onboarding() {
           value={geographicalDepartment}
           onChange={(event) => {
             setGeographicalDepartment(event.target.value);
-            setSchoolId("");
             setSchool("");
-            setSchoolSearch("");
             setSchoolPhone("");
             setSchoolEmail("");
             setValidationError(null);
@@ -708,141 +734,56 @@ function Onboarding() {
     content = formQuestion(
       t("onb.teacherSchoolQuestion"),
       <div className="grid gap-4">
-        <Field label={t("onb.schoolSearch")} htmlFor="teacher-school-search">
+        <Field label={t("onb.schoolName")} htmlFor="teacher-school-name">
           <Input
-            id="teacher-school-search"
+            id="teacher-school-name"
             autoComplete="organization"
-            value={schoolSearch}
-            placeholder={t("onb.schoolSearchPlaceholder")}
+            maxLength={200}
+            required
+            value={school}
+            placeholder={t("onb.teacherSchoolPlaceholder")}
             onChange={(event) => {
-              setSchoolSearch(event.target.value);
-              setSchoolId("");
-              setSchool("");
-              setSchoolPhone("");
-              setSchoolEmail("");
+              setSchool(event.target.value);
               setValidationError(null);
             }}
           />
         </Field>
-        {schoolSearch.trim().length >= 2 && (
-          <div className="max-h-56 overflow-y-auto rounded-lg border" role="listbox">
-            {schoolResults.isLoading ? (
-              <p className="p-3 text-sm text-muted-foreground">{t("common.loading")}</p>
-            ) : schoolResults.error ? (
-              <p className="p-3 text-sm text-destructive" role="alert">
-                {t("onb.schoolSearchError")}
-              </p>
-            ) : schoolResults.data?.length ? (
-              schoolResults.data.map((candidate) => (
-                <button
-                  type="button"
-                  key={candidate.id}
-                  role="option"
-                  aria-selected={schoolId === candidate.id}
-                  className="flex w-full items-center justify-between border-b px-3 py-2 text-left text-sm last:border-0 hover:bg-muted"
-                  onClick={() => {
-                    setSchoolId(candidate.id);
-                    setSchool(candidate.name);
-                    setSchoolPhone(candidate.phone ?? "");
-                    setSchoolEmail(candidate.email ?? "");
-                    setValidationError(null);
-                  }}
-                >
-                  <span>{candidate.name}</span>
-                  {candidate.verification_status === "pending" && (
-                    <span className="text-xs text-muted-foreground">{t("onb.schoolPending")}</span>
-                  )}
-                </button>
-              ))
-            ) : (
-              <p className="p-3 text-sm text-muted-foreground">{t("onb.schoolNotFound")}</p>
-            )}
-          </div>
-        )}
-        {schoolId && (
-          <div className="flex items-center justify-between rounded-lg border border-brand/30 bg-brand/5 px-3 py-2 text-sm">
-            <span className="font-medium">{school}</span>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                setSchoolId("");
-                setSchool("");
-              }}
-            >
-              {t("onb.schoolChooseAnother")}
-            </Button>
-          </div>
-        )}
-        {!schoolId && (
-          <Field label={t("onb.schoolNotListed")} htmlFor="teacher-school-manual">
-            <Input
-              id="teacher-school-manual"
-              autoComplete="organization"
-              maxLength={200}
-              value={school}
-              placeholder={t("onb.teacherSchoolPlaceholder")}
-              onChange={(event) => {
-                setSchool(event.target.value);
-                setValidationError(null);
-              }}
-            />
-          </Field>
-        )}
-      </div>,
-      saveTeacherSchool,
-    );
-  } else if (step === "teacher-school-contact") {
-    content = formQuestion(
-      t("onb.schoolContactQuestion"),
-      <div className="grid gap-4">
-        {selectedSchool.isLoading ? (
-          <p className="text-sm text-muted-foreground">{t("common.loading")}</p>
-        ) : selectedSchool.error || !selectedSchool.data ? (
-          <p className="text-sm text-destructive" role="alert">
-            {t("onb.schoolSearchError")}
-          </p>
-        ) : (
-          <div className="rounded-lg border bg-muted/40 p-3 text-sm">
-            <p className="font-semibold">{selectedSchool.data.name}</p>
-            <p className="text-muted-foreground">
-              {selectedSchool.data.verification_status === "verified"
-                ? t("onb.schoolConfirmContactHint")
-                : t("onb.schoolPendingContactHint")}
-            </p>
-          </div>
-        )}
         <Field
           label={t("onb.schoolPhone")}
-          htmlFor="school-phone"
-          hint={t("onb.schoolContactOptional")}
+          htmlFor="teacher-school-phone"
+          hint={t("onb.schoolContactRequired")}
         >
           <Input
-            id="school-phone"
+            id="teacher-school-phone"
             type="tel"
-            autoComplete="tel"
             maxLength={32}
+            required
             value={schoolPhone}
-            onChange={(event) => setSchoolPhone(event.target.value)}
+            onChange={(event) => {
+              setSchoolPhone(event.target.value);
+              setValidationError(null);
+            }}
           />
         </Field>
         <Field
           label={t("onb.schoolEmail")}
-          htmlFor="school-email"
-          hint={t("onb.schoolContactOptional")}
+          htmlFor="teacher-school-email"
+          hint={t("onb.schoolContactRequired")}
         >
           <Input
-            id="school-email"
+            id="teacher-school-email"
             type="email"
-            autoComplete="email"
             maxLength={254}
+            required
             value={schoolEmail}
-            onChange={(event) => setSchoolEmail(event.target.value)}
+            onChange={(event) => {
+              setSchoolEmail(event.target.value);
+              setValidationError(null);
+            }}
           />
         </Field>
       </div>,
-      saveTeacherSchoolContacts,
+      saveTeacherSchool,
     );
   } else if (step === "teacher-levels") {
     content = formQuestion(
@@ -978,6 +919,8 @@ function getFlowSteps(
     geographical_department: string | null;
     school: string | null;
     school_id: string | null;
+    school_email: string | null;
+    school_phone: string | null;
     teacher_school_contacts_confirmed: boolean;
     phone: string | null;
   },
@@ -999,11 +942,18 @@ function getFlowSteps(
         steps.push("student-track");
       }
     }
+    if (!profile.school?.trim()) steps.push("student-school");
     return [...steps, "student-complete"];
   }
   if (!isHaitiDepartment(profile.geographical_department)) steps.push("teacher-department");
-  if (!profile.school_id) steps.push("teacher-school");
-  if (!profile.teacher_school_contacts_confirmed) steps.push("teacher-school-contact");
+  if (
+    !profile.school_id ||
+    !profile.teacher_school_contacts_confirmed ||
+    !profile.school_email?.trim() ||
+    !profile.school_phone?.trim()
+  ) {
+    steps.push("teacher-school");
+  }
   if (!teacherAssignments.length) steps.push("teacher-levels");
   else if (
     teacherAssignments.some(

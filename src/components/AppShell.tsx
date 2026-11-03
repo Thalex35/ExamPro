@@ -9,8 +9,6 @@ import {
   BookOpen,
   Bot,
   ChevronDown,
-  ChevronRight,
-  CircleHelp,
   FileCheck2,
   FileText,
   LayoutDashboard,
@@ -484,32 +482,6 @@ export function AppShell({
         </nav>
 
         <div className="mt-3 shrink-0 px-1">
-          <div className={cn("mb-3 flex justify-center", sidebarCollapsed && "lg:hidden")}>
-            <LanguageSwitch tone="light" />
-          </div>
-          <div className="border-t border-sidebar-border pt-3">
-            <a
-              href="/#contact"
-              title={sidebarCollapsed ? t("dash.help") : undefined}
-              className={cn(
-                "flex items-center gap-3 rounded-xl border border-sidebar-border bg-sidebar-accent/70 px-3 py-3 text-xs transition-colors duration-[var(--motion-fast-value)] hover:bg-sidebar-accent",
-                sidebarCollapsed && "lg:justify-center lg:px-0",
-              )}
-            >
-              <CircleHelp className="h-5 w-5 shrink-0 text-sidebar-primary" />
-              <span className={cn("min-w-0 flex-1", sidebarCollapsed && "lg:hidden")}>
-                <span className="block font-semibold text-sidebar-foreground">
-                  {t("dash.help")}
-                </span>
-                <span className="mt-0.5 block truncate text-[10px] text-sidebar-foreground/60">
-                  {t("dash.helpHint")}
-                </span>
-              </span>
-              <span className={cn("text-sidebar-foreground/50", sidebarCollapsed && "lg:hidden")}>
-                <ChevronRight className="h-4 w-4" />
-              </span>
-            </a>
-          </div>
           <div className="mt-3 border-t border-sidebar-border pt-3">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

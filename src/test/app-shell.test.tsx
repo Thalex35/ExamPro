@@ -99,8 +99,10 @@ describe("shared role-aware sidebar", () => {
     expect(navigationText).toContain("course.all");
     expect(navigationText).toContain("dash.examArchive");
     expect(navigationText).toContain("dash.comingSoon");
+    expect(navigationText).not.toContain("dash.help");
     expect(navigationText).not.toContain("nav.teacherExams");
     expect(navigationText).not.toContain("nav.adminUsers");
+    expect(screen.queryByText("Language")).not.toBeInTheDocument();
   });
 
   it("shows teacher navigation without student or administrator actions", () => {

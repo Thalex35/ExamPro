@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState, type FormEvent } from "react";
-import { LogOut } from "lucide-react";
+import { ChevronRight, CircleHelp, LogOut } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { catalogQuery, tracksFor } from "@/lib/catalog";
@@ -9,9 +9,10 @@ import { useMe } from "@/lib/session";
 import { useI18n, type Lang } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Field, NativeSelect } from "@/components/Field";
+import { Field } from "@/components/Field";
 import { StudentAcademicFields } from "@/components/StudentAcademicFields";
 import { Loading, PageHeader } from "@/components/States";
+import { LanguageSwitch } from "@/components/LanguageSwitch";
 
 export const Route = createFileRoute("/_authenticated/profile")({
   head: () => ({ meta: [{ title: "Mon profil — EXAMPRO" }] }),
@@ -105,16 +106,10 @@ function ProfilePage() {
         <Field label={t("onb.school")} htmlFor="p-school">
           <Input id="p-school" value={school} onChange={(e) => setSchool(e.target.value)} />
         </Field>
-        <Field label={t("lang.label")} htmlFor="p-lang">
-          <NativeSelect
-            id="p-lang"
-            value={language}
-            onChange={(e) => setLanguage(e.target.value as Lang)}
-          >
-            <option value="fr">Français</option>
-            <option value="ht">Kreyòl</option>
-          </NativeSelect>
-        </Field>
+        <div className="grid gap-2">
+          <span className="text-sm font-medium leading-none">{t("lang.label")}</span>
+          <LanguageSwitch value={language} onChange={setLanguage} />
+        </div>
         {me.isStudent && (
           <StudentAcademicFields
             levelName={level ? name(level) : ""}
@@ -134,6 +129,19 @@ function ProfilePage() {
           </Button>
         </div>
       </form>
+      <a
+        href="/#contact"
+        className="card-surface mt-5 flex items-center gap-4 p-4 transition-colors hover:border-brand/50 hover:bg-accent/30"
+      >
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand/10 text-deep">
+          <CircleHelp className="h-6 w-6" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block font-semibold text-heading">{t("dash.help")}</span>
+          <span className="mt-1 block text-sm text-muted-foreground">{t("dash.helpHint")}</span>
+        </span>
+        <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground" />
+      </a>
       <div className="mt-5 flex justify-end">
         <Button
           type="button"

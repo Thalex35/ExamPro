@@ -1,16 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
+import { BookOpen, FileText } from "lucide-react";
 import { useState } from "react";
-import { FilePlus, PenSquare } from "lucide-react";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
-import { catalogQuery } from "@/lib/catalog";
-import { openExamFile } from "@/lib/files";
-import { useMe } from "@/lib/session";
-import { useI18n } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
-import { StatusBadge } from "@/components/Field";
 import { Empty, ErrorState, Loading, PageHeader } from "@/components/States";
+import { supabase } from "@/integrations/supabase/client";
+import { useI18n } from "@/lib/i18n";
+import { useMe } from "@/lib/session";
 import { TeacherGate } from "@/components/TeacherGate";
 
 export const Route = createFileRoute("/_authenticated/teacher/")({
@@ -19,19 +16,19 @@ export const Route = createFileRoute("/_authenticated/teacher/")({
 });
 
 function TeacherHome() {
-  const { t, name, errMsg } = useI18n();
+  const { t, lang, errMsg } = useI18n();
   const { data: me } = useMe();
-  const qc = useQueryClient();
   const [resubmitting, setResubmitting] = useState(false);
-  const isVerified = me?.isAdmin || me?.profile?.teacher_verification_status === "approved";
-  const verificationStatus = me?.profile?.teacher_verification_status;
-  const cat = useQuery(catalogQuery);
   const uid = me?.user.id;
   const courses = useQuery({
     queryKey: ["my-courses", uid],
     enabled: !!uid,
     queryFn: async () => {
-      const { data, error } = await supabase.from("courses").select("id,title,status,subject_id,level_id,updated_at").eq("author_id", uid!).order("updated_at", { ascending: false });
+      const { data, error } = await supabase
+        .from("courses")
+        .select("id,title,status,updated_at,resource_type")
+        .eq("author_id", uid!)
+        .order("updated_at", { ascending: false });
       if (error) throw error;
       return data;
     },
@@ -40,28 +37,17 @@ function TeacherHome() {
     queryKey: ["my-exams", uid],
     enabled: !!uid,
     queryFn: async () => {
-      const { data, error } = await supabase.from("exams").select("id,title,status,subject_id,level_id,exam_year,file_path").eq("author_id", uid!).order("created_at", { ascending: false });
+      const { data, error } = await supabase
+        .from("exams")
+        .select("id,title,status,created_at,exam_year")
+        .eq("author_id", uid!)
+        .order("created_at", { ascending: false });
       if (error) throw error;
       return data;
     },
   });
+  const verificationStatus = me?.profile?.teacher_verification_status;
 
-  async function setExamStatus(id: string, status: "draft" | "published") {
-    const { error } = await supabase.from("exams").update({ status }).eq("id", id);
-    if (error) { toast.error(errMsg(error)); return; }
-    qc.invalidateQueries();
-  }
-  async function deleteExam(id: string, path: string) {
-    const { error } = await supabase.from("exams").delete().eq("id", id);
-    if (error) { toast.error(errMsg(error)); return; }
-    await supabase.storage.from("exams").remove([path]);
-    qc.invalidateQueries();
-  }
-  async function deleteCourse(id: string) {
-    const { error } = await supabase.from("courses").delete().eq("id", id);
-    if (error) { toast.error(errMsg(error)); return; }
-    qc.invalidateQueries();
-  }
   async function resubmitVerification() {
     if (resubmitting) return;
     setResubmitting(true);
@@ -69,7 +55,6 @@ function TeacherHome() {
       const { error } = await supabase.rpc("resubmit_teacher_verification");
       if (error) throw error;
       toast.success(t("common.saved"));
-      await qc.invalidateQueries({ queryKey: ["me"] });
     } catch (error) {
       toast.error(errMsg(error));
     } finally {
@@ -77,91 +62,138 @@ function TeacherHome() {
     }
   }
 
-  const c = cat.data;
-  const label = (subjectId: string, levelId: string) => {
-    if (!c) return "";
-    const s = c.subjects.find((x) => x.id === subjectId);
-    const l = c.levels.find((x) => x.id === levelId);
-    return [s && name(s), l && name(l)].filter(Boolean).join(" · ");
-  };
-
   return (
     <TeacherGate>
-      <PageHeader
-        title={t("teacher.title")}
-        action={
-          <div className="flex flex-wrap gap-2">
-            {isVerified && (
-              <Button asChild variant="hero"><Link to="/teacher/courses/new"><PenSquare /> {t("teacher.newCourse")}</Link></Button>
-            )}
-            {isVerified && (
-              <Button asChild variant="outline"><Link to="/teacher/exams/new"><FilePlus /> {t("teacher.newExam")}</Link></Button>
-            )}
-          </div>
-        }
-      />
-      {!isVerified && verificationStatus !== "rejected" && (
-        <p className="mb-6 rounded-lg border border-brand/30 bg-brand/5 p-4 text-sm text-muted-foreground" role="status">
+      <PageHeader title={t("teacher.title")} />
+      {verificationStatus === "pending" && (
+        <p
+          className="mb-6 rounded-lg border border-brand/30 bg-brand/5 p-4 text-sm text-muted-foreground"
+          role="status"
+        >
           {t("teacher.verificationPending")}
         </p>
       )}
       {verificationStatus === "rejected" && (
-        <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm" role="status">
+        <div
+          className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm"
+          role="status"
+        >
           <span>{me?.profile?.teacher_verification_note || t("teacher.verificationRejected")}</span>
           <Button size="sm" disabled={resubmitting} onClick={() => void resubmitVerification()}>
             {t("teacher.resubmitVerification")}
           </Button>
         </div>
       )}
-      <div className="grid gap-8 lg:grid-cols-2">
-        <section>
-          <h2 className="mb-3 text-lg font-bold">{t("teacher.myCourses")}</h2>
-          {courses.isLoading ? <Loading /> : courses.error ? <ErrorState error={courses.error} /> : !courses.data?.length ? <Empty>{t("teacher.empty")}</Empty> : (
-            <ul className="card-surface divide-y">
-              {courses.data.map((x) => (
-                <li key={x.id} className="flex flex-wrap items-center gap-3 p-4">
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate font-semibold text-heading">{x.title}</p>
-                    <p className="text-xs text-muted-foreground">{label(x.subject_id, x.level_id)}</p>
-                  </div>
-                  <StatusBadge status={x.status} label={t(`status.${x.status}`)} />
-                  {isVerified && (
-                    <>
-                      <Button asChild size="sm" variant="ghost"><Link to="/teacher/courses/$courseId" params={{ courseId: x.id }}>{t("common.edit")}</Link></Button>
-                      <Button size="sm" variant="ghost" className="text-destructive" onClick={() => confirm(t("common.delete") + " ?") && deleteCourse(x.id)}>{t("common.delete")}</Button>
-                    </>
-                  )}
-                </li>
-              ))}
-            </ul>
+      <section className="card-surface mb-6 p-5">
+        <h2 className="font-semibold text-heading">
+          {me?.profile?.full_name || me?.user.email || t("teacher.title")}
+        </h2>
+        <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-sm text-muted-foreground">
+          {me?.profile?.school && (
+            <span>
+              {t("admin.school")}: {me.profile.school}
+            </span>
           )}
-        </section>
-        <section>
-          <h2 className="mb-3 text-lg font-bold">{t("teacher.myExams")}</h2>
-          {exams.isLoading ? <Loading /> : exams.error ? <ErrorState error={exams.error} /> : !exams.data?.length ? <Empty>{t("teacher.empty")}</Empty> : (
-            <ul className="card-surface divide-y">
-              {exams.data.map((x) => (
-                <li key={x.id} className="flex flex-wrap items-center gap-3 p-4">
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate font-semibold text-heading">{x.title}</p>
-                    <p className="text-xs text-muted-foreground">{label(x.subject_id, x.level_id)} · {x.exam_year}</p>
-                  </div>
-                  <StatusBadge status={x.status} label={t(`status.${x.status}`)} />
-                  <Button size="sm" variant="ghost" onClick={() => openExamFile(x.file_path).catch((e) => toast.error(errMsg(e)))}>{t("common.open")}</Button>
-                  {isVerified && (
-                    <Button size="sm" variant="ghost" onClick={() => setExamStatus(x.id, x.status === "published" ? "draft" : "published")}>
-                      {x.status === "published" ? t("form.unpublish") : t("form.publish")}
-                    </Button>
-                  )}
-                  {isVerified && (
-                    <Button size="sm" variant="ghost" className="text-destructive" onClick={() => confirm(t("common.delete") + " ?") && deleteExam(x.id, x.file_path)}>{t("common.delete")}</Button>
-                  )}
-                </li>
-              ))}
-            </ul>
+          {me?.profile?.geographical_department && (
+            <span>
+              {t("admin.department")}: {me.profile.geographical_department}
+            </span>
           )}
-        </section>
-      </div>
+        </div>
+      </section>
+      {courses.isLoading || exams.isLoading ? (
+        <Loading />
+      ) : courses.error ? (
+        <ErrorState error={courses.error} onRetry={() => void courses.refetch()} />
+      ) : exams.error ? (
+        <ErrorState error={exams.error} onRetry={() => void exams.refetch()} />
+      ) : (
+        <>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Link
+              to="/teacher/exams"
+              className="card-surface flex items-center gap-4 p-5 transition-shadow hover:shadow-brand"
+            >
+              <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-accent text-deep">
+                <FileText className="h-5 w-5" />
+              </span>
+              <span>
+                <span className="block text-sm text-muted-foreground">{t("teacher.myExams")}</span>
+                <strong className="text-2xl text-heading">{exams.data?.length ?? 0}</strong>
+              </span>
+            </Link>
+            <Link
+              to="/teacher/courses"
+              className="card-surface flex items-center gap-4 p-5 transition-shadow hover:shadow-brand"
+            >
+              <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-accent text-deep">
+                <BookOpen className="h-5 w-5" />
+              </span>
+              <span>
+                <span className="block text-sm text-muted-foreground">
+                  {t("teacher.myCourses")}
+                </span>
+                <strong className="text-2xl text-heading">{courses.data?.length ?? 0}</strong>
+              </span>
+            </Link>
+          </div>
+          <section className="mt-8">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+              <h2 className="text-lg font-bold text-heading">{t("admin.recentContent")}</h2>
+              <div className="flex gap-2">
+                <Button asChild size="sm" variant="outline">
+                  <Link to="/teacher/exams">{t("teacher.myExams")}</Link>
+                </Button>
+                <Button asChild size="sm" variant="outline">
+                  <Link to="/teacher/courses">{t("teacher.myCourses")}</Link>
+                </Button>
+              </div>
+            </div>
+            {!(courses.data?.length || exams.data?.length) ? (
+              <Empty>{t("teacher.empty")}</Empty>
+            ) : (
+              <ul className="card-surface divide-y">
+                {[
+                  ...(courses.data ?? []).map((item) => ({
+                    id: `course-${item.id}`,
+                    title: item.title,
+                    status: item.status,
+                    date: item.updated_at,
+                    kind: "course" as const,
+                  })),
+                  ...(exams.data ?? []).map((item) => ({
+                    id: `exam-${item.id}`,
+                    title: item.title,
+                    status: item.status,
+                    date: item.created_at,
+                    kind: "exam" as const,
+                  })),
+                ]
+                  .sort((a, b) => b.date.localeCompare(a.date))
+                  .slice(0, 6)
+                  .map((item) => (
+                    <li key={item.id} className="flex flex-wrap items-center gap-3 p-4">
+                      {item.kind === "course" ? (
+                        <BookOpen className="h-4 w-4 text-deep" />
+                      ) : (
+                        <FileText className="h-4 w-4 text-deep" />
+                      )}
+                      <span className="min-w-0 flex-1 truncate font-medium text-heading">
+                        {item.title}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {new Date(item.date).toLocaleDateString(lang === "ht" ? "fr-HT" : "fr-FR")}
+                      </span>
+                      <span className="rounded-full bg-muted px-2.5 py-1 text-xs">
+                        {t(`status.${item.status}`)}
+                      </span>
+                    </li>
+                  ))}
+              </ul>
+            )}
+          </section>
+        </>
+      )}
     </TeacherGate>
   );
 }

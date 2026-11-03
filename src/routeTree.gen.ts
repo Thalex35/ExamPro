@@ -21,13 +21,23 @@ import { Route as AuthenticatedFavoritesRouteImport } from './routes/_authentica
 import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated/onboarding'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedProgressRouteImport } from './routes/_authenticated/progress'
+import { Route as AuthenticatedAdminUsersRouteImport } from './routes/_authenticated/admin.users'
 import { Route as AuthenticatedCoursesIndexRouteImport } from './routes/_authenticated/courses.index'
 import { Route as AuthenticatedCoursesCourseIdRouteImport } from './routes/_authenticated/courses.$courseId'
 import { Route as AuthenticatedSubjectsIndexRouteImport } from './routes/_authenticated/subjects.index'
 import { Route as AuthenticatedSubjectsSubjectIdRouteImport } from './routes/_authenticated/subjects.$subjectId'
 import { Route as AuthenticatedTeacherIndexRouteImport } from './routes/_authenticated/teacher.index'
+import { Route as AuthenticatedAdminCoursesIndexRouteImport } from './routes/_authenticated/admin.courses.index'
+import { Route as AuthenticatedAdminCoursesCourseIdRouteImport } from './routes/_authenticated/admin.courses.$courseId'
+import { Route as AuthenticatedAdminCoursesNewRouteImport } from './routes/_authenticated/admin.courses.new'
+import { Route as AuthenticatedAdminExamsIndexRouteImport } from './routes/_authenticated/admin.exams.index'
+import { Route as AuthenticatedAdminExamsExamIdRouteImport } from './routes/_authenticated/admin.exams.$examId'
+import { Route as AuthenticatedAdminExamsNewRouteImport } from './routes/_authenticated/admin.exams.new'
+import { Route as AuthenticatedTeacherCoursesIndexRouteImport } from './routes/_authenticated/teacher.courses.index'
 import { Route as AuthenticatedTeacherCoursesCourseIdRouteImport } from './routes/_authenticated/teacher.courses.$courseId'
 import { Route as AuthenticatedTeacherCoursesNewRouteImport } from './routes/_authenticated/teacher.courses.new'
+import { Route as AuthenticatedTeacherExamsIndexRouteImport } from './routes/_authenticated/teacher.exams.index'
+import { Route as AuthenticatedTeacherExamsExamIdRouteImport } from './routes/_authenticated/teacher.exams.$examId'
 import { Route as AuthenticatedTeacherExamsNewRouteImport } from './routes/_authenticated/teacher.exams.new'
 
 const IndexRoute = IndexRouteImport.update({
@@ -90,6 +100,11 @@ const AuthenticatedProgressRoute = AuthenticatedProgressRouteImport.update({
   path: '/progress',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAdminUsersRoute = AuthenticatedAdminUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => AuthenticatedAdminRoute,
+} as any)
 const AuthenticatedCoursesIndexRoute =
   AuthenticatedCoursesIndexRouteImport.update({
     id: '/courses/',
@@ -120,6 +135,48 @@ const AuthenticatedTeacherIndexRoute =
     path: '/teacher/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedAdminCoursesIndexRoute =
+  AuthenticatedAdminCoursesIndexRouteImport.update({
+    id: '/courses/',
+    path: '/courses/',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminCoursesCourseIdRoute =
+  AuthenticatedAdminCoursesCourseIdRouteImport.update({
+    id: '/courses/$courseId',
+    path: '/courses/$courseId',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminCoursesNewRoute =
+  AuthenticatedAdminCoursesNewRouteImport.update({
+    id: '/courses/new',
+    path: '/courses/new',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminExamsIndexRoute =
+  AuthenticatedAdminExamsIndexRouteImport.update({
+    id: '/exams/',
+    path: '/exams/',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminExamsExamIdRoute =
+  AuthenticatedAdminExamsExamIdRouteImport.update({
+    id: '/exams/$examId',
+    path: '/exams/$examId',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminExamsNewRoute =
+  AuthenticatedAdminExamsNewRouteImport.update({
+    id: '/exams/new',
+    path: '/exams/new',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedTeacherCoursesIndexRoute =
+  AuthenticatedTeacherCoursesIndexRouteImport.update({
+    id: '/teacher/courses/',
+    path: '/teacher/courses/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedTeacherCoursesCourseIdRoute =
   AuthenticatedTeacherCoursesCourseIdRouteImport.update({
     id: '/teacher/courses/$courseId',
@@ -130,6 +187,18 @@ const AuthenticatedTeacherCoursesNewRoute =
   AuthenticatedTeacherCoursesNewRouteImport.update({
     id: '/teacher/courses/new',
     path: '/teacher/courses/new',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedTeacherExamsIndexRoute =
+  AuthenticatedTeacherExamsIndexRouteImport.update({
+    id: '/teacher/exams/',
+    path: '/teacher/exams/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedTeacherExamsExamIdRoute =
+  AuthenticatedTeacherExamsExamIdRouteImport.update({
+    id: '/teacher/exams/$examId',
+    path: '/teacher/exams/$examId',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedTeacherExamsNewRoute =
@@ -143,7 +212,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/reset-password': typeof ResetPasswordRoute
-  '/admin': typeof AuthenticatedAdminRoute
+  '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/evaluations': typeof AuthenticatedEvaluationsRoute
   '/exams': typeof AuthenticatedExamsRoute
@@ -151,20 +220,30 @@ export interface FileRoutesByFullPath {
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/progress': typeof AuthenticatedProgressRoute
+  '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/courses/$courseId': typeof AuthenticatedCoursesCourseIdRoute
   '/subjects/$subjectId': typeof AuthenticatedSubjectsSubjectIdRoute
   '/courses/': typeof AuthenticatedCoursesIndexRoute
   '/subjects/': typeof AuthenticatedSubjectsIndexRoute
   '/teacher/': typeof AuthenticatedTeacherIndexRoute
+  '/admin/courses/$courseId': typeof AuthenticatedAdminCoursesCourseIdRoute
+  '/admin/courses/new': typeof AuthenticatedAdminCoursesNewRoute
+  '/admin/exams/$examId': typeof AuthenticatedAdminExamsExamIdRoute
+  '/admin/exams/new': typeof AuthenticatedAdminExamsNewRoute
   '/teacher/courses/$courseId': typeof AuthenticatedTeacherCoursesCourseIdRoute
   '/teacher/courses/new': typeof AuthenticatedTeacherCoursesNewRoute
+  '/teacher/exams/$examId': typeof AuthenticatedTeacherExamsExamIdRoute
   '/teacher/exams/new': typeof AuthenticatedTeacherExamsNewRoute
+  '/admin/courses/': typeof AuthenticatedAdminCoursesIndexRoute
+  '/admin/exams/': typeof AuthenticatedAdminExamsIndexRoute
+  '/teacher/courses/': typeof AuthenticatedTeacherCoursesIndexRoute
+  '/teacher/exams/': typeof AuthenticatedTeacherExamsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/reset-password': typeof ResetPasswordRoute
-  '/admin': typeof AuthenticatedAdminRoute
+  '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/evaluations': typeof AuthenticatedEvaluationsRoute
   '/exams': typeof AuthenticatedExamsRoute
@@ -172,14 +251,24 @@ export interface FileRoutesByTo {
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/progress': typeof AuthenticatedProgressRoute
+  '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/courses/$courseId': typeof AuthenticatedCoursesCourseIdRoute
   '/subjects/$subjectId': typeof AuthenticatedSubjectsSubjectIdRoute
   '/courses': typeof AuthenticatedCoursesIndexRoute
   '/subjects': typeof AuthenticatedSubjectsIndexRoute
   '/teacher': typeof AuthenticatedTeacherIndexRoute
+  '/admin/courses/$courseId': typeof AuthenticatedAdminCoursesCourseIdRoute
+  '/admin/courses/new': typeof AuthenticatedAdminCoursesNewRoute
+  '/admin/exams/$examId': typeof AuthenticatedAdminExamsExamIdRoute
+  '/admin/exams/new': typeof AuthenticatedAdminExamsNewRoute
   '/teacher/courses/$courseId': typeof AuthenticatedTeacherCoursesCourseIdRoute
   '/teacher/courses/new': typeof AuthenticatedTeacherCoursesNewRoute
+  '/teacher/exams/$examId': typeof AuthenticatedTeacherExamsExamIdRoute
   '/teacher/exams/new': typeof AuthenticatedTeacherExamsNewRoute
+  '/admin/courses': typeof AuthenticatedAdminCoursesIndexRoute
+  '/admin/exams': typeof AuthenticatedAdminExamsIndexRoute
+  '/teacher/courses': typeof AuthenticatedTeacherCoursesIndexRoute
+  '/teacher/exams': typeof AuthenticatedTeacherExamsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -187,7 +276,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/reset-password': typeof ResetPasswordRoute
-  '/_authenticated/admin': typeof AuthenticatedAdminRoute
+  '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/evaluations': typeof AuthenticatedEvaluationsRoute
   '/_authenticated/exams': typeof AuthenticatedExamsRoute
@@ -195,14 +284,24 @@ export interface FileRoutesById {
   '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/progress': typeof AuthenticatedProgressRoute
+  '/_authenticated/admin/users': typeof AuthenticatedAdminUsersRoute
   '/_authenticated/courses/$courseId': typeof AuthenticatedCoursesCourseIdRoute
   '/_authenticated/subjects/$subjectId': typeof AuthenticatedSubjectsSubjectIdRoute
   '/_authenticated/courses/': typeof AuthenticatedCoursesIndexRoute
   '/_authenticated/subjects/': typeof AuthenticatedSubjectsIndexRoute
   '/_authenticated/teacher/': typeof AuthenticatedTeacherIndexRoute
+  '/_authenticated/admin/courses/$courseId': typeof AuthenticatedAdminCoursesCourseIdRoute
+  '/_authenticated/admin/courses/new': typeof AuthenticatedAdminCoursesNewRoute
+  '/_authenticated/admin/exams/$examId': typeof AuthenticatedAdminExamsExamIdRoute
+  '/_authenticated/admin/exams/new': typeof AuthenticatedAdminExamsNewRoute
   '/_authenticated/teacher/courses/$courseId': typeof AuthenticatedTeacherCoursesCourseIdRoute
   '/_authenticated/teacher/courses/new': typeof AuthenticatedTeacherCoursesNewRoute
+  '/_authenticated/teacher/exams/$examId': typeof AuthenticatedTeacherExamsExamIdRoute
   '/_authenticated/teacher/exams/new': typeof AuthenticatedTeacherExamsNewRoute
+  '/_authenticated/admin/courses/': typeof AuthenticatedAdminCoursesIndexRoute
+  '/_authenticated/admin/exams/': typeof AuthenticatedAdminExamsIndexRoute
+  '/_authenticated/teacher/courses/': typeof AuthenticatedTeacherCoursesIndexRoute
+  '/_authenticated/teacher/exams/': typeof AuthenticatedTeacherExamsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -218,14 +317,24 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/profile'
     | '/progress'
+    | '/admin/users'
     | '/courses/$courseId'
     | '/subjects/$subjectId'
     | '/courses/'
     | '/subjects/'
     | '/teacher/'
+    | '/admin/courses/$courseId'
+    | '/admin/courses/new'
+    | '/admin/exams/$examId'
+    | '/admin/exams/new'
     | '/teacher/courses/$courseId'
     | '/teacher/courses/new'
+    | '/teacher/exams/$examId'
     | '/teacher/exams/new'
+    | '/admin/courses/'
+    | '/admin/exams/'
+    | '/teacher/courses/'
+    | '/teacher/exams/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -239,14 +348,24 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/profile'
     | '/progress'
+    | '/admin/users'
     | '/courses/$courseId'
     | '/subjects/$subjectId'
     | '/courses'
     | '/subjects'
     | '/teacher'
+    | '/admin/courses/$courseId'
+    | '/admin/courses/new'
+    | '/admin/exams/$examId'
+    | '/admin/exams/new'
     | '/teacher/courses/$courseId'
     | '/teacher/courses/new'
+    | '/teacher/exams/$examId'
     | '/teacher/exams/new'
+    | '/admin/courses'
+    | '/admin/exams'
+    | '/teacher/courses'
+    | '/teacher/exams'
   id:
     | '__root__'
     | '/'
@@ -261,14 +380,24 @@ export interface FileRouteTypes {
     | '/_authenticated/onboarding'
     | '/_authenticated/profile'
     | '/_authenticated/progress'
+    | '/_authenticated/admin/users'
     | '/_authenticated/courses/$courseId'
     | '/_authenticated/subjects/$subjectId'
     | '/_authenticated/courses/'
     | '/_authenticated/subjects/'
     | '/_authenticated/teacher/'
+    | '/_authenticated/admin/courses/$courseId'
+    | '/_authenticated/admin/courses/new'
+    | '/_authenticated/admin/exams/$examId'
+    | '/_authenticated/admin/exams/new'
     | '/_authenticated/teacher/courses/$courseId'
     | '/_authenticated/teacher/courses/new'
+    | '/_authenticated/teacher/exams/$examId'
     | '/_authenticated/teacher/exams/new'
+    | '/_authenticated/admin/courses/'
+    | '/_authenticated/admin/exams/'
+    | '/_authenticated/teacher/courses/'
+    | '/_authenticated/teacher/exams/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -364,6 +493,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProgressRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/admin/users': {
+      id: '/_authenticated/admin/users'
+      path: '/users'
+      fullPath: '/admin/users'
+      preLoaderRoute: typeof AuthenticatedAdminUsersRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/courses/': {
       id: '/_authenticated/courses/'
       path: '/courses'
@@ -399,6 +535,55 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTeacherIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/admin/courses/': {
+      id: '/_authenticated/admin/courses/'
+      path: '/courses'
+      fullPath: '/admin/courses/'
+      preLoaderRoute: typeof AuthenticatedAdminCoursesIndexRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/courses/$courseId': {
+      id: '/_authenticated/admin/courses/$courseId'
+      path: '/courses/$courseId'
+      fullPath: '/admin/courses/$courseId'
+      preLoaderRoute: typeof AuthenticatedAdminCoursesCourseIdRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/courses/new': {
+      id: '/_authenticated/admin/courses/new'
+      path: '/courses/new'
+      fullPath: '/admin/courses/new'
+      preLoaderRoute: typeof AuthenticatedAdminCoursesNewRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/exams/': {
+      id: '/_authenticated/admin/exams/'
+      path: '/exams'
+      fullPath: '/admin/exams/'
+      preLoaderRoute: typeof AuthenticatedAdminExamsIndexRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/exams/$examId': {
+      id: '/_authenticated/admin/exams/$examId'
+      path: '/exams/$examId'
+      fullPath: '/admin/exams/$examId'
+      preLoaderRoute: typeof AuthenticatedAdminExamsExamIdRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/exams/new': {
+      id: '/_authenticated/admin/exams/new'
+      path: '/exams/new'
+      fullPath: '/admin/exams/new'
+      preLoaderRoute: typeof AuthenticatedAdminExamsNewRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/teacher/courses/': {
+      id: '/_authenticated/teacher/courses/'
+      path: '/teacher/courses'
+      fullPath: '/teacher/courses/'
+      preLoaderRoute: typeof AuthenticatedTeacherCoursesIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/teacher/courses/$courseId': {
       id: '/_authenticated/teacher/courses/$courseId'
       path: '/teacher/courses/$courseId'
@@ -413,6 +598,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTeacherCoursesNewRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/teacher/exams/': {
+      id: '/_authenticated/teacher/exams/'
+      path: '/teacher/exams'
+      fullPath: '/teacher/exams/'
+      preLoaderRoute: typeof AuthenticatedTeacherExamsIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/teacher/exams/$examId': {
+      id: '/_authenticated/teacher/exams/$examId'
+      path: '/teacher/exams/$examId'
+      fullPath: '/teacher/exams/$examId'
+      preLoaderRoute: typeof AuthenticatedTeacherExamsExamIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/teacher/exams/new': {
       id: '/_authenticated/teacher/exams/new'
       path: '/teacher/exams/new'
@@ -423,8 +622,32 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AuthenticatedAdminRouteChildren {
+  AuthenticatedAdminUsersRoute: typeof AuthenticatedAdminUsersRoute
+  AuthenticatedAdminCoursesCourseIdRoute: typeof AuthenticatedAdminCoursesCourseIdRoute
+  AuthenticatedAdminCoursesNewRoute: typeof AuthenticatedAdminCoursesNewRoute
+  AuthenticatedAdminExamsExamIdRoute: typeof AuthenticatedAdminExamsExamIdRoute
+  AuthenticatedAdminExamsNewRoute: typeof AuthenticatedAdminExamsNewRoute
+  AuthenticatedAdminCoursesIndexRoute: typeof AuthenticatedAdminCoursesIndexRoute
+  AuthenticatedAdminExamsIndexRoute: typeof AuthenticatedAdminExamsIndexRoute
+}
+
+const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
+  AuthenticatedAdminUsersRoute: AuthenticatedAdminUsersRoute,
+  AuthenticatedAdminCoursesCourseIdRoute:
+    AuthenticatedAdminCoursesCourseIdRoute,
+  AuthenticatedAdminCoursesNewRoute: AuthenticatedAdminCoursesNewRoute,
+  AuthenticatedAdminExamsExamIdRoute: AuthenticatedAdminExamsExamIdRoute,
+  AuthenticatedAdminExamsNewRoute: AuthenticatedAdminExamsNewRoute,
+  AuthenticatedAdminCoursesIndexRoute: AuthenticatedAdminCoursesIndexRoute,
+  AuthenticatedAdminExamsIndexRoute: AuthenticatedAdminExamsIndexRoute,
+}
+
+const AuthenticatedAdminRouteWithChildren =
+  AuthenticatedAdminRoute._addFileChildren(AuthenticatedAdminRouteChildren)
+
 interface AuthenticatedRouteRouteChildren {
-  AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
+  AuthenticatedAdminRoute: typeof AuthenticatedAdminRouteWithChildren
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedEvaluationsRoute: typeof AuthenticatedEvaluationsRoute
   AuthenticatedExamsRoute: typeof AuthenticatedExamsRoute
@@ -439,11 +662,14 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedTeacherIndexRoute: typeof AuthenticatedTeacherIndexRoute
   AuthenticatedTeacherCoursesCourseIdRoute: typeof AuthenticatedTeacherCoursesCourseIdRoute
   AuthenticatedTeacherCoursesNewRoute: typeof AuthenticatedTeacherCoursesNewRoute
+  AuthenticatedTeacherExamsExamIdRoute: typeof AuthenticatedTeacherExamsExamIdRoute
   AuthenticatedTeacherExamsNewRoute: typeof AuthenticatedTeacherExamsNewRoute
+  AuthenticatedTeacherCoursesIndexRoute: typeof AuthenticatedTeacherCoursesIndexRoute
+  AuthenticatedTeacherExamsIndexRoute: typeof AuthenticatedTeacherExamsIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
-  AuthenticatedAdminRoute: AuthenticatedAdminRoute,
+  AuthenticatedAdminRoute: AuthenticatedAdminRouteWithChildren,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedEvaluationsRoute: AuthenticatedEvaluationsRoute,
   AuthenticatedExamsRoute: AuthenticatedExamsRoute,
@@ -459,7 +685,10 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedTeacherCoursesCourseIdRoute:
     AuthenticatedTeacherCoursesCourseIdRoute,
   AuthenticatedTeacherCoursesNewRoute: AuthenticatedTeacherCoursesNewRoute,
+  AuthenticatedTeacherExamsExamIdRoute: AuthenticatedTeacherExamsExamIdRoute,
   AuthenticatedTeacherExamsNewRoute: AuthenticatedTeacherExamsNewRoute,
+  AuthenticatedTeacherCoursesIndexRoute: AuthenticatedTeacherCoursesIndexRoute,
+  AuthenticatedTeacherExamsIndexRoute: AuthenticatedTeacherExamsIndexRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =

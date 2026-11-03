@@ -16,9 +16,7 @@ import {
   Menu,
   PanelLeftClose,
   PanelLeftOpen,
-  PenSquare,
   Search,
-  Shield,
   Sparkles,
   User,
   X,
@@ -45,6 +43,11 @@ type NavItem = {
     | "/progress"
     | "/teacher"
     | "/admin"
+    | "/teacher/exams"
+    | "/teacher/courses"
+    | "/admin/exams"
+    | "/admin/courses"
+    | "/admin/users"
     | "/profile";
   key: TKey;
   icon: typeof BookOpen;
@@ -244,14 +247,20 @@ export function AppShell({
   }
 
   const items: NavItem[] = [];
-  if (me?.isStudent || me?.isAdmin) {
+  if (me?.isAdmin) {
+    items.push({ to: "/admin", key: "nav.dashboard", icon: LayoutDashboard });
+    items.push({ to: "/admin/exams", key: "nav.adminExams", icon: FileText });
+    items.push({ to: "/admin/courses", key: "nav.adminCourses", icon: BookOpen });
+    items.push({ to: "/admin/users", key: "nav.adminUsers", icon: User });
+  } else if (me?.isTeacher) {
+    items.push({ to: "/teacher", key: "nav.dashboard", icon: LayoutDashboard });
+    items.push({ to: "/teacher/exams", key: "nav.teacherExams", icon: FileText });
+    items.push({ to: "/teacher/courses", key: "nav.teacherCourses", icon: BookOpen });
+  } else if (me?.isStudent) {
     items.push({ to: "/dashboard", key: "nav.dashboard", icon: LayoutDashboard });
     items.push({ to: "/subjects", key: "nav.subjects", icon: BookOpen });
     items.push({ to: "/exams", key: "nav.exams", icon: FileText });
   }
-  if (me?.isTeacher || me?.isAdmin)
-    items.push({ to: "/teacher", key: "nav.teacher", icon: PenSquare });
-  if (me?.isAdmin) items.push({ to: "/admin", key: "nav.admin", icon: Shield });
   items.push({ to: "/profile", key: "nav.profile", icon: User });
 
   const nav = (
@@ -261,6 +270,7 @@ export function AppShell({
           key={i.to}
           to={i.to}
           className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-sidebar-foreground/80 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+          activeOptions={{ exact: i.to === "/admin" || i.to === "/teacher" }}
           activeProps={{ className: "bg-sidebar-accent text-sidebar-accent-foreground" }}
         >
           <i.icon className="h-4 w-4" /> {t(i.key)}

@@ -14,13 +14,16 @@ export const Route = createFileRoute("/_authenticated")({
     const [profileResult, roleResult] = await Promise.all([
       supabase
         .from("profiles")
-        .select("onboarded,geographical_department")
+        .select("onboarded,geographical_department,is_active")
         .eq("id", user.id)
         .maybeSingle(),
       supabase.from("user_roles").select("role").eq("user_id", user.id),
     ]);
     if (profileResult.error) throw profileResult.error;
     if (roleResult.error) throw roleResult.error;
+    if (profileResult.data && !profileResult.data.is_active) {
+      throw redirect({ to: "/auth", search: { reason: "unauthorized" } });
+    }
 
     const roles = (roleResult.data ?? [])
       .map((entry) => entry.role)

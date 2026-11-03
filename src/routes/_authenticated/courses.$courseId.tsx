@@ -1,7 +1,11 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { Download, ExternalLink } from "lucide-react";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { catalogQuery } from "@/lib/catalog";
+import { openCourseFile } from "@/lib/files";
 import { useI18n } from "@/lib/i18n";
 import { Empty, ErrorState, Loading } from "@/components/States";
 import { Button } from "@/components/ui/button";
@@ -16,9 +20,10 @@ export const Route = createFileRoute("/_authenticated/courses/$courseId")({
 
 function CourseView() {
   const { courseId } = Route.useParams();
-  const { t, name, lang } = useI18n();
+  const { t, name, lang, errMsg } = useI18n();
   const { data: me } = useMe();
   const router = useRouter();
+  const [downloading, setDownloading] = useState(false);
   const cat = useQuery(catalogQuery);
   const q = useQuery({
     queryKey: ["course", courseId],
@@ -37,6 +42,7 @@ function CourseView() {
   if (!q.data) return <Empty>{t("404.title")}</Empty>;
   const x = q.data;
   const c = cat.data;
+  const filePath = x.file_path;
   const profile = me?.profile;
   const isOutOfScope =
     !!me?.isStudent &&
@@ -79,7 +85,33 @@ function CourseView() {
           {t("demo.warning")}
         </p>
       )}
-      <div className="card-surface mt-6 whitespace-pre-wrap p-6 leading-relaxed">{x.body}</div>
+      {x.resource_type === "external_link" && x.external_url ? (
+        <a
+          href={x.external_url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-6 inline-flex min-h-11 items-center gap-2 rounded-lg bg-primary px-4 py-2 font-semibold text-primary-foreground hover:opacity-90"
+        >
+          <ExternalLink className="h-4 w-4" />
+          {t("content.openLink")}
+        </a>
+      ) : x.resource_type === "document" && filePath ? (
+        <Button
+          className="mt-6"
+          disabled={downloading}
+          onClick={() => {
+            setDownloading(true);
+            void openCourseFile(filePath)
+              .catch((error: unknown) => toast.error(errMsg(error)))
+              .finally(() => setDownloading(false));
+          }}
+        >
+          <Download className="mr-2 h-4 w-4" />
+          {downloading ? t("common.loading") : t("content.download")}
+        </Button>
+      ) : (
+        <div className="card-surface mt-6 whitespace-pre-wrap p-6 leading-relaxed">{x.body}</div>
+      )}
     </article>
   );
 }

@@ -82,6 +82,9 @@ export type Database =
               | string
               | null
             created_at: string
+            external_url: string | null
+            file_name: string | null
+            file_path: string | null
             id: string
             is_demo: boolean
             language: string
@@ -89,6 +92,8 @@ export type Database =
             published_at:
               | string
               | null
+            resource_type: string
+            review_status: string
             status: Database["public"]["Enums"]["content_status"]
             subject_id: string
             summary:
@@ -110,6 +115,9 @@ export type Database =
               | string
               | null
             created_at?: string
+            external_url?: string | null
+            file_name?: string | null
+            file_path?: string | null
             id?: string
             is_demo?: boolean
             language?: string
@@ -117,6 +125,8 @@ export type Database =
             published_at?:
               | string
               | null
+            resource_type?: string
+            review_status?: string
             status?: Database["public"]["Enums"]["content_status"]
             subject_id: string
             summary?:
@@ -138,6 +148,9 @@ export type Database =
               | string
               | null
             created_at?: string
+            external_url?: string | null
+            file_name?: string | null
+            file_path?: string | null
             id?: string
             is_demo?: boolean
             language?: string
@@ -145,6 +158,8 @@ export type Database =
             published_at?:
               | string
               | null
+            resource_type?: string
+            review_status?: string
             status?: Database["public"]["Enums"]["content_status"]
             subject_id?: string
             summary?:
@@ -316,6 +331,7 @@ export type Database =
             session:
               | string
               | null
+            review_status: string
             status: Database["public"]["Enums"]["content_status"]
             subject_id: string
             title: string
@@ -347,6 +363,7 @@ export type Database =
             session?:
               | string
               | null
+            review_status?: string
             status?: Database["public"]["Enums"]["content_status"]
             subject_id: string
             title: string
@@ -378,6 +395,7 @@ export type Database =
             session?:
               | string
               | null
+            review_status?: string
             status?: Database["public"]["Enums"]["content_status"]
             subject_id?: string
             title?: string
@@ -509,6 +527,7 @@ export type Database =
               | string
               | null
             id: string
+            is_active: boolean
             language: string
             last_name:
               | string
@@ -557,6 +576,7 @@ export type Database =
               | string
               | null
             id: string
+            is_active?: boolean
             language?: string
             last_name?:
               | string
@@ -605,6 +625,7 @@ export type Database =
               | string
               | null
             id?: string
+            is_active?: boolean
             language?: string
             last_name?:
               | string
@@ -1152,6 +1173,34 @@ export type Database =
         ]: never
       }
       Functions: {
+        admin_list_users: {
+          Args: Record<
+            PropertyKey,
+            never
+          >
+          Returns: {
+            created_at: string
+            email: string
+            full_name: string | null
+            geographical_department: string | null
+            is_active: boolean
+            level_fr: string | null
+            level_ht: string | null
+            roles: Database["public"]["Enums"]["app_role"][]
+            school: string | null
+            teacher_verification_status: string | null
+            track_code: string | null
+            user_id: string
+          }[]
+        }
+        admin_set_user_active: {
+          Args: {
+            _active: boolean
+            _user_id: string
+          }
+          Returns: undefined
+        }
+
         admin_delete_demo_content: {
           Args: Record<
             PropertyKey,

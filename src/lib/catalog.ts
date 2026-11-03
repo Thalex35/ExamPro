@@ -51,6 +51,58 @@ export const catalogQuery = queryOptions({
 });
 
 export type Catalog = Awaited<ReturnType<NonNullable<typeof catalogQuery.queryFn>>>;
+export type TeacherContentPermissions = {
+  assignments: { level_id: string; track_id: string | null }[];
+  subjectIds: string[];
+};
+
+export const teacherContentPermissionsQuery = (teacherId: string) =>
+  queryOptions({
+    queryKey: ["teacher-content-permissions", teacherId],
+    queryFn: async () => {
+      const [assignments, subjects] = await Promise.all([
+        supabase
+          .from("teacher_academic_assignments")
+          .select("level_id,track_id")
+          .eq("teacher_id", teacherId),
+        supabase.from("teacher_subjects").select("subject_id").eq("teacher_id", teacherId),
+      ]);
+      if (assignments.error) throw assignments.error;
+      if (subjects.error) throw subjects.error;
+      return {
+        assignments: assignments.data,
+        subjectIds: subjects.data.map((entry) => entry.subject_id),
+      };
+    },
+  });
+
+export function catalogForTeacher(
+  catalog: Catalog,
+  permissions: TeacherContentPermissions,
+): Catalog {
+  const levelIds = new Set(permissions.assignments.map((entry) => entry.level_id));
+  const trackIds = new Set(
+    permissions.assignments.flatMap((entry) => (entry.track_id ? [entry.track_id] : [])),
+  );
+  const subjectIds = new Set(permissions.subjectIds);
+  const chapters = catalog.chapters.filter(
+    (chapter) => levelIds.has(chapter.level_id) && subjectIds.has(chapter.subject_id),
+  );
+  const chapterIds = new Set(chapters.map((chapter) => chapter.id));
+  return {
+    levels: catalog.levels.filter((level) => levelIds.has(level.id)),
+    tracks: catalog.tracks.filter((track) => trackIds.has(track.id)),
+    subjects: catalog.subjects.filter((subject) => subjectIds.has(subject.id)),
+    levelSubjects: catalog.levelSubjects.filter(
+      (link) => levelIds.has(link.level_id) && subjectIds.has(link.subject_id),
+    ),
+    trackSubjects: catalog.trackSubjects.filter(
+      (link) => trackIds.has(link.track_id) && subjectIds.has(link.subject_id),
+    ),
+    chapters,
+    topics: catalog.topics.filter((topic) => chapterIds.has(topic.chapter_id)),
+  };
+}
 
 /** Every subject linked to a student's level, with the selected filière's subjects first. */
 export function subjectsForLevel(

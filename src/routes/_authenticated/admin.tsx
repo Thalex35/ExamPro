@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useLocation } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
@@ -6,7 +6,6 @@ import { Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { catalogQuery, chaptersFor, topicsFor, type Catalog } from "@/lib/catalog";
 import { useI18n } from "@/lib/i18n";
-import { useMe, type Role } from "@/lib/session";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,34 +20,175 @@ export const Route = createFileRoute("/_authenticated/admin")({
 
 function Admin() {
   const { t } = useI18n();
+  const { pathname } = useLocation();
   return (
     <AdminGate>
-      <PageHeader title={t("admin.title")} />
-      <Tabs defaultValue="catalog">
-        <TabsList className="flex h-auto flex-wrap">
-          <TabsTrigger value="catalog">{t("admin.catalog")}</TabsTrigger>
-          <TabsTrigger value="users">{t("admin.users")}</TabsTrigger>
-          <TabsTrigger value="content">{t("admin.content")}</TabsTrigger>
-          <TabsTrigger value="schools">{t("admin.schools")}</TabsTrigger>
-          <TabsTrigger value="teacher-verification">{t("admin.teacherVerification")}</TabsTrigger>
-        </TabsList>
-        <TabsContent value="catalog" className="mt-6">
-          <CatalogAdmin />
-        </TabsContent>
-        <TabsContent value="users" className="mt-6">
-          <UsersAdmin />
-        </TabsContent>
-        <TabsContent value="content" className="mt-6">
-          <ContentAdmin />
-        </TabsContent>
-        <TabsContent value="schools" className="mt-6">
-          <SchoolReviewAdmin />
-        </TabsContent>
-        <TabsContent value="teacher-verification" className="mt-6">
-          <TeacherVerificationAdmin />
-        </TabsContent>
-      </Tabs>
+      {pathname === "/admin" ? (
+        <>
+          <PageHeader
+            title={t("admin.dashboardTitle")}
+            subtitle={t("admin.dashboardDescription")}
+          />
+          <AdminOverview />
+          <Tabs defaultValue="catalog">
+            <TabsList className="flex h-auto flex-wrap">
+              <TabsTrigger value="catalog">{t("admin.catalog")}</TabsTrigger>
+              <TabsTrigger value="content">{t("admin.content")}</TabsTrigger>
+              <TabsTrigger value="schools">{t("admin.schools")}</TabsTrigger>
+              <TabsTrigger value="teacher-verification">
+                {t("admin.teacherVerification")}
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent value="catalog" className="mt-6">
+              <CatalogAdmin />
+            </TabsContent>
+            <TabsContent value="content" className="mt-6">
+              <ContentAdmin />
+            </TabsContent>
+            <TabsContent value="schools" className="mt-6">
+              <SchoolReviewAdmin />
+            </TabsContent>
+            <TabsContent value="teacher-verification" className="mt-6">
+              <TeacherVerificationAdmin />
+            </TabsContent>
+          </Tabs>
+        </>
+      ) : (
+        <Outlet />
+      )}
     </AdminGate>
+  );
+}
+
+function AdminOverview() {
+  const { t, lang } = useI18n();
+  const q = useQuery({
+    queryKey: ["admin-overview"],
+    queryFn: async () => {
+      const [users, students, teachers, exams, courses, pending, recentCourses, recentExams] =
+        await Promise.all([
+          supabase.from("profiles").select("id", { count: "exact", head: true }),
+          supabase
+            .from("user_roles")
+            .select("user_id", { count: "exact", head: true })
+            .eq("role", "student"),
+          supabase
+            .from("user_roles")
+            .select("user_id", { count: "exact", head: true })
+            .eq("role", "teacher"),
+          supabase.from("exams").select("id", { count: "exact", head: true }),
+          supabase.from("courses").select("id", { count: "exact", head: true }),
+          supabase
+            .from("teacher_verification_requests")
+            .select("id", { count: "exact", head: true })
+            .eq("status", "pending"),
+          supabase
+            .from("courses")
+            .select("id,title,status,updated_at")
+            .order("updated_at", { ascending: false })
+            .limit(5),
+          supabase
+            .from("exams")
+            .select("id,title,status,created_at")
+            .order("created_at", { ascending: false })
+            .limit(5),
+        ]);
+      const failed = [users, students, teachers, exams, courses, pending].find(
+        (item) => item.error,
+      );
+      if (failed?.error) throw failed.error;
+      if (recentCourses.error) throw recentCourses.error;
+      if (recentExams.error) throw recentExams.error;
+      const recent = [
+        ...recentCourses.data.map((item) => ({
+          id: item.id,
+          title: item.title,
+          status: item.status,
+          date: item.updated_at,
+          kind: "course" as const,
+        })),
+        ...recentExams.data.map((item) => ({
+          id: item.id,
+          title: item.title,
+          status: item.status,
+          date: item.created_at,
+          kind: "exam" as const,
+        })),
+      ]
+        .sort((a, b) => b.date.localeCompare(a.date))
+        .slice(0, 6);
+      return {
+        users: users.count ?? 0,
+        students: students.count ?? 0,
+        teachers: teachers.count ?? 0,
+        exams: exams.count ?? 0,
+        courses: courses.count ?? 0,
+        pending: pending.count ?? 0,
+        recent,
+      };
+    },
+  });
+  if (q.isLoading) return <Loading />;
+  if (q.error || !q.data) return <ErrorState error={q.error} onRetry={() => void q.refetch()} />;
+  const cards = [
+    { label: t("admin.totalUsers"), value: q.data.users, to: "/admin/users" as const },
+    { label: t("admin.students"), value: q.data.students, to: "/admin/users" as const },
+    { label: t("admin.teachers"), value: q.data.teachers, to: "/admin/users" as const },
+    { label: t("admin.totalExams"), value: q.data.exams, to: "/admin/exams" as const },
+    { label: t("admin.totalCourses"), value: q.data.courses, to: "/admin/courses" as const },
+    { label: t("admin.pendingVerifications"), value: q.data.pending, to: "/admin" as const },
+  ];
+  return (
+    <div className="mb-8 space-y-6">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        {cards.map((card) => (
+          <Link
+            key={card.label}
+            to={card.to}
+            className="card-surface p-5 transition-shadow hover:shadow-brand"
+          >
+            <p className="text-sm text-muted-foreground">{card.label}</p>
+            <p className="mt-2 text-3xl font-bold text-heading">{card.value}</p>
+          </Link>
+        ))}
+      </div>
+      <section>
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-lg font-bold text-heading">{t("admin.recentContent")}</h2>
+          <div className="flex flex-wrap gap-2">
+            <Button asChild size="sm" variant="outline">
+              <Link to="/admin/exams">{t("admin.manageExams")}</Link>
+            </Button>
+            <Button asChild size="sm" variant="outline">
+              <Link to="/admin/courses">{t("admin.manageCourses")}</Link>
+            </Button>
+            <Button asChild size="sm" variant="outline">
+              <Link to="/admin/users">{t("admin.manageUsers")}</Link>
+            </Button>
+          </div>
+        </div>
+        {q.data.recent.length ? (
+          <ul className="card-surface divide-y">
+            {q.data.recent.map((item) => (
+              <li key={`${item.kind}-${item.id}`} className="flex flex-wrap items-center gap-3 p-4">
+                <span className="w-16 text-xs uppercase text-muted-foreground">
+                  {item.kind === "course" ? t("subj.courses") : t("nav.exams")}
+                </span>
+                <span className="min-w-0 flex-1 truncate font-medium text-heading">
+                  {item.title}
+                </span>
+                <time className="text-xs text-muted-foreground">
+                  {new Date(item.date).toLocaleDateString(lang === "ht" ? "fr-HT" : "fr-FR")}
+                </time>
+                <StatusBadge status={item.status} label={t(`status.${item.status}`)} />
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <Empty>{t("teacher.empty")}</Empty>
+        )}
+      </section>
+    </div>
   );
 }
 
@@ -338,80 +478,6 @@ function CatalogAdmin() {
   );
 }
 
-function UsersAdmin() {
-  const { t, errMsg } = useI18n();
-  const { data: me } = useMe();
-  const qc = useQueryClient();
-  const q = useQuery({
-    queryKey: ["admin-users"],
-    queryFn: async () => {
-      const [p, r] = await Promise.all([
-        supabase
-          .from("profiles")
-          .select("id,full_name,school,created_at")
-          .order("created_at", { ascending: false }),
-        supabase.from("user_roles").select("user_id,role"),
-      ]);
-      if (p.error) throw p.error;
-      if (r.error) throw r.error;
-      return p.data.map((u) => ({
-        ...u,
-        roles: r.data.filter((x) => x.user_id === u.id).map((x) => x.role as Role),
-      }));
-    },
-  });
-  async function toggle(userId: string, role: Role, enabled: boolean) {
-    const { error } = await supabase.rpc("admin_set_role", {
-      _user_id: userId,
-      _role: role,
-      _enabled: enabled,
-    });
-    if (error) {
-      toast.error(errMsg(error));
-      return;
-    }
-    qc.invalidateQueries({ queryKey: ["admin-users"] });
-  }
-  if (q.isLoading) return <Loading />;
-  if (q.error) return <ErrorState error={q.error} />;
-  return (
-    <div className="card-surface overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead className="border-b text-left text-muted-foreground">
-          <tr>
-            <th className="p-3">{t("auth.fullName")}</th>
-            <th className="p-3">{t("admin.roles")}</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y">
-          {q.data!.map((u) => (
-            <tr key={u.id}>
-              <td className="p-3 font-medium text-heading">
-                {u.full_name ?? "—"}
-                {u.id === me?.user.id ? " (vous)" : ""}
-              </td>
-              <td className="p-3">
-                <div className="flex flex-wrap gap-3">
-                  {(["student", "teacher", "admin"] as Role[]).map((r) => (
-                    <label key={r} className="flex items-center gap-1">
-                      <input
-                        type="checkbox"
-                        checked={u.roles.includes(r)}
-                        onChange={(e) => toggle(u.id, r, e.target.checked)}
-                      />{" "}
-                      {r}
-                    </label>
-                  ))}
-                </div>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
 function ContentAdmin() {
   const { t, errMsg } = useI18n();
   const qc = useQueryClient();
@@ -458,7 +524,10 @@ function ContentAdmin() {
     id: string,
     status: "draft" | "published" | "archived",
   ) {
-    const { error } = await supabase.from(kind).update({ status }).eq("id", id);
+    const { error } = await supabase
+      .from(kind)
+      .update({ status, review_status: "none" })
+      .eq("id", id);
     if (error) {
       toast.error(errMsg(error));
       return;

@@ -8,9 +8,9 @@ describe("role-specific route access", () => {
     expect(canAccessRolePath("/teacher/courses/new", [])).toBe(false);
   });
 
-  it("allows students and denies teachers from student learning pages", () => {
+  it("allows academic resource browsing but keeps student learning areas restricted", () => {
     expect(canAccessRolePath("/dashboard", ["student"])).toBe(true);
-    expect(canAccessRolePath("/courses/example", ["teacher"])).toBe(false);
+    expect(canAccessRolePath("/courses/example", ["teacher"])).toBe(true);
     expect(canAccessRolePath("/exams", ["teacher"])).toBe(false);
   });
 
@@ -20,8 +20,14 @@ describe("role-specific route access", () => {
     expect(canAccessRolePath("/admin", ["student"])).toBe(false);
   });
 
-  it("allows administrators and shared profile/authentication routes", () => {
-    expect(canAccessRolePath("/teacher/courses/new", ["admin"])).toBe(true);
+  it("keeps administrator and teacher workspaces separate", () => {
+    expect(canAccessRolePath("/teacher/courses/new", ["admin"])).toBe(false);
+    expect(canAccessRolePath("/admin/courses", ["teacher"])).toBe(false);
+    expect(canAccessRolePath("/teacher/exams", ["teacher"])).toBe(true);
+    expect(canAccessRolePath("/admin/users", ["admin"])).toBe(true);
+  });
+
+  it("allows shared profile and onboarding routes", () => {
     expect(canAccessRolePath("/profile", ["teacher"])).toBe(true);
     expect(canAccessRolePath("/onboarding", ["student"])).toBe(true);
   });

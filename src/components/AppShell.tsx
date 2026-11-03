@@ -8,6 +8,8 @@ import {
   Bookmark,
   BookOpen,
   Bot,
+  ChevronDown,
+  ChevronRight,
   CircleHelp,
   FileCheck2,
   FileText,
@@ -23,6 +25,14 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { trackFilter } from "@/lib/catalog";
 import { openExamFile } from "@/lib/files";
 import { formatExamYear } from "@/lib/exam-years";
@@ -225,13 +235,14 @@ export function AppShell({
   onboardingOnly?: boolean;
 }) {
   const { data: me, isLoading } = useMe();
-  const { t } = useI18n();
+  const { t, errMsg } = useI18n();
   const navigate = useNavigate();
   const location = useLocation();
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
 
   const needsOnboarding = !!me && !me.profile?.onboarded && !me.isAdmin;
   useEffect(() => {
@@ -241,9 +252,15 @@ export function AppShell({
   useEffect(() => setOpen(false), [location.pathname]);
 
   async function signOut() {
+    setSigningOut(true);
+    const { error } = await supabase.auth.signOut();
+    setSigningOut(false);
+    if (error) {
+      toast.error(errMsg(error));
+      return;
+    }
     await qc.cancelQueries();
     qc.clear();
-    await supabase.auth.signOut();
     navigate({ to: "/auth", replace: true });
   }
 
@@ -320,33 +337,39 @@ export function AppShell({
     >
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-40 flex h-screen w-64 flex-col overflow-y-auto bg-sidebar px-4 py-4 text-sidebar-foreground transition-[width,transform] duration-[var(--motion-fast-value)] lg:sticky lg:top-0 lg:translate-x-0",
+          "fixed inset-y-0 left-0 z-40 flex h-screen w-64 flex-col overflow-hidden bg-sidebar px-4 py-4 text-sidebar-foreground transition-[width,transform] duration-[var(--motion-fast-value)] lg:sticky lg:top-0 lg:h-screen lg:translate-x-0",
           sidebarCollapsed ? "lg:w-[76px]" : "lg:w-[var(--sidebar-width)]",
           open ? "translate-x-0" : "-translate-x-full",
         )}
       >
         <div
           className={cn(
-            "flex min-h-[58px] items-center justify-between border-b border-sidebar-border px-2 pb-3",
+            "relative flex min-h-[72px] shrink-0 items-center justify-between gap-2 border-b border-sidebar-border px-1 pb-4",
             sidebarCollapsed && "lg:justify-center",
           )}
         >
-          <Link to="/" aria-label="EXAMPRO" className="flex items-center">
-            {sidebarCollapsed ? (
-              <>
-                <BrandLogo className="h-8 lg:hidden" />
-                <BrandIcon className="hidden h-9 w-9 lg:block" />
-              </>
-            ) : (
-              <BrandLogo className="h-8" />
-            )}
+          <Link to="/" aria-label="EXAMPRO" className="flex min-w-0 items-center gap-2.5">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-sidebar-active ring-1 ring-sidebar-primary/20">
+              <BrandIcon className="h-10 w-10" />
+            </span>
+            <span className={cn("min-w-0", sidebarCollapsed && "lg:hidden")}>
+              <span className="block text-lg font-extrabold leading-none tracking-tight text-sidebar-foreground">
+                EXAM<span className="text-sidebar-primary">PRO</span>
+              </span>
+              <span className="mt-1 block truncate text-[9px] leading-tight text-sidebar-foreground/65">
+                {t("brand.tagline")}
+              </span>
+            </span>
           </Link>
           <button
             type="button"
             onClick={() => setSidebarCollapsed((collapsed) => !collapsed)}
             aria-label={sidebarCollapsed ? t("dash.expandSidebar") : t("dash.collapseSidebar")}
             title={sidebarCollapsed ? t("dash.expandSidebar") : t("dash.collapseSidebar")}
-            className="hidden rounded-md p-1.5 transition-colors duration-[var(--motion-fast-value)] hover:bg-sidebar-accent lg:inline-flex"
+            className={cn(
+              "hidden rounded-md p-1.5 transition-colors duration-[var(--motion-fast-value)] hover:bg-sidebar-accent lg:inline-flex",
+              sidebarCollapsed && "lg:absolute lg:right-0 lg:top-0",
+            )}
           >
             {sidebarCollapsed ? (
               <PanelLeftOpen className="h-4 w-4" />
@@ -364,30 +387,13 @@ export function AppShell({
           </button>
         </div>
 
-        <Link
-          to="/profile"
-          title={sidebarCollapsed ? fullName : undefined}
-          className={cn(
-            "mt-4 flex min-w-0 items-center gap-3 rounded-xl px-2 py-2 transition-colors duration-[var(--motion-fast-value)] hover:bg-sidebar-accent",
-            sidebarCollapsed && "lg:justify-center lg:px-0",
-            location.pathname === "/profile" && "bg-sidebar-accent",
-          )}
+        <nav
+          aria-label={t("dash.workspace")}
+          className="min-h-0 flex-1 overflow-y-auto overscroll-contain pt-5"
         >
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand/20 text-xs font-bold text-sidebar-primary">
-            {initials || <User className="h-4 w-4" />}
-          </span>
-          <span className={cn("min-w-0 flex-1", sidebarCollapsed && "lg:hidden")}>
-            <span className="block truncate text-xs font-semibold">{fullName}</span>
-            <span className="mt-0.5 block truncate text-[10px] text-sidebar-foreground/60">
-              {roleLabel}
-            </span>
-          </span>
-        </Link>
-
-        <nav aria-label={t("dash.workspace")} className="mt-5 flex-1">
           <p
             className={cn(
-              "mb-2 px-2 text-[10px] font-bold uppercase tracking-[0.14em] text-sidebar-foreground/50",
+              "mb-3 px-2 text-[10px] font-bold uppercase tracking-[0.2em] text-sidebar-foreground/55",
               sidebarCollapsed && "lg:hidden",
             )}
           >
@@ -401,16 +407,18 @@ export function AppShell({
                   key={to}
                   to={to}
                   className={cn(
-                    "flex items-center gap-3 rounded-lg border-l-[3px] border-transparent px-2 py-2.5 text-xs font-semibold text-sidebar-foreground/70 transition-colors duration-[var(--motion-fast-value)] hover:bg-sidebar-accent hover:text-sidebar-foreground",
+                    "relative flex items-center gap-3 rounded-xl border border-transparent px-3 py-3 text-xs font-semibold text-sidebar-foreground/75 transition-colors duration-[var(--motion-fast-value)] hover:bg-sidebar-accent hover:text-sidebar-foreground",
                     sidebarCollapsed && "lg:justify-center lg:px-0",
-                    isActive && "border-l-brand bg-sidebar-accent text-sidebar-foreground",
+                    isActive &&
+                      "border-sidebar-primary/20 bg-sidebar-active text-sidebar-foreground shadow-sm before:absolute before:bottom-2 before:left-0 before:top-2 before:w-1 before:rounded-r-full before:bg-sidebar-primary before:content-['']",
                   )}
                   title={sidebarCollapsed ? t(key) : undefined}
                   activeOptions={{
                     exact: to === "/admin" || to === "/teacher" || to === "/dashboard",
                   }}
                   activeProps={{
-                    className: "border-l-brand bg-sidebar-accent text-sidebar-foreground",
+                    className:
+                      "border-sidebar-primary/20 bg-sidebar-active text-sidebar-foreground shadow-sm before:absolute before:bottom-2 before:left-0 before:top-2 before:w-1 before:rounded-r-full before:bg-sidebar-primary before:content-['']",
                   }}
                 >
                   <Icon className={cn("h-4 w-4 shrink-0", isActive && "text-sidebar-primary")} />
@@ -424,7 +432,7 @@ export function AppShell({
             <>
               <p
                 className={cn(
-                  "mb-2 mt-7 px-2 text-[10px] font-bold uppercase tracking-[0.14em] text-sidebar-foreground/50",
+                  "mb-2 mt-7 px-2 text-[10px] font-bold uppercase tracking-[0.2em] text-sidebar-foreground/50",
                   sidebarCollapsed && "lg:hidden",
                 )}
               >
@@ -435,7 +443,7 @@ export function AppShell({
                   aria-disabled="true"
                   title={sidebarCollapsed ? t("dash.aiTutor") : undefined}
                   className={cn(
-                    "flex cursor-not-allowed items-center gap-3 rounded-lg px-2 py-2.5 text-xs font-semibold text-sidebar-foreground/50",
+                    "flex cursor-not-allowed items-center gap-3 rounded-xl px-3 py-3 text-xs font-semibold text-sidebar-foreground/50",
                     sidebarCollapsed && "lg:justify-center lg:px-0",
                   )}
                 >
@@ -456,7 +464,7 @@ export function AppShell({
                   aria-disabled="true"
                   title={sidebarCollapsed ? t("dash.premium") : undefined}
                   className={cn(
-                    "flex cursor-not-allowed items-center gap-3 rounded-lg px-2 py-2.5 text-xs font-semibold text-sidebar-foreground/50",
+                    "flex cursor-not-allowed items-center gap-3 rounded-xl px-3 py-3 text-xs font-semibold text-sidebar-foreground/50",
                     sidebarCollapsed && "lg:justify-center lg:px-0",
                   )}
                 >
@@ -466,52 +474,109 @@ export function AppShell({
               </div>
             </>
           )}
-        </nav>
-
-        <div className="mt-5 border-t border-sidebar-border pt-3">
-          <a
-            href="/#contact"
-            title={sidebarCollapsed ? t("dash.help") : undefined}
-            className={cn(
-              "flex items-center gap-3 rounded-lg border border-sidebar-border bg-sidebar-accent/60 px-3 py-3 text-xs transition-colors duration-[var(--motion-fast-value)] hover:bg-sidebar-accent",
-              sidebarCollapsed && "lg:justify-center lg:px-0",
-            )}
-          >
-            <CircleHelp className="h-5 w-5 shrink-0 text-sidebar-primary" />
-            <span className={cn("min-w-0 flex-1", sidebarCollapsed && "lg:hidden")}>
-              <span className="block font-semibold text-sidebar-foreground">{t("dash.help")}</span>
-              <span className="mt-0.5 block truncate text-[10px] text-sidebar-foreground/60">
-                {t("dash.helpHint")}
-              </span>
-            </span>
-            <span className={cn("text-sidebar-foreground/50", sidebarCollapsed && "lg:hidden")}>
-              ›
-            </span>
-          </a>
-          <div className="mt-3 flex flex-col gap-2">
-            <div className={sidebarCollapsed ? "lg:hidden" : ""}>
-              <LanguageSwitch tone="light" />
-            </div>
-            <button
-              type="button"
-              onClick={signOut}
-              title={sidebarCollapsed ? t("nav.logout") : undefined}
-              className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-sidebar-foreground/80 transition-colors duration-[var(--motion-fast-value)] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                sidebarCollapsed && "lg:justify-center lg:px-0",
-              )}
-            >
-              <LogOut className="h-4 w-4" />
-              <span className={sidebarCollapsed ? "lg:hidden" : ""}>{t("nav.logout")}</span>
-            </button>
-          </div>
           {isStudent && !sidebarCollapsed && (
-            <p className="mt-3 text-center text-[9px] text-sidebar-foreground/50">
+            <p className="mb-2 mt-4 px-2 text-center text-[9px] text-sidebar-foreground/50">
               <span className="font-bold text-sidebar-primary">MVP</span>
               {" · "}
               {t("dash.sidebarFooter")}
             </p>
           )}
+        </nav>
+
+        <div className="mt-3 shrink-0 px-1">
+          <div className={cn("mb-3 flex justify-center", sidebarCollapsed && "lg:hidden")}>
+            <LanguageSwitch tone="light" />
+          </div>
+          <div className="border-t border-sidebar-border pt-3">
+            <a
+              href="/#contact"
+              title={sidebarCollapsed ? t("dash.help") : undefined}
+              className={cn(
+                "flex items-center gap-3 rounded-xl border border-sidebar-border bg-sidebar-accent/70 px-3 py-3 text-xs transition-colors duration-[var(--motion-fast-value)] hover:bg-sidebar-accent",
+                sidebarCollapsed && "lg:justify-center lg:px-0",
+              )}
+            >
+              <CircleHelp className="h-5 w-5 shrink-0 text-sidebar-primary" />
+              <span className={cn("min-w-0 flex-1", sidebarCollapsed && "lg:hidden")}>
+                <span className="block font-semibold text-sidebar-foreground">
+                  {t("dash.help")}
+                </span>
+                <span className="mt-0.5 block truncate text-[10px] text-sidebar-foreground/60">
+                  {t("dash.helpHint")}
+                </span>
+              </span>
+              <span className={cn("text-sidebar-foreground/50", sidebarCollapsed && "lg:hidden")}>
+                <ChevronRight className="h-4 w-4" />
+              </span>
+            </a>
+          </div>
+          <div className="mt-3 border-t border-sidebar-border pt-3">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  disabled={signingOut}
+                  aria-label={fullName}
+                  title={sidebarCollapsed ? fullName : undefined}
+                  className={cn(
+                    "flex w-full min-w-0 items-center gap-3 rounded-xl px-2 py-2 text-left transition-colors duration-[var(--motion-fast-value)] hover:bg-sidebar-accent disabled:opacity-60",
+                    sidebarCollapsed && "lg:justify-center lg:px-0",
+                  )}
+                >
+                  <span className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand/20 text-xs font-bold text-sidebar-primary ring-1 ring-sidebar-primary/25">
+                    {initials || <User className="h-4 w-4" />}
+                    <span
+                      aria-hidden="true"
+                      className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-sidebar bg-success"
+                    />
+                  </span>
+                  <span className={cn("min-w-0 flex-1", sidebarCollapsed && "lg:hidden")}>
+                    <span className="block truncate text-xs font-semibold">{fullName}</span>
+                    <span className="mt-0.5 block truncate text-[10px] text-sidebar-foreground/60">
+                      {roleLabel}
+                    </span>
+                  </span>
+                  <ChevronDown
+                    className={cn(
+                      "h-4 w-4 shrink-0 text-sidebar-foreground/65",
+                      sidebarCollapsed && "lg:hidden",
+                    )}
+                  />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                side="top"
+                align={sidebarCollapsed ? "center" : "start"}
+                sideOffset={8}
+                className="z-50 w-56 border-sidebar-border bg-sidebar text-sidebar-foreground"
+              >
+                <DropdownMenuLabel className="px-3 py-2">
+                  <span className="block truncate text-xs font-semibold">{fullName}</span>
+                  <span className="mt-0.5 block truncate text-[10px] font-normal text-sidebar-foreground/60">
+                    {roleLabel}
+                  </span>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator className="bg-sidebar-border" />
+                <DropdownMenuItem
+                  asChild
+                  className="cursor-pointer focus:bg-sidebar-accent focus:text-sidebar-foreground"
+                >
+                  <Link to="/profile">
+                    <User className="text-sidebar-primary" />
+                    {t("profile.title")}
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  disabled={signingOut}
+                  onSelect={() => void signOut()}
+                  className="cursor-pointer text-red-300 focus:bg-red-500/10 focus:text-red-200"
+                >
+                  <LogOut />
+                  {t("nav.logout")}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
       </aside>
 

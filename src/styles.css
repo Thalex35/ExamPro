@@ -44,6 +44,7 @@
   --color-ring-offset-background: var(--background);
   --radius-control: var(--control-radius-value);
   --color-sidebar: var(--sidebar);
+  --color-sidebar-active: var(--sidebar-active);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-primary: var(--sidebar-primary);
   --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
@@ -94,6 +95,7 @@
   --shadow-card-value:
     0 1px 2px oklch(0.24 0.06 257 / 0.06), 0 8px 24px -16px oklch(0.24 0.06 257 / 0.18);
   --sidebar: oklch(0.24 0.06 257);
+  --sidebar-active: oklch(0.34 0.1 255);
   --sidebar-foreground: oklch(0.95 0.01 250);
   --sidebar-primary: oklch(0.74 0.13 207);
   --sidebar-primary-foreground: oklch(0.24 0.06 257);

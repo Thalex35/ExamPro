@@ -42,6 +42,7 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
   --color-ring-offset-background: var(--background);
+  --radius-control: var(--control-radius-value);
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-primary: var(--sidebar-primary);
@@ -56,6 +57,13 @@
 
 :root {
   --radius: 0.75rem;
+  --control-radius-value: 0.625rem;
+  --control-height-value: 2.25rem;
+  --sidebar-width: 16.25rem;
+  --motion-fast-value: 160ms;
+  --motion-standard-value: 200ms;
+  --space-panel-value: 1.5rem;
+  --font-weight-body-value: 400;
   --background: oklch(0.982 0.005 250); /* #F7F9FC */
   --foreground: oklch(0.372 0.044 257); /* #334155 */
   --heading: oklch(0.24 0.06 257); /* #0B1F3A */
@@ -83,7 +91,8 @@
   --input: oklch(0.9 0.015 255);
   --ring: oklch(0.74 0.13 207);
   --shadow-brand-value: 0 10px 30px -12px oklch(0.74 0.13 207 / 0.55);
-  --shadow-card-value: 0 1px 2px oklch(0.24 0.06 257 / 0.06), 0 8px 24px -16px oklch(0.24 0.06 257 / 0.18);
+  --shadow-card-value:
+    0 1px 2px oklch(0.24 0.06 257 / 0.06), 0 8px 24px -16px oklch(0.24 0.06 257 / 0.18);
   --sidebar: oklch(0.24 0.06 257);
   --sidebar-foreground: oklch(0.95 0.01 250);
   --sidebar-primary: oklch(0.74 0.13 207);
@@ -104,9 +113,13 @@
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
+    font-weight: var(--font-weight-body-value);
     -webkit-font-smoothing: antialiased;
   }
-  h1, h2, h3, h4 {
+  h1,
+  h2,
+  h3,
+  h4 {
     color: var(--color-heading);
     letter-spacing: -0.02em;
   }
@@ -124,7 +137,7 @@
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: var(--radius-xl, 1rem);
-  box-shadow: var(--shadow-card-value);
+  box-shadow: var(--shadow-card);
 }
 
 .public-site {
@@ -236,8 +249,7 @@
   overflow: hidden;
   background:
     radial-gradient(52rem 36rem at 88% 5%, rgb(10 189 208 / 22%), transparent 62%),
-    radial-gradient(40rem 32rem at 4% 100%, rgb(7 89 133 / 36%), transparent 65%),
-    #0b1f3a;
+    radial-gradient(40rem 32rem at 4% 100%, rgb(7 89 133 / 36%), transparent 65%), #0b1f3a;
   color: white;
 }
 
@@ -569,9 +581,15 @@
   background: #eef2f6;
 }
 
-.public-preview-lines span:nth-child(1) { width: 92%; }
-.public-preview-lines span:nth-child(2) { width: 73%; }
-.public-preview-lines span:nth-child(3) { width: 84%; }
+.public-preview-lines span:nth-child(1) {
+  width: 92%;
+}
+.public-preview-lines span:nth-child(2) {
+  width: 73%;
+}
+.public-preview-lines span:nth-child(3) {
+  width: 84%;
+}
 
 .public-float-card {
   position: absolute;
@@ -682,7 +700,10 @@
   border-radius: 17px;
   background: #fff;
   box-shadow: 0 10px 28px rgb(11 31 58 / 5%);
-  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    border-color 180ms ease;
 }
 
 .public-feature-card:hover {
@@ -705,10 +726,22 @@
   height: 22px;
 }
 
-.public-feature-icon.blue { background: #e9f1ff; color: #2563a6; }
-.public-feature-icon.cyan { background: #e1f8fa; color: #07889b; }
-.public-feature-icon.green { background: #e8f7ef; color: #178052; }
-.public-feature-icon.orange { background: #fff2e5; color: #bd6a20; }
+.public-feature-icon.blue {
+  background: #e9f1ff;
+  color: #2563a6;
+}
+.public-feature-icon.cyan {
+  background: #e1f8fa;
+  color: #07889b;
+}
+.public-feature-icon.green {
+  background: #e8f7ef;
+  color: #178052;
+}
+.public-feature-icon.orange {
+  background: #fff2e5;
+  color: #bd6a20;
+}
 
 .public-feature-card h3,
 .public-audience-card h3 {
@@ -1035,8 +1068,7 @@
   border: 1px solid rgb(8 189 208 / 20%);
   border-radius: 22px;
   background:
-    radial-gradient(35rem 18rem at 85% 0%, rgb(8 189 208 / 15%), transparent 70%),
-    #0b1f3a;
+    radial-gradient(35rem 18rem at 85% 0%, rgb(8 189 208 / 15%), transparent 70%), #0b1f3a;
   box-shadow: 0 20px 50px rgb(11 31 58 / 15%);
 }
 
@@ -1131,9 +1163,7 @@
 
 .public-contact-section {
   padding: 88px 24px;
-  background:
-    radial-gradient(34rem 28rem at 88% 0%, rgb(8 189 208 / 8%), transparent 72%),
-    #f5f8fb;
+  background: radial-gradient(34rem 28rem at 88% 0%, rgb(8 189 208 / 8%), transparent 72%), #f5f8fb;
 }
 
 .public-contact-card {
@@ -1202,7 +1232,10 @@
   font: inherit;
   font-size: 0.9rem;
   outline: none;
-  transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    background 160ms ease;
 }
 
 .public-contact-field input {

@@ -2,7 +2,17 @@ import type { ReactNode, SelectHTMLAttributes } from "react";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 
-export function Field({ label, htmlFor, hint, children }: { label: string; htmlFor: string; hint?: string; children: ReactNode }) {
+export function Field({
+  label,
+  htmlFor,
+  hint,
+  children,
+}: {
+  label: string;
+  htmlFor: string;
+  hint?: string;
+  children: ReactNode;
+}) {
   return (
     <div className="grid gap-1.5">
       <Label htmlFor={htmlFor}>{label}</Label>
@@ -17,7 +27,7 @@ export function NativeSelect({ className, ...props }: SelectHTMLAttributes<HTMLS
     <select
       {...props}
       className={cn(
-        "h-9 w-full rounded-md border border-input bg-card px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50",
+        "h-[var(--control-height-value)] w-full rounded-control border border-input bg-card px-3 text-sm shadow-sm transition-colors duration-[var(--motion-fast-value)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
         className,
       )}
     />
@@ -29,7 +39,11 @@ export function StatusBadge({ status, label }: { status: string; label: string }
     <span
       className={cn(
         "inline-flex rounded-full px-2 py-0.5 text-xs font-semibold",
-        status === "published" ? "bg-success/10 text-success" : status === "archived" ? "bg-muted text-muted-foreground" : "bg-warning/10 text-warning",
+        status === "published"
+          ? "bg-success/10 text-success"
+          : status === "archived"
+            ? "bg-muted text-muted-foreground"
+            : "bg-warning/10 text-warning",
       )}
     >
       {label}

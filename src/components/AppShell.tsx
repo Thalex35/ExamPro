@@ -230,7 +230,7 @@ export function AppShell({
   const location = useLocation();
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
-  const [studentSidebarCollapsed, setStudentSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
 
   const needsOnboarding = !!me && !me.profile?.onboarded && !me.isAdmin;
@@ -247,6 +247,7 @@ export function AppShell({
     navigate({ to: "/auth", replace: true });
   }
 
+  const isStudent = !!me?.isStudent && !me.isTeacher && !me.isAdmin;
   const items: NavItem[] = [];
   if (me?.isAdmin) {
     items.push({ to: "/admin", key: "nav.dashboard", icon: LayoutDashboard });
@@ -260,26 +261,12 @@ export function AppShell({
   } else if (me?.isStudent) {
     items.push({ to: "/dashboard", key: "nav.dashboard", icon: LayoutDashboard });
     items.push({ to: "/subjects", key: "nav.subjects", icon: BookOpen });
-    items.push({ to: "/exams", key: "nav.exams", icon: FileText });
+    items.push({ to: "/courses", key: "course.all", icon: BookOpen });
+    items.push({ to: "/exams", key: "dash.examArchive", icon: Archive });
+    items.push({ to: "/favorites", key: "dash.favorites", icon: Bookmark });
+    items.push({ to: "/evaluations", key: "dash.evaluations", icon: FileCheck2 });
+    items.push({ to: "/progress", key: "dash.performance", icon: BarChart3 });
   }
-  items.push({ to: "/profile", key: "nav.profile", icon: User });
-
-  const nav = (
-    <nav className="flex flex-col gap-1">
-      {items.map((i) => (
-        <Link
-          key={i.to}
-          to={i.to}
-          className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-sidebar-foreground/80 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-          activeOptions={{ exact: i.to === "/admin" || i.to === "/teacher" }}
-          activeProps={{ className: "bg-sidebar-accent text-sidebar-accent-foreground" }}
-        >
-          <i.icon className="h-4 w-4" /> {t(i.key)}
-        </Link>
-      ))}
-    </nav>
-  );
-
   if (onboardingOnly) {
     return (
       <div className="min-h-screen bg-background">
@@ -305,254 +292,270 @@ export function AppShell({
     );
   }
 
-  if (me?.isStudent && !me.isTeacher && !me.isAdmin) {
-    const fullName =
-      [me.profile?.first_name, me.profile?.last_name].filter(Boolean).join(" ") ||
-      me.profile?.full_name ||
-      me.user.email ||
-      "";
-    const initials = fullName
-      .split(/\s+/)
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((part) => part[0]?.toLocaleUpperCase())
-      .join("");
-    const sidebarTextClass = studentSidebarCollapsed ? "lg:hidden" : "";
-    const studentNavigationItems = [
-      { to: "/dashboard" as const, label: t("nav.dashboard"), icon: LayoutDashboard },
-      { to: "/subjects" as const, label: t("nav.subjects"), icon: BookOpen },
-      { to: "/courses" as const, label: t("course.all"), icon: BookOpen },
-      { to: "/exams" as const, label: t("dash.examArchive"), icon: Archive },
-      { to: "/favorites" as const, label: t("dash.favorites"), icon: Bookmark },
-      { to: "/evaluations" as const, label: t("dash.evaluations"), icon: FileCheck2 },
-      { to: "/progress" as const, label: t("dash.performance"), icon: BarChart3 },
-    ];
+  const fullName =
+    [me?.profile?.first_name, me?.profile?.last_name].filter(Boolean).join(" ") ||
+    me?.profile?.full_name ||
+    me?.user.email ||
+    "";
+  const initials = fullName
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toLocaleUpperCase())
+    .join("");
+  const roleLabel = me?.isAdmin
+    ? t("admin.adminUsers")
+    : me?.isTeacher
+      ? t("teacher.title")
+      : t("dash.studentSpace");
 
-    return (
-      <div
+  return (
+    <div
+      className={cn(
+        "min-h-screen bg-background lg:grid",
+        sidebarCollapsed
+          ? "lg:grid-cols-[76px_minmax(0,1fr)]"
+          : "lg:grid-cols-[var(--sidebar-width)_minmax(0,1fr)]",
+      )}
+    >
+      <aside
         className={cn(
-          "min-h-screen bg-background lg:grid",
-          studentSidebarCollapsed
-            ? "lg:grid-cols-[76px_minmax(0,1fr)]"
-            : "lg:grid-cols-[252px_minmax(0,1fr)]",
+          "fixed inset-y-0 left-0 z-40 flex h-screen w-64 flex-col overflow-y-auto bg-sidebar px-4 py-4 text-sidebar-foreground transition-[width,transform] duration-[var(--motion-fast-value)] lg:sticky lg:top-0 lg:translate-x-0",
+          sidebarCollapsed ? "lg:w-[76px]" : "lg:w-[var(--sidebar-width)]",
+          open ? "translate-x-0" : "-translate-x-full",
         )}
       >
-        <aside
+        <div
           className={cn(
-            "fixed inset-y-0 left-0 z-40 flex h-screen w-64 flex-col overflow-y-auto bg-sidebar px-3.5 py-4 text-sidebar-foreground transition-[width,transform] duration-200 lg:sticky lg:top-0 lg:translate-x-0",
-            studentSidebarCollapsed ? "lg:w-[76px]" : "lg:w-[252px]",
-            open ? "translate-x-0" : "-translate-x-full",
+            "flex min-h-[58px] items-center justify-between border-b border-sidebar-border px-2 pb-3",
+            sidebarCollapsed && "lg:justify-center",
           )}
         >
-          <div
+          <Link to="/" aria-label="EXAMPRO" className="flex items-center">
+            {sidebarCollapsed ? (
+              <>
+                <BrandLogo className="h-8 lg:hidden" />
+                <BrandIcon className="hidden h-9 w-9 lg:block" />
+              </>
+            ) : (
+              <BrandLogo className="h-8" />
+            )}
+          </Link>
+          <button
+            type="button"
+            onClick={() => setSidebarCollapsed((collapsed) => !collapsed)}
+            aria-label={sidebarCollapsed ? t("dash.expandSidebar") : t("dash.collapseSidebar")}
+            title={sidebarCollapsed ? t("dash.expandSidebar") : t("dash.collapseSidebar")}
+            className="hidden rounded-md p-1.5 transition-colors duration-[var(--motion-fast-value)] hover:bg-sidebar-accent lg:inline-flex"
+          >
+            {sidebarCollapsed ? (
+              <PanelLeftOpen className="h-4 w-4" />
+            ) : (
+              <PanelLeftClose className="h-4 w-4" />
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={() => setOpen(false)}
+            aria-label={t("dash.closeSidebar")}
+            className="rounded-md p-1.5 transition-colors duration-[var(--motion-fast-value)] hover:bg-sidebar-accent lg:hidden"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        <Link
+          to="/profile"
+          title={sidebarCollapsed ? fullName : undefined}
+          className={cn(
+            "mt-4 flex min-w-0 items-center gap-3 rounded-xl px-2 py-2 transition-colors duration-[var(--motion-fast-value)] hover:bg-sidebar-accent",
+            sidebarCollapsed && "lg:justify-center lg:px-0",
+            location.pathname === "/profile" && "bg-sidebar-accent",
+          )}
+        >
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand/20 text-xs font-bold text-sidebar-primary">
+            {initials || <User className="h-4 w-4" />}
+          </span>
+          <span className={cn("min-w-0 flex-1", sidebarCollapsed && "lg:hidden")}>
+            <span className="block truncate text-xs font-semibold">{fullName}</span>
+            <span className="mt-0.5 block truncate text-[10px] text-sidebar-foreground/60">
+              {roleLabel}
+            </span>
+          </span>
+        </Link>
+
+        <nav aria-label={t("dash.workspace")} className="mt-5 flex-1">
+          <p
             className={cn(
-              "flex min-h-[58px] items-center justify-between border-b border-sidebar-border px-2 pb-3",
-              studentSidebarCollapsed && "lg:justify-center",
+              "mb-2 px-2 text-[10px] font-bold uppercase tracking-[0.14em] text-sidebar-foreground/50",
+              sidebarCollapsed && "lg:hidden",
             )}
           >
-            <Link to="/" aria-label="EXAMPRO" className="flex min-w-0 items-center">
-              <BrandIcon className="h-9 w-9 shrink-0" />
-            </Link>
-            <button
-              type="button"
-              onClick={() => {
-                setStudentSidebarCollapsed((collapsed) => !collapsed);
-                setOpen(false);
-              }}
-              aria-label={
-                studentSidebarCollapsed ? t("dash.expandSidebar") : t("dash.collapseSidebar")
-              }
-              title={studentSidebarCollapsed ? t("dash.expandSidebar") : t("dash.collapseSidebar")}
-              className="hidden rounded-md p-1.5 text-sidebar-foreground transition-colors hover:bg-sidebar-accent lg:inline-flex"
-            >
-              {studentSidebarCollapsed ? (
-                <PanelLeftOpen className="h-4 w-4" />
-              ) : (
-                <PanelLeftClose className="h-4 w-4" />
-              )}
-            </button>
-            <button
-              type="button"
-              onClick={() => setOpen(false)}
-              aria-label={t("dash.closeSidebar")}
-              className="rounded-md p-1.5 text-sidebar-foreground hover:bg-sidebar-accent lg:hidden"
-            >
-              <X className="h-5 w-5" />
-            </button>
+            {t("dash.workspace")}
+          </p>
+          <div className="flex flex-col gap-1">
+            {items.map(({ to, key, icon: Icon }) => {
+              const isActive = location.pathname === to || location.pathname.startsWith(`${to}/`);
+              return (
+                <Link
+                  key={to}
+                  to={to}
+                  className={cn(
+                    "flex items-center gap-3 rounded-lg border-l-[3px] border-transparent px-2 py-2.5 text-xs font-semibold text-sidebar-foreground/70 transition-colors duration-[var(--motion-fast-value)] hover:bg-sidebar-accent hover:text-sidebar-foreground",
+                    sidebarCollapsed && "lg:justify-center lg:px-0",
+                    isActive && "border-l-brand bg-sidebar-accent text-sidebar-foreground",
+                  )}
+                  title={sidebarCollapsed ? t(key) : undefined}
+                  activeOptions={{
+                    exact: to === "/admin" || to === "/teacher" || to === "/dashboard",
+                  }}
+                  activeProps={{
+                    className: "border-l-brand bg-sidebar-accent text-sidebar-foreground",
+                  }}
+                >
+                  <Icon className={cn("h-4 w-4 shrink-0", isActive && "text-sidebar-primary")} />
+                  <span className={sidebarCollapsed ? "lg:hidden" : ""}>{t(key)}</span>
+                </Link>
+              );
+            })}
           </div>
 
-          <Link
-            to="/profile"
-            className={cn(
-              "mt-4 flex min-w-0 items-center gap-3 rounded-xl px-2 py-2 transition-colors hover:bg-sidebar-accent",
-              studentSidebarCollapsed && "lg:justify-center lg:px-0",
-            )}
-            title={studentSidebarCollapsed ? fullName : undefined}
-          >
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand/20 text-xs font-bold text-sidebar-primary">
-              {initials || <User className="h-4 w-4" />}
-            </span>
-            <span className={cn("min-w-0 flex-1", sidebarTextClass)}>
-              <span className="block truncate text-xs font-semibold">{fullName}</span>
-              <span className="mt-0.5 block truncate text-[10px] text-sidebar-foreground/60">
-                {t("dash.studentSpace")}
-              </span>
-            </span>
-            <span
-              className={cn(
-                "rounded-md p-1 text-sidebar-foreground/60 hover:bg-sidebar-accent",
-                sidebarTextClass,
-              )}
-              aria-hidden="true"
-            >
-              ···
-            </span>
-          </Link>
-
-          <nav aria-label={t("dash.studentNavigation")} className="mt-5 flex-1">
-            <p
-              className={cn(
-                "mb-2 px-2 text-[10px] font-bold uppercase tracking-[0.14em] text-sidebar-foreground/50",
-                sidebarTextClass,
-              )}
-            >
-              {t("dash.workspace")}
-            </p>
-            <div className="flex flex-col gap-1">
-              {studentNavigationItems.map(({ to, label, icon: Icon }) => {
-                const isActive =
-                  location.pathname === to ||
-                  (to !== "/dashboard" && location.pathname.startsWith(`${to}/`)) ||
-                  (to === "/courses" && location.pathname.startsWith("/courses")) ||
-                  (to === "/subjects" && location.pathname.startsWith("/subjects/"));
-                return (
-                  <Link
-                    key={to}
-                    to={to}
-                    title={studentSidebarCollapsed ? label : undefined}
-                    className={cn(
-                      "flex items-center gap-3 rounded-lg border-l-[3px] border-transparent px-2 py-2.5 text-xs font-semibold text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground",
-                      studentSidebarCollapsed && "lg:justify-center lg:px-0",
-                      isActive && "border-l-brand bg-sidebar-accent text-sidebar-foreground",
-                    )}
-                  >
-                    <Icon className={cn("h-4 w-4 shrink-0", isActive && "text-sidebar-primary")} />
-                    <span className={sidebarTextClass}>{label}</span>
-                  </Link>
-                );
-              })}
-            </div>
-            <p
-              className={cn(
-                "mb-2 mt-7 px-2 text-[10px] font-bold uppercase tracking-[0.14em] text-sidebar-foreground/50",
-                sidebarTextClass,
-              )}
-            >
-              {t("dash.comingSoon")}
-            </p>
-            <div className="flex flex-col gap-1">
-              <span
-                aria-disabled="true"
-                title={t("dash.aiTutor")}
+          {isStudent && (
+            <>
+              <p
                 className={cn(
-                  "flex cursor-not-allowed items-center gap-3 rounded-lg px-2 py-2.5 text-xs font-semibold text-sidebar-foreground/50",
-                  studentSidebarCollapsed && "lg:justify-center lg:px-0",
+                  "mb-2 mt-7 px-2 text-[10px] font-bold uppercase tracking-[0.14em] text-sidebar-foreground/50",
+                  sidebarCollapsed && "lg:hidden",
                 )}
               >
-                <Bot className="h-4 w-4 shrink-0" />
-                <span className={cn("flex-1", sidebarTextClass)}>{t("dash.aiTutor")}</span>
+                {t("dash.comingSoon")}
+              </p>
+              <div className="flex flex-col gap-1">
                 <span
+                  aria-disabled="true"
+                  title={sidebarCollapsed ? t("dash.aiTutor") : undefined}
                   className={cn(
-                    "rounded-full bg-sidebar-primary px-2 py-0.5 text-[8px] font-bold uppercase text-sidebar-primary-foreground",
-                    sidebarTextClass,
+                    "flex cursor-not-allowed items-center gap-3 rounded-lg px-2 py-2.5 text-xs font-semibold text-sidebar-foreground/50",
+                    sidebarCollapsed && "lg:justify-center lg:px-0",
                   )}
                 >
-                  {t("dash.comingSoon")}
+                  <Bot className="h-4 w-4 shrink-0" />
+                  <span className={cn("flex-1", sidebarCollapsed && "lg:hidden")}>
+                    {t("dash.aiTutor")}
+                  </span>
+                  <span
+                    className={cn(
+                      "rounded-full bg-sidebar-primary px-2 py-0.5 text-[8px] font-bold uppercase text-sidebar-primary-foreground",
+                      sidebarCollapsed && "lg:hidden",
+                    )}
+                  >
+                    {t("dash.comingSoon")}
+                  </span>
                 </span>
-              </span>
-              <span
-                aria-disabled="true"
-                title={t("dash.premium")}
-                className={cn(
-                  "flex cursor-not-allowed items-center gap-3 rounded-lg px-2 py-2.5 text-xs font-semibold text-sidebar-foreground/50",
-                  studentSidebarCollapsed && "lg:justify-center lg:px-0",
-                )}
-              >
-                <Sparkles className="h-4 w-4 shrink-0" />
-                <span className={sidebarTextClass}>{t("dash.premium")}</span>
-              </span>
-            </div>
-          </nav>
+                <span
+                  aria-disabled="true"
+                  title={sidebarCollapsed ? t("dash.premium") : undefined}
+                  className={cn(
+                    "flex cursor-not-allowed items-center gap-3 rounded-lg px-2 py-2.5 text-xs font-semibold text-sidebar-foreground/50",
+                    sidebarCollapsed && "lg:justify-center lg:px-0",
+                  )}
+                >
+                  <Sparkles className="h-4 w-4 shrink-0" />
+                  <span className={sidebarCollapsed ? "lg:hidden" : ""}>{t("dash.premium")}</span>
+                </span>
+              </div>
+            </>
+          )}
+        </nav>
 
-          <div className="mt-5 border-t border-sidebar-border pt-3">
-            <a
-              href="/#contact"
-              title={studentSidebarCollapsed ? t("dash.help") : undefined}
-              className={cn(
-                "flex items-center gap-3 rounded-lg border border-sidebar-border bg-sidebar-accent/60 px-3 py-3 text-xs transition-colors hover:bg-sidebar-accent",
-                studentSidebarCollapsed && "lg:justify-center lg:px-0",
-              )}
-            >
-              <CircleHelp className="h-5 w-5 shrink-0 text-sidebar-primary" />
-              <span className={cn("min-w-0 flex-1", sidebarTextClass)}>
-                <span className="block font-semibold text-sidebar-foreground">
-                  {t("dash.help")}
-                </span>
-                <span className="mt-0.5 block truncate text-[10px] text-sidebar-foreground/60">
-                  {t("dash.helpHint")}
-                </span>
+        <div className="mt-5 border-t border-sidebar-border pt-3">
+          <a
+            href="/#contact"
+            title={sidebarCollapsed ? t("dash.help") : undefined}
+            className={cn(
+              "flex items-center gap-3 rounded-lg border border-sidebar-border bg-sidebar-accent/60 px-3 py-3 text-xs transition-colors duration-[var(--motion-fast-value)] hover:bg-sidebar-accent",
+              sidebarCollapsed && "lg:justify-center lg:px-0",
+            )}
+          >
+            <CircleHelp className="h-5 w-5 shrink-0 text-sidebar-primary" />
+            <span className={cn("min-w-0 flex-1", sidebarCollapsed && "lg:hidden")}>
+              <span className="block font-semibold text-sidebar-foreground">{t("dash.help")}</span>
+              <span className="mt-0.5 block truncate text-[10px] text-sidebar-foreground/60">
+                {t("dash.helpHint")}
               </span>
-              <span className={cn("text-sidebar-foreground/50", sidebarTextClass)}>›</span>
-            </a>
-            <p
+            </span>
+            <span className={cn("text-sidebar-foreground/50", sidebarCollapsed && "lg:hidden")}>
+              ›
+            </span>
+          </a>
+          <div className="mt-3 flex flex-col gap-2">
+            <div className={sidebarCollapsed ? "lg:hidden" : ""}>
+              <LanguageSwitch tone="light" />
+            </div>
+            <button
+              type="button"
+              onClick={signOut}
+              title={sidebarCollapsed ? t("nav.logout") : undefined}
               className={cn(
-                "mt-3 text-center text-[9px] text-sidebar-foreground/50",
-                sidebarTextClass,
+                "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-sidebar-foreground/80 transition-colors duration-[var(--motion-fast-value)] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                sidebarCollapsed && "lg:justify-center lg:px-0",
               )}
             >
+              <LogOut className="h-4 w-4" />
+              <span className={sidebarCollapsed ? "lg:hidden" : ""}>{t("nav.logout")}</span>
+            </button>
+          </div>
+          {isStudent && !sidebarCollapsed && (
+            <p className="mt-3 text-center text-[9px] text-sidebar-foreground/50">
               <span className="font-bold text-sidebar-primary">MVP</span>
               {" · "}
               {t("dash.sidebarFooter")}
             </p>
-          </div>
-        </aside>
+          )}
+        </div>
+      </aside>
 
-        {open && (
+      {open && (
+        <button
+          type="button"
+          aria-label={t("dash.closeSidebar")}
+          onClick={() => setOpen(false)}
+          className="fixed inset-0 z-30 bg-primary/40 lg:hidden"
+        />
+      )}
+
+      <div className="min-w-0">
+        <header className="sticky top-0 z-20 flex items-center gap-3 border-b bg-card/95 px-3 py-3 backdrop-blur sm:px-5 lg:px-8">
           <button
             type="button"
-            aria-label={t("dash.closeSidebar")}
-            onClick={() => setOpen(false)}
-            className="fixed inset-0 z-30 bg-primary/40 lg:hidden"
-          />
-        )}
-
-        <div className="min-w-0">
-          <header className="sticky top-0 z-20 flex items-center gap-2 border-b bg-card/95 px-3 py-3 backdrop-blur sm:gap-4 sm:px-5 lg:px-8">
-            <button
-              type="button"
-              onClick={() => setOpen(true)}
-              aria-label={t("dash.openSidebar")}
-              className="shrink-0 rounded-md p-1.5 hover:bg-muted lg:hidden"
-            >
-              <Menu className="h-5 w-5" />
-            </button>
+            onClick={() => setOpen(true)}
+            aria-label={t("dash.openSidebar")}
+            className="shrink-0 rounded-md p-1.5 transition-colors duration-[var(--motion-fast-value)] hover:bg-muted lg:hidden"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
+          {isStudent ? (
             <StudentSearch
-              levelId={me.profile?.level_id ?? null}
-              trackId={me.profile?.track_id ?? null}
+              levelId={me?.profile?.level_id ?? null}
+              trackId={me?.profile?.track_id ?? null}
             />
+          ) : (
+            <div className="flex-1" />
+          )}
+          {isStudent && (
             <div className="relative shrink-0">
               <button
                 type="button"
                 onClick={() => setNotificationsOpen((shown) => !shown)}
                 aria-label={t("dash.notifications")}
                 aria-expanded={notificationsOpen}
-                className="flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                className="flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition-colors duration-[var(--motion-fast-value)] hover:bg-muted hover:text-foreground"
               >
                 <Bell className="h-4 w-4" />
               </button>
               {notificationsOpen && (
                 <div
-                  className="absolute right-0 top-12 z-50 w-72 rounded-xl border bg-card p-4 shadow-lg"
+                  className="absolute right-0 top-12 z-50 w-72 rounded-xl border bg-card p-4 shadow-card"
                   role="status"
                 >
                   <p className="font-semibold text-heading">{t("dash.notifications")}</p>
@@ -560,61 +563,9 @@ export function AppShell({
                 </div>
               )}
             </div>
-          </header>
-          <main className="mx-auto w-full max-w-[1440px] px-4 py-7 sm:px-8 sm:py-9">
-            {isLoading ? <Loading /> : children}
-          </main>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="min-h-screen lg:grid lg:grid-cols-[260px_1fr]">
-      <aside
-        className={cn(
-          "fixed inset-y-0 left-0 z-40 flex w-64 flex-col gap-6 bg-sidebar p-5 transition-transform lg:static lg:w-auto lg:translate-x-0",
-          open ? "translate-x-0" : "-translate-x-full",
-        )}
-      >
-        <div className="flex items-center justify-between rounded-lg bg-card px-3 py-2">
-          <Link to="/" aria-label="EXAMPRO">
-            <BrandLogo className="h-8" />
-          </Link>
-          <button className="lg:hidden" onClick={() => setOpen(false)} aria-label="Close menu">
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-        {nav}
-        <div className="mt-auto flex flex-col gap-3">
-          <LanguageSwitch tone="light" />
-          <button
-            onClick={signOut}
-            className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-          >
-            <LogOut className="h-4 w-4" /> {t("nav.logout")}
-          </button>
-        </div>
-      </aside>
-      {open && (
-        <div
-          className="fixed inset-0 z-30 bg-primary/40 lg:hidden"
-          onClick={() => setOpen(false)}
-        />
-      )}
-      <div className="min-w-0">
-        <header className="sticky top-0 z-20 flex items-center justify-between border-b bg-card/90 px-4 py-3 backdrop-blur lg:hidden">
-          <button
-            onClick={() => setOpen(true)}
-            aria-label="Menu"
-            className="rounded-md p-1.5 hover:bg-muted"
-          >
-            <Menu className="h-5 w-5" />
-          </button>
-          <BrandLogo className="h-7" />
-          <LanguageSwitch />
+          )}
         </header>
-        <main className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-8">
+        <main className="mx-auto w-full max-w-[1440px] px-4 py-7 sm:px-8 sm:py-9">
           {isLoading ? <Loading /> : children}
         </main>
       </div>

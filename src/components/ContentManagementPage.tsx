@@ -11,6 +11,7 @@ import { Empty, ErrorState, Loading, PageHeader } from "@/components/States";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 import { catalogQuery } from "@/lib/catalog";
+import { formatExamYear } from "@/lib/exam-years";
 import { openCourseFile, openExamFile } from "@/lib/files";
 import { useI18n } from "@/lib/i18n";
 import { useMe } from "@/lib/session";
@@ -92,7 +93,7 @@ export function ContentManagementPage({ role, kind }: { role: RoleArea; kind: Ki
     const matchesText = [
       row.title,
       row.kind === "exam" ? (row.description ?? "") : (row.summary ?? ""),
-      row.kind === "exam" ? String(row.exam_year) : "",
+      row.kind === "exam" ? formatExamYear(row.exam_year) : "",
       subject ? name(subject) : "",
       level ? name(level) : "",
       track?.code ?? "",
@@ -299,7 +300,7 @@ export function ContentManagementPage({ role, kind }: { role: RoleArea; kind: Ki
             <option value="">{t("admin.filterYear")}</option>
             {years.map((item) => (
               <option key={item} value={item}>
-                {item}
+                {formatExamYear(item)}
               </option>
             ))}
           </NativeSelect>
@@ -325,7 +326,7 @@ export function ContentManagementPage({ role, kind }: { role: RoleArea; kind: Ki
                       subject && name(subject),
                       level && name(level),
                       track?.code,
-                      row.kind === "exam" ? String(row.exam_year) : null,
+                      row.kind === "exam" ? formatExamYear(row.exam_year) : null,
                     ]
                       .filter(Boolean)
                       .join(" · ")}

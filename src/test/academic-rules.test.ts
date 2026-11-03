@@ -8,6 +8,7 @@ import {
   type Catalog,
 } from "@/lib/catalog";
 import { validateExamFile } from "@/lib/files";
+import { EXAM_YEAR_ENDS, formatExamYear } from "@/lib/exam-years";
 
 const c = {
   levels: [
@@ -107,6 +108,9 @@ describe("academic rules", () => {
     expect(subjectsFor(c, "term").map((s) => s.id)).toEqual([]);
     expect(subjectsFor(c, "term", "wrong-level").map((s) => s.id)).toEqual([]);
   });
+  it("shows all level subjects when no track is selected in a classification form", () => {
+    expect(subjectsForLevel(c, "term").map((subject) => subject.id)).toHaveLength(13);
+  });
   it("prioritizes SMP core subjects without hiding the other subjects", () => {
     const smp = subjectsFor(c, "term", "smp");
     const smpTrack = c.tracks.find((item) => item.id === "smp");
@@ -176,5 +180,10 @@ describe("academic rules", () => {
       validateExamFile({ name: "a.pdf", type: "application/pdf", size: 21 * 1024 * 1024 }),
     ).toBe("FILE_SIZE");
     expect(validateExamFile({ name: "a.pdf", type: "application/pdf", size: 1024 })).toBeNull();
+  });
+  it("offers academic exam years from 1990-1991 through 2024-2025", () => {
+    expect(EXAM_YEAR_ENDS).toHaveLength(35);
+    expect(formatExamYear(EXAM_YEAR_ENDS[0])).toBe("1990-1991");
+    expect(formatExamYear(EXAM_YEAR_ENDS.at(-1)!)).toBe("2024-2025");
   });
 });

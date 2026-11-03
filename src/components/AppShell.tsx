@@ -25,6 +25,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { trackFilter } from "@/lib/catalog";
 import { openExamFile } from "@/lib/files";
+import { formatExamYear } from "@/lib/exam-years";
 import { useMe } from "@/lib/session";
 import { useI18n, type TKey } from "@/lib/i18n";
 import { BrandIcon, BrandLogo } from "./Brand";
@@ -200,7 +201,7 @@ function StudentSearch({ levelId, trackId }: { levelId: string | null; trackId: 
                   <span className="text-xs text-muted-foreground">
                     {busyExam === exam.id ? t("common.loading") : t("dash.examResult")}
                     {" · "}
-                    {exam.exam_year}
+                    {formatExamYear(exam.exam_year)}
                   </span>
                 </button>
               ))}

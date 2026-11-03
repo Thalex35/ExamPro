@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { catalogQuery, subjectsForLevel, trackFilter } from "@/lib/catalog";
 import { openExamFile } from "@/lib/files";
+import { formatExamYear } from "@/lib/exam-years";
 import { useMe } from "@/lib/session";
 import { useI18n } from "@/lib/i18n";
 import { Empty, ErrorState, Loading } from "@/components/States";
@@ -71,6 +72,7 @@ function Exams() {
       exam.title,
       examSubject ? name(examSubject) : "",
       exam.description ?? "",
+      formatExamYear(exam.exam_year),
     ]
       .join(" ")
       .toLocaleLowerCase();
@@ -151,7 +153,7 @@ function Exams() {
           <option value="">{t("exams.allYears")}</option>
           {years.map((item) => (
             <option key={item} value={item}>
-              {item}
+              {formatExamYear(item)}
             </option>
           ))}
         </NativeSelect>
@@ -280,7 +282,7 @@ function Exams() {
                       </h2>
                       <p className="mt-2 flex items-center gap-1.5 text-[11px] text-muted-foreground">
                         <CalendarDays className="h-3.5 w-3.5 shrink-0" />
-                        {exam.exam_year}
+                        {formatExamYear(exam.exam_year)}
                         {level && <> · {name(level)}</>}
                         {track && <> · {track.code}</>}
                         {exam.session && <> · {exam.session}</>}

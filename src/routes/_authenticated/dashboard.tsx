@@ -22,6 +22,7 @@ import { catalogQuery, subjectsForLevel, trackFilter } from "@/lib/catalog";
 import { useI18n } from "@/lib/i18n";
 import { useMe } from "@/lib/session";
 import { openExamFile } from "@/lib/files";
+import { formatExamYear } from "@/lib/exam-years";
 import { demoRecordsQuery } from "@/lib/demo-data";
 import { DemoBadge } from "@/components/DemoBadge";
 
@@ -343,7 +344,7 @@ function Dashboard() {
                             {exam.is_demo && <DemoBadge />}
                           </div>
                           <p className="mt-1 text-sm text-muted-foreground">
-                            {subjectName(exam.subject_id)} · {exam.exam_year}
+                            {subjectName(exam.subject_id)} · {formatExamYear(exam.exam_year)}
                             {exam.track_id === trackId && track
                               ? ` · ${t("dash.priorityForTrack")} ${track.code}`
                               : ""}

@@ -5,13 +5,14 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 import { catalogForTeacher, catalogQuery, teacherContentPermissionsQuery } from "@/lib/catalog";
+import { EXAM_YEAR_ENDS, formatExamYear } from "@/lib/exam-years";
 import { validateExamFile } from "@/lib/files";
 import { useMe } from "@/lib/session";
 import { useI18n } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Field } from "@/components/Field";
+import { Field, NativeSelect } from "@/components/Field";
 import { ClassificationFields, type Classification } from "@/components/ClassificationFields";
 import { ErrorState, Loading } from "@/components/States";
 
@@ -30,7 +31,10 @@ export function ExamForm({ exam, returnTo = "/teacher" }: { exam?: Exam; returnT
   });
   const [title, setTitle] = useState(exam?.title ?? "");
   const [description, setDescription] = useState(exam?.description ?? "");
-  const [year, setYear] = useState(String(exam?.exam_year ?? new Date().getFullYear() - 1));
+  const [year, setYear] = useState(() => {
+    const defaultYear = Math.min(Math.max(new Date().getFullYear() - 1, 1991), 2025);
+    return String(exam?.exam_year ?? defaultYear);
+  });
   const [session, setSession] = useState(exam?.session ?? "");
   const [file, setFile] = useState<File | null>(null);
   const [publish, setPublish] = useState(
@@ -51,6 +55,10 @@ export function ExamForm({ exam, returnTo = "/teacher" }: { exam?: Exam; returnT
   if (!me) return <Loading />;
   const formCatalog =
     me.isAdmin || !permissions.data ? cat.data : catalogForTeacher(cat.data, permissions.data);
+  const yearOptions =
+    exam && !EXAM_YEAR_ENDS.includes(exam.exam_year)
+      ? [...EXAM_YEAR_ENDS, exam.exam_year].sort((a, b) => a - b)
+      : EXAM_YEAR_ENDS;
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -130,15 +138,19 @@ export function ExamForm({ exam, returnTo = "/teacher" }: { exam?: Exam; returnT
       <ClassificationFields c={formCatalog} value={cls} onChange={setCls} withChapters={false} />
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label={t("form.year")} htmlFor="e-year">
-          <Input
+          <NativeSelect
             id="e-year"
-            type="number"
-            min={1950}
-            max={2100}
+            className="h-10"
             required
             value={year}
             onChange={(event) => setYear(event.target.value)}
-          />
+          >
+            {yearOptions.map((examYear) => (
+              <option key={examYear} value={examYear}>
+                {formatExamYear(examYear)}
+              </option>
+            ))}
+          </NativeSelect>
         </Field>
         <Field label={t("form.session")} htmlFor="e-session">
           <Input

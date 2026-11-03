@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { catalogQuery, chaptersFor, subjectsForLevel, topicsFor, trackFilter } from "@/lib/catalog";
+import { catalogQuery, chaptersFor, subjectsFor, topicsFor, trackFilter } from "@/lib/catalog";
 import { useMe } from "@/lib/session";
 import { useI18n } from "@/lib/i18n";
 import { Empty, ErrorState, Loading } from "@/components/States";
@@ -52,7 +52,7 @@ function SubjectDetail() {
   if (cat.error || !cat.data) return <ErrorState error={cat.error} onRetry={() => cat.refetch()} />;
   const c = cat.data;
   const subject = c.subjects.find((s) => s.id === subjectId);
-  const allowed = subjectsForLevel(c, levelId, trackId).some((s) => s.id === subjectId);
+  const allowed = subjectsFor(c, levelId, trackId).some((s) => s.id === subjectId);
   if (!subject || !allowed) return <Empty>{t("subj.empty")}</Empty>;
   const chapters = chaptersFor(c, subjectId, levelId);
   const activeChapter = chapters.find((x) => x.id === chapter);

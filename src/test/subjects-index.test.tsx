@@ -12,7 +12,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock("@tanstack/react-router", async () => {
   const React = await import("react");
   return {
-    createFileRoute: () => (options: unknown) => options,
+    createFileRoute: () => (options: Record<string, unknown>) => ({ ...options, options }),
     Link: ({
       to,
       params,
@@ -91,7 +91,8 @@ function makeCatalog(): Catalog {
 }
 
 function renderSubjects() {
-  const SubjectPage = Route.component;
+  const SubjectPage = Route.options.component;
+  if (!SubjectPage) throw new Error("Subjects page component is not configured");
   return render(<SubjectPage />);
 }
 

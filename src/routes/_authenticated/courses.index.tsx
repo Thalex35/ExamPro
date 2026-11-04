@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { BookOpen, Search } from "lucide-react";
 import { useState } from "react";
@@ -12,6 +12,12 @@ import { useI18n } from "@/lib/i18n";
 import { useMe } from "@/lib/session";
 
 export const Route = createFileRoute("/_authenticated/courses/")({
+  validateSearch: (
+    s: Record<string, unknown>,
+  ): { subject?: string | undefined; chapter?: string | undefined } => ({
+    subject: typeof s["subject"] === "string" ? s["subject"] : undefined,
+    chapter: typeof s["chapter"] === "string" ? s["chapter"] : undefined,
+  }),
   head: () => ({ meta: [{ title: "Cours — EXAMPRO" }] }),
   component: CoursesPage,
 });
@@ -20,10 +26,11 @@ function CoursesPage() {
   const { t, name } = useI18n();
   const { data: me } = useMe();
   const catalog = useQuery(catalogQuery);
+  const { subject: subjectId, chapter: chapterId } = Route.useSearch();
+  const navigate = useNavigate({ from: "/courses/" });
   const levelId = me?.profile?.level_id;
   const trackId = me?.profile?.track_id;
   const [search, setSearch] = useState("");
-  const [subjectId, setSubjectId] = useState("");
 
   const courses = useQuery({
     queryKey: ["all-student-courses", levelId, trackId],
@@ -44,12 +51,15 @@ function CoursesPage() {
   if (catalog.isLoading) return <Loading />;
   if (catalog.error || !catalog.data) return <ErrorState error={catalog.error} />;
   const subjects = subjectsForLevel(catalog.data, levelId, trackId);
+  const selectedSubject = catalog.data.subjects.find((subject) => subject.id === subjectId);
+  const selectedChapter = catalog.data.chapters.find((chapter) => chapter.id === chapterId);
   const term = search.trim().toLocaleLowerCase();
   const results = (courses.data ?? []).filter((course) => {
     const subject = catalog.data!.subjects.find((entry) => entry.id === course.subject_id);
     const chapter = catalog.data!.chapters.find((entry) => entry.id === course.chapter_id);
     return (
       (!subjectId || course.subject_id === subjectId) &&
+      (!chapterId || course.chapter_id === chapterId) &&
       [
         course.title,
         course.summary ?? "",
@@ -64,6 +74,42 @@ function CoursesPage() {
 
   return (
     <div>
+      {chapterId && (
+        <nav
+          className="mb-4 flex flex-wrap items-center gap-1 text-sm text-muted-foreground"
+          aria-label="breadcrumb"
+        >
+          <Link to="/subjects" className="hover:text-foreground">
+            {t("subj.title")}
+          </Link>
+          <span aria-hidden="true">›</span>
+          {selectedSubject && (
+            <>
+              <Link
+                to="/subjects/$subjectId"
+                params={{ subjectId: selectedSubject.id }}
+                search={{}}
+                className="hover:text-foreground"
+              >
+                {name(selectedSubject)}
+              </Link>
+              <span aria-hidden="true">›</span>
+              {selectedChapter && (
+                <Link
+                  to="/subjects/$subjectId"
+                  params={{ subjectId: selectedSubject.id }}
+                  search={{ chapter: chapterId }}
+                  className="hover:text-foreground"
+                >
+                  {name(selectedChapter)}
+                </Link>
+              )}
+              <span aria-hidden="true">›</span>
+            </>
+          )}
+          <span className="font-medium text-foreground">{t("subj.courses")}</span>
+        </nav>
+      )}
       <PageHeader title={t("course.all")} subtitle={t("course.allDescription")} />
       <div className="card-surface mb-6 grid gap-3 p-3 sm:grid-cols-[minmax(0,1fr)_minmax(200px,280px)]">
         <div className="relative">
@@ -81,7 +127,15 @@ function CoursesPage() {
           aria-label={t("exams.subject")}
           className="h-11"
           value={subjectId}
-          onChange={(event) => setSubjectId(event.target.value)}
+          onChange={(event) =>
+            navigate({
+              search: (previous) => ({
+                ...previous,
+                subject: event.target.value || undefined,
+                chapter: undefined,
+              }),
+            })
+          }
         >
           <option value="">{t("course.allSubjects")}</option>
           {subjects.map((subject) => (

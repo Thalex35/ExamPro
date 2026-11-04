@@ -44,7 +44,7 @@ export function ExamForm({ exam, returnTo = "/teacher" }: { exam?: Exam; returnT
     level_id: exam?.level_id ?? "",
     track_id: exam?.track_id ?? "",
     subject_id: exam?.subject_id ?? "",
-    chapter_id: "",
+    chapter_id: exam?.chapter_id ?? "",
     topic_id: "",
   });
   const [busy, setBusy] = useState(false);
@@ -92,6 +92,7 @@ export function ExamForm({ exam, returnTo = "/teacher" }: { exam?: Exam; returnT
       level_id: cls.level_id,
       track_id: cls.track_id || null,
       subject_id: cls.subject_id,
+      chapter_id: cls.chapter_id || null,
       file_path: path!,
       file_name: file?.name ?? exam?.file_name ?? null,
       status:
@@ -135,7 +136,13 @@ export function ExamForm({ exam, returnTo = "/teacher" }: { exam?: Exam; returnT
           onChange={(event) => setTitle(event.target.value)}
         />
       </Field>
-      <ClassificationFields c={formCatalog} value={cls} onChange={setCls} withChapters={false} />
+      <ClassificationFields
+        c={formCatalog}
+        value={cls}
+        onChange={setCls}
+        withChapters
+        withTopics={false}
+      />
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label={t("form.year")} htmlFor="e-year">
           <NativeSelect

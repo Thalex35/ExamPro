@@ -1,0 +1,32 @@
+import {
+  Activity,
+  Atom,
+  BookOpen,
+  Brain,
+  Calculator,
+  Dna,
+  FlaskConical,
+  Globe,
+  Languages,
+  Leaf,
+  Mountain,
+  Palette,
+  TrendingUp,
+  type LucideIcon,
+} from "lucide-react";
+
+export const subjectIcons: Record<string, LucideIcon> = {
+  calculator: Calculator,
+  atom: Atom,
+  dna: Dna,
+  leaf: Leaf,
+  flask: FlaskConical,
+  mountain: Mountain,
+  languages: Languages,
+  "book-open": BookOpen,
+  brain: Brain,
+  palette: Palette,
+  globe: Globe,
+  "trending-up": TrendingUp,
+  activity: Activity,
+};

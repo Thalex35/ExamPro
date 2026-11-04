@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { ArrowRight, CalendarDays, FileText, Search } from "lucide-react";
@@ -19,8 +19,14 @@ import { DemoBadge } from "@/components/DemoBadge";
 export const Route = createFileRoute("/_authenticated/exams")({
   validateSearch: (
     s: Record<string, unknown>,
-  ): { subject?: string | undefined; year?: number | undefined; session?: string | undefined } => ({
+  ): {
+    subject?: string | undefined;
+    chapter?: string | undefined;
+    year?: number | undefined;
+    session?: string | undefined;
+  } => ({
     subject: typeof s["subject"] === "string" ? s["subject"] : undefined,
+    chapter: typeof s["chapter"] === "string" ? s["chapter"] : undefined,
     year: typeof s["year"] === "number" ? s["year"] : undefined,
     session: typeof s["session"] === "string" ? s["session"] : undefined,
   }),
@@ -30,7 +36,7 @@ export const Route = createFileRoute("/_authenticated/exams")({
 
 function Exams() {
   const { t, name, errMsg } = useI18n();
-  const { subject, year, session } = Route.useSearch();
+  const { subject, chapter, year, session } = Route.useSearch();
   const navigate = useNavigate({ from: "/exams" });
   const { data: me } = useMe();
   const cat = useQuery(catalogQuery);
@@ -45,7 +51,9 @@ function Exams() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("exams")
-        .select("id,title,description,exam_year,session,subject_id,file_path,is_demo,demo_content")
+        .select(
+          "id,title,description,exam_year,session,subject_id,chapter_id,file_path,is_demo,demo_content",
+        )
         .eq("status", "published")
         .eq("level_id", levelId!)
         .or(trackFilter(trackId))
@@ -68,9 +76,11 @@ function Exams() {
   const term = search.trim().toLocaleLowerCase();
   const filteredExams = (q.data ?? []).filter((exam) => {
     const examSubject = c.subjects.find((candidate) => candidate.id === exam.subject_id);
+    const examChapter = c.chapters.find((candidate) => candidate.id === exam.chapter_id);
     const searchableText = [
       exam.title,
       examSubject ? name(examSubject) : "",
+      examChapter ? name(examChapter) : "",
       exam.description ?? "",
       formatExamYear(exam.exam_year),
     ]
@@ -78,12 +88,13 @@ function Exams() {
       .toLocaleLowerCase();
     return (
       (!subject || exam.subject_id === subject) &&
+      (!chapter || exam.chapter_id === chapter) &&
       (!year || exam.exam_year === year) &&
       (!session || exam.session === session) &&
       (!term || searchableText.includes(term))
     );
   });
-  const hasActiveFilters = !!search || !!subject || !!year || !!session;
+  const hasActiveFilters = !!search || !!subject || !!chapter || !!year || !!session;
   const accentTones = [
     "from-sky-50 to-blue-50 text-sky-700",
     "from-violet-50 to-purple-50 text-violet-700",
@@ -92,6 +103,40 @@ function Exams() {
 
   return (
     <div className="space-y-6">
+      {chapter && (
+        <nav
+          className="flex flex-wrap items-center gap-1 text-sm text-muted-foreground"
+          aria-label="breadcrumb"
+        >
+          <Link to="/subjects" className="hover:text-foreground">
+            {t("subj.title")}
+          </Link>
+          <span aria-hidden="true">›</span>
+          {c.subjects.find((item) => item.id === subject) && subject && (
+            <Link
+              to="/subjects/$subjectId"
+              params={{ subjectId: subject }}
+              search={{}}
+              className="hover:text-foreground"
+            >
+              {name(c.subjects.find((item) => item.id === subject)!)}
+            </Link>
+          )}
+          <span aria-hidden="true">›</span>
+          {c.chapters.find((item) => item.id === chapter) && subject && (
+            <Link
+              to="/subjects/$subjectId"
+              params={{ subjectId: subject }}
+              search={{ chapter }}
+              className="hover:text-foreground"
+            >
+              {name(c.chapters.find((item) => item.id === chapter)!)}
+            </Link>
+          )}
+          <span aria-hidden="true">›</span>
+          <span className="font-medium text-foreground">{t("subj.exams")}</span>
+        </nav>
+      )}
       <div className="mb-8">
         <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.16em] text-deep">
           {t("exams.eyebrow")}
@@ -185,6 +230,7 @@ function Exams() {
                 search: (previous) => ({
                   ...previous,
                   subject: undefined,
+                  chapter: undefined,
                   year: undefined,
                   session: undefined,
                 }),
@@ -251,6 +297,7 @@ function Exams() {
             >
               {filteredExams.map((exam, index) => {
                 const examSubject = c.subjects.find((item) => item.id === exam.subject_id);
+                const examChapter = c.chapters.find((item) => item.id === exam.chapter_id);
                 return (
                   <article
                     key={exam.id}
@@ -274,7 +321,9 @@ function Exams() {
                     <div className="flex min-w-0 flex-1 flex-col p-4">
                       {examSubject && (
                         <span className="mb-2 w-fit rounded-full bg-accent px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-deep">
-                          {name(examSubject)}
+                          {[name(examSubject), examChapter && name(examChapter)]
+                            .filter(Boolean)
+                            .join(" · ")}
                         </span>
                       )}
                       <h2 className="line-clamp-2 text-sm font-semibold text-heading">

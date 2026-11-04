@@ -1,46 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import {
-  Activity,
-  Atom,
-  BookOpen,
-  Brain,
-  Calculator,
-  Dna,
-  FileText,
-  FlaskConical,
-  Globe,
-  GraduationCap,
-  Languages,
-  Leaf,
-  Mountain,
-  Palette,
-  Play,
-  Sparkles,
-  TrendingUp,
-  type LucideIcon,
-} from "lucide-react";
+import { BookOpen, FileText, GraduationCap, Play, Sparkles } from "lucide-react";
 import { Empty, ErrorState, Loading } from "@/components/States";
 import { supabase } from "@/integrations/supabase/client";
 import { catalogQuery, chaptersFor, subjectsForLevel, trackFilter } from "@/lib/catalog";
+import { subjectIcons } from "@/lib/subject-icons";
 import { useI18n } from "@/lib/i18n";
 import { useMe } from "@/lib/session";
-
-const subjectIcons: Record<string, LucideIcon> = {
-  calculator: Calculator,
-  atom: Atom,
-  dna: Dna,
-  leaf: Leaf,
-  flask: FlaskConical,
-  mountain: Mountain,
-  languages: Languages,
-  "book-open": BookOpen,
-  brain: Brain,
-  palette: Palette,
-  globe: Globe,
-  "trending-up": TrendingUp,
-  activity: Activity,
-};
 
 function countBySubject(resources: { subject_id: string }[]) {
   return resources.reduce<Record<string, number>>((counts, resource) => {

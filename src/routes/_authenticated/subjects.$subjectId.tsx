@@ -1,20 +1,33 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronRight } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { catalogQuery, chaptersFor, subjectsForLevel, topicsFor, trackFilter } from "@/lib/catalog";
-import { useMe } from "@/lib/session";
-import { useI18n } from "@/lib/i18n";
+import {
+  ArrowRight,
+  BookOpen,
+  Brain,
+  ChevronRight,
+  FileText,
+  GraduationCap,
+  Layers3,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { Empty, ErrorState, Loading } from "@/components/States";
-import { cn } from "@/lib/utils";
-import { DemoBadge } from "@/components/DemoBadge";
+import { supabase } from "@/integrations/supabase/client";
+import { catalogQuery, chaptersFor, subjectsForLevel, trackFilter } from "@/lib/catalog";
+import { subjectIcons } from "@/lib/subject-icons";
+import { useI18n } from "@/lib/i18n";
+import { useMe } from "@/lib/session";
+
+type ResourceKind = "courses" | "quiz" | "exams";
 
 export const Route = createFileRoute("/_authenticated/subjects/$subjectId")({
   validateSearch: (
     s: Record<string, unknown>,
-  ): { chapter?: string | undefined; topic?: string | undefined } => ({
+  ): { chapter?: string | undefined; resource?: ResourceKind | undefined } => ({
     chapter: typeof s["chapter"] === "string" ? s["chapter"] : undefined,
-    topic: typeof s["topic"] === "string" ? s["topic"] : undefined,
+    resource:
+      s["resource"] === "courses" || s["resource"] === "quiz" || s["resource"] === "exams"
+        ? s["resource"]
+        : undefined,
   }),
   head: () => ({ meta: [{ title: "Matière — EXAMPRO" }] }),
   component: SubjectDetail,
@@ -22,185 +35,343 @@ export const Route = createFileRoute("/_authenticated/subjects/$subjectId")({
 
 function SubjectDetail() {
   const { subjectId } = Route.useParams();
-  const { chapter, topic } = Route.useSearch();
+  const { chapter: chapterId, resource } = Route.useSearch();
   const { t, name } = useI18n();
   const { data: me } = useMe();
-  const cat = useQuery(catalogQuery);
+  const catalogQueryResult = useQuery(catalogQuery);
   const levelId = me?.profile?.level_id;
   const trackId = me?.profile?.track_id;
 
-  const courses = useQuery({
-    queryKey: ["subject-courses", subjectId, levelId, trackId, chapter, topic],
+  const resources = useQuery({
+    queryKey: ["subject-resources", subjectId, levelId, trackId],
     enabled: !!levelId,
     queryFn: async () => {
-      let q = supabase
-        .from("courses")
-        .select("id,title,summary,chapter_id,topic_id,published_at,is_demo")
-        .eq("status", "published")
-        .eq("subject_id", subjectId)
-        .eq("level_id", levelId!)
-        .or(trackFilter(trackId));
-      if (topic) q = q.eq("topic_id", topic);
-      else if (chapter) q = q.eq("chapter_id", chapter);
-      const { data, error } = await q.order("published_at", { ascending: false });
-      if (error) throw error;
-      return data;
+      const filter = trackFilter(trackId);
+      const [courses, exams] = await Promise.all([
+        supabase
+          .from("courses")
+          .select("id,chapter_id")
+          .eq("status", "published")
+          .eq("subject_id", subjectId)
+          .eq("level_id", levelId!)
+          .or(filter),
+        supabase
+          .from("exams")
+          .select("id,chapter_id")
+          .eq("status", "published")
+          .eq("subject_id", subjectId)
+          .eq("level_id", levelId!)
+          .or(filter),
+      ]);
+      if (courses.error) throw courses.error;
+      if (exams.error) throw exams.error;
+      return { courses: courses.data, exams: exams.data };
     },
   });
 
-  if (cat.isLoading) return <Loading />;
-  if (cat.error || !cat.data) return <ErrorState error={cat.error} onRetry={() => cat.refetch()} />;
-  const c = cat.data;
-  const subject = c.subjects.find((s) => s.id === subjectId);
-  const allowed = subjectsForLevel(c, levelId, trackId).some((s) => s.id === subjectId);
+  if (catalogQueryResult.isLoading) return <Loading />;
+  if (catalogQueryResult.error || !catalogQueryResult.data)
+    return (
+      <ErrorState error={catalogQueryResult.error} onRetry={() => catalogQueryResult.refetch()} />
+    );
+  const catalog = catalogQueryResult.data;
+  const subject = catalog.subjects.find((entry) => entry.id === subjectId);
+  const allowed = subjectsForLevel(catalog, levelId, trackId).some(
+    (entry) => entry.id === subjectId,
+  );
   if (!subject || !allowed) return <Empty>{t("subj.empty")}</Empty>;
-  const chapters = chaptersFor(c, subjectId, levelId);
-  const activeChapter = chapters.find((x) => x.id === chapter);
-  const activeTopic = c.topics.find((x) => x.id === topic);
+
+  const SubjectIcon = subjectIcons[subject.icon ?? ""] ?? GraduationCap;
+  const chapters = chaptersFor(catalog, subjectId, levelId);
+  const chapter = chapters.find((entry) => entry.id === chapterId);
+  const isSimpleSubject = chapters.length === 0;
+  const allCourses = resources.data?.courses ?? [];
+  const allExams = resources.data?.exams ?? [];
+  const selectedCourses = isSimpleSubject
+    ? allCourses.filter((course) => !course.chapter_id)
+    : allCourses.filter((course) => course.chapter_id === chapter?.id);
+  const selectedExams = isSimpleSubject
+    ? allExams.filter((exam) => !exam.chapter_id)
+    : allExams.filter((exam) => exam.chapter_id === chapter?.id);
+
+  const activeResource = resource
+    ? {
+        courses: t("subj.courses"),
+        quiz: t("subj.quiz"),
+        exams: t("subj.examsShort"),
+      }[resource]
+    : undefined;
 
   return (
-    <div>
+    <div className="space-y-6">
       <nav
-        className="mb-4 flex flex-wrap items-center gap-1 text-sm text-muted-foreground"
+        className="flex flex-wrap items-center gap-1 text-sm text-muted-foreground"
         aria-label="breadcrumb"
       >
-        <Link to="/subjects" className="hover:text-foreground">
+        <Link to="/subjects" className="transition-colors hover:text-foreground">
           {t("subj.title")}
         </Link>
-        <ChevronRight className="h-3 w-3" />
+        <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" />
         <Link
           to="/subjects/$subjectId"
           params={{ subjectId }}
           search={{}}
-          className="hover:text-foreground"
+          className="transition-colors hover:text-foreground"
         >
           {name(subject)}
         </Link>
-        {activeChapter && (
+        {chapter && (
           <>
-            <ChevronRight className="h-3 w-3" />
-            <span>{name(activeChapter)}</span>
+            <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" />
+            <Link
+              to="/subjects/$subjectId"
+              params={{ subjectId }}
+              search={{ chapter: chapter.id }}
+              className="transition-colors hover:text-foreground"
+            >
+              {name(chapter)}
+            </Link>
           </>
         )}
-        {activeTopic && (
+        {activeResource && (
           <>
-            <ChevronRight className="h-3 w-3" />
-            <span>{name(activeTopic)}</span>
+            <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" />
+            <span className="font-medium text-foreground">{activeResource}</span>
           </>
         )}
       </nav>
-      <h1 className="mb-8 text-2xl font-bold sm:text-3xl">{name(subject)}</h1>
 
-      <div className="grid gap-8 lg:grid-cols-[300px_1fr]">
-        <aside>
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-            {t("subj.chapters")}
-          </h2>
-          {chapters.length === 0 ? (
-            <Empty>{t("subj.noChapters")}</Empty>
-          ) : (
-            <div className="card-surface divide-y overflow-hidden">
-              <Link
-                to="/subjects/$subjectId"
-                params={{ subjectId }}
-                search={{}}
-                className={cn(
-                  "block px-4 py-3 text-sm font-medium hover:bg-muted",
-                  !chapter && "bg-accent text-accent-foreground",
-                )}
-              >
-                {t("subj.allCourses")}
-              </Link>
-              {chapters.map((ch) => {
-                const topics = topicsFor(c, ch.id);
-                const open = ch.id === chapter;
-                return (
-                  <div key={ch.id}>
-                    <Link
-                      to="/subjects/$subjectId"
-                      params={{ subjectId }}
-                      search={{ chapter: ch.id }}
-                      className={cn(
-                        "flex items-center justify-between px-4 py-3 text-sm font-medium hover:bg-muted",
-                        open && !topic && "bg-accent text-accent-foreground",
-                      )}
-                    >
-                      {name(ch)}
-                      {!ch.verified && (
-                        <span className="text-[10px] font-semibold uppercase text-warning">
-                          {t("common.toVerify")}
-                        </span>
-                      )}
-                    </Link>
-                    {open && topics.length > 0 && (
-                      <ul className="bg-muted/50 pb-2">
-                        {topics.map((tp) => (
-                          <li key={tp.id}>
-                            <Link
-                              to="/subjects/$subjectId"
-                              params={{ subjectId }}
-                              search={{ chapter: ch.id, topic: tp.id }}
-                              className={cn(
-                                "block py-2 pl-8 pr-4 text-sm text-muted-foreground hover:text-foreground",
-                                topic === tp.id && "font-semibold text-deep",
-                              )}
-                            >
-                              {name(tp)}
-                            </Link>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
+      <header className="relative isolate overflow-hidden rounded-3xl border border-sky-100 bg-gradient-to-br from-white via-sky-50 to-blue-100 p-5 shadow-sm sm:p-8">
+        <div className="relative z-10 flex items-center justify-between gap-5">
+          <div className="max-w-2xl">
+            <p className="mb-2 text-xs font-bold uppercase tracking-[0.16em] text-deep">
+              {chapter ? t("subj.chapters") : t("subj.title")}
+            </p>
+            <h1 className="text-2xl font-extrabold tracking-tight text-heading sm:text-3xl">
+              {chapter ? name(chapter) : name(subject)}
+            </h1>
+            <p className="mt-2 text-sm text-muted-foreground sm:text-base">
+              {chapter
+                ? t("subj.chapterDescription")
+                : isSimpleSubject
+                  ? t("subj.simpleDescription")
+                  : t("subj.chapterDescription")}
+            </p>
+          </div>
+          <span className="hidden h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-primary text-brand shadow-md sm:flex">
+            {chapter ? (
+              <BookOpen className="h-8 w-8" aria-hidden="true" />
+            ) : (
+              <SubjectIcon className="h-8 w-8" aria-hidden="true" />
+            )}
+          </span>
+        </div>
+        <div
+          aria-hidden="true"
+          className="absolute -bottom-24 -right-10 -z-10 h-56 w-56 rounded-full bg-sky-200/50 blur-3xl"
+        />
+      </header>
+
+      {resources.isLoading ? (
+        <Loading />
+      ) : resources.error ? (
+        <ErrorState error={resources.error} onRetry={() => void resources.refetch()} />
+      ) : chapters.length > 0 && !chapter ? (
+        <section aria-labelledby="chapters-heading" className="space-y-4">
+          <div className="flex items-center gap-2">
+            <Layers3 className="h-5 w-5 text-brand" aria-hidden="true" />
+            <h2 id="chapters-heading" className="text-xl font-bold text-heading">
+              {t("subj.chapters")}
+            </h2>
+            <span className="ml-auto rounded-full bg-sky-100 px-3 py-1 text-xs font-semibold text-deep">
+              {chapters.length} {t("subj.chapters").toLowerCase()}
+            </span>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {chapters.map((item, index) => {
+              const courseCount = allCourses.filter(
+                (course) => course.chapter_id === item.id,
+              ).length;
+              const examCount = allExams.filter((exam) => exam.chapter_id === item.id).length;
+              return (
+                <Link
+                  key={item.id}
+                  to="/subjects/$subjectId"
+                  params={{ subjectId }}
+                  search={{ chapter: item.id }}
+                  className="group flex min-h-56 flex-col rounded-2xl border border-sky-100 bg-card p-5 shadow-card transition-all duration-200 hover:-translate-y-1 hover:border-brand/50 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-brand">
+                      <BookOpen className="h-6 w-6" aria-hidden="true" />
+                    </span>
+                    <span className="rounded-full bg-sky-50 px-2.5 py-1 text-xs font-semibold text-deep">
+                      {t("subj.chapterNumber")} {index + 1}
+                    </span>
                   </div>
-                );
-              })}
-            </div>
-          )}
-        </aside>
-        <section>
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-            {t("subj.courses")}
-          </h2>
-          {courses.isLoading ? (
-            <Loading />
-          ) : courses.error ? (
-            <ErrorState error={courses.error} onRetry={() => courses.refetch()} />
-          ) : !courses.data?.length ? (
-            <Empty>{t("subj.noCoursesHere")}</Empty>
-          ) : (
-            <div className="grid gap-3">
-              {courses.data.map((x) => {
-                const ch = c.chapters.find((y) => y.id === x.chapter_id);
-                const tp = c.topics.find((y) => y.id === x.topic_id);
-                return (
-                  <Link
-                    key={x.id}
-                    to="/courses/$courseId"
-                    params={{ courseId: x.id }}
-                    className="card-surface block p-5 hover:shadow-brand"
-                  >
-                    <p className="text-lg font-semibold text-heading">{x.title}</p>
-                    {x.is_demo && <DemoBadge />}
-                    {x.summary && (
-                      <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{x.summary}</p>
-                    )}
-                    <p className="mt-2 text-xs text-deep">
-                      {[ch && name(ch), tp && name(tp)].filter(Boolean).join(" · ")}
-                    </p>
-                  </Link>
-                );
-              })}
-            </div>
-          )}
-          <Link
-            to="/exams"
-            search={{ subject: subjectId }}
-            className="mt-6 inline-block text-sm font-semibold text-deep hover:underline"
-          >
-            {t("subj.exams")} →
-          </Link>
+                  <span className="mt-4 text-lg font-bold text-heading group-hover:text-deep">
+                    {name(item)}
+                  </span>
+                  <span className="mt-auto flex flex-wrap gap-2 pt-4 text-xs font-semibold text-deep">
+                    <ResourceCount icon={BookOpen} count={courseCount} label={t("subj.courses")} />
+                    <span className="inline-flex items-center gap-1 rounded-full bg-sky-50 px-2.5 py-1.5">
+                      <Brain className="h-3.5 w-3.5" aria-hidden="true" />
+                      {t("subj.comingSoon")}
+                    </span>
+                    <ResourceCount icon={FileText} count={examCount} label={t("subj.examsShort")} />
+                  </span>
+                  <span className="mt-4 flex items-center gap-1 text-sm font-bold text-deep">
+                    {t("subj.openChapter")}
+                    <ArrowRight
+                      className="h-4 w-4 transition-transform group-hover:translate-x-1"
+                      aria-hidden="true"
+                    />
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
         </section>
-      </div>
+      ) : resource === "quiz" ? (
+        <UnavailableQuiz />
+      ) : (
+        <section aria-labelledby="resources-heading" className="space-y-4">
+          <div className="flex items-center gap-2">
+            <Layers3 className="h-5 w-5 text-brand" aria-hidden="true" />
+            <h2 id="resources-heading" className="text-xl font-bold text-heading">
+              {t("subj.availableResources")}
+            </h2>
+          </div>
+          <div className="grid gap-4 md:grid-cols-3">
+            <ResourceCard
+              to="/courses"
+              search={{ subject: subjectId, chapter: chapter?.id }}
+              icon={BookOpen}
+              title={t("subj.courses")}
+              description={t("subj.coursesDescription")}
+              count={selectedCourses.length}
+            />
+            <Link
+              to="/subjects/$subjectId"
+              params={{ subjectId }}
+              search={{ chapter: chapter?.id, resource: "quiz" }}
+              className="group flex min-h-48 items-center gap-4 rounded-2xl border border-sky-100 bg-card p-5 shadow-card transition-all duration-200 hover:-translate-y-1 hover:border-brand/50 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <ResourceCardContents
+                icon={Brain}
+                title={t("subj.quiz")}
+                description={t("subj.quizDescription")}
+                countLabel={t("subj.comingSoon")}
+              />
+            </Link>
+            <ResourceCard
+              to="/exams"
+              search={{ subject: subjectId, chapter: chapter?.id }}
+              icon={FileText}
+              title={t("subj.examsCategory")}
+              description={t("subj.examsDescription")}
+              count={selectedExams.length}
+            />
+          </div>
+        </section>
+      )}
+    </div>
+  );
+}
+
+function ResourceCount({
+  icon: Icon,
+  count,
+  label,
+}: {
+  icon: LucideIcon;
+  count: number;
+  label: string;
+}) {
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full bg-sky-50 px-2.5 py-1.5">
+      <Icon className="h-3.5 w-3.5" aria-hidden="true" />
+      {count} {label}
+    </span>
+  );
+}
+
+function ResourceCard({
+  to,
+  search,
+  icon,
+  title,
+  description,
+  count,
+}: {
+  to: "/courses" | "/exams";
+  search: { subject: string; chapter?: string | undefined };
+  icon: LucideIcon;
+  title: string;
+  description: string;
+  count: number;
+}) {
+  const { t } = useI18n();
+  return (
+    <Link
+      to={to}
+      search={search}
+      className="group flex min-h-48 items-center gap-4 rounded-2xl border border-sky-100 bg-card p-5 shadow-card transition-all duration-200 hover:-translate-y-1 hover:border-brand/50 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    >
+      <ResourceCardContents
+        icon={icon}
+        title={title}
+        description={description}
+        countLabel={`${count} ${t(count === 1 ? "subj.resourceSingular" : "subj.resourcesCount")}`}
+      />
+    </Link>
+  );
+}
+
+function ResourceCardContents({
+  icon: Icon,
+  title,
+  description,
+  countLabel,
+}: {
+  icon: LucideIcon;
+  title: string;
+  description: string;
+  countLabel: string;
+}) {
+  return (
+    <>
+      <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-primary text-brand">
+        <Icon className="h-7 w-7" aria-hidden="true" />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="flex items-center justify-between gap-2">
+          <span className="text-lg font-bold text-heading">{title}</span>
+          <ArrowRight
+            className="h-5 w-5 shrink-0 text-brand transition-transform group-hover:translate-x-1"
+            aria-hidden="true"
+          />
+        </span>
+        <span className="mt-1 block text-sm text-muted-foreground">{description}</span>
+        <span className="mt-4 inline-flex rounded-full bg-sky-50 px-3 py-1.5 text-xs font-semibold text-deep">
+          {countLabel}
+        </span>
+      </span>
+    </>
+  );
+}
+
+function UnavailableQuiz() {
+  const { t } = useI18n();
+  return (
+    <div className="rounded-2xl border border-sky-100 bg-card p-8 text-center shadow-card">
+      <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary text-brand">
+        <Brain className="h-7 w-7" aria-hidden="true" />
+      </span>
+      <h2 className="mt-4 text-xl font-bold text-heading">{t("subj.quiz")}</h2>
+      <p className="mx-auto mt-2 max-w-lg text-sm text-muted-foreground">
+        {t("subj.quizUnavailable")}
+      </p>
     </div>
   );
 }

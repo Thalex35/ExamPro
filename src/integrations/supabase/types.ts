@@ -310,6 +310,7 @@ export type Database =
         exams: {
           Row: {
             author_id: string
+            chapter_id: string | null
             created_at: string
             description:
               | string
@@ -342,6 +343,7 @@ export type Database =
           }
           Insert: {
             author_id: string
+            chapter_id?: string | null
             created_at?: string
             description?:
               | string
@@ -374,6 +376,7 @@ export type Database =
           }
           Update: {
             author_id?: string
+            chapter_id?: string | null
             created_at?: string
             description?:
               | string
@@ -405,6 +408,17 @@ export type Database =
             updated_at?: string
           }
           Relationships: [
+            {
+              foreignKeyName: "exams_chapter_id_fkey"
+              columns: [
+                "chapter_id",
+              ]
+              isOneToOne: false
+              referencedRelation: "chapters"
+              referencedColumns: [
+                "id",
+              ]
+            },
             {
               foreignKeyName: "exams_level_id_fkey"
               columns: [

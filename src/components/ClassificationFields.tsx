@@ -23,11 +23,13 @@ export function ClassificationFields({
   value,
   onChange,
   withChapters = true,
+  withTopics = true,
 }: {
   c: Catalog;
   value: Classification;
   onChange: (v: Classification) => void;
   withChapters?: boolean;
+  withTopics?: boolean;
 }) {
   const { t, name } = useI18n();
   const level = c.levels.find((l) => l.id === value.level_id);
@@ -122,21 +124,23 @@ export function ClassificationFields({
               ))}
             </NativeSelect>
           </Field>
-          <Field label={t("form.topic")} htmlFor="f-topic">
-            <NativeSelect
-              id="f-topic"
-              disabled={!topics.length}
-              value={value.topic_id}
-              onChange={(e) => onChange({ ...value, topic_id: e.target.value })}
-            >
-              <option value="">{t("common.none")}</option>
-              {topics.map((tp) => (
-                <option key={tp.id} value={tp.id}>
-                  {name(tp)}
-                </option>
-              ))}
-            </NativeSelect>
-          </Field>
+          {withTopics && (
+            <Field label={t("form.topic")} htmlFor="f-topic">
+              <NativeSelect
+                id="f-topic"
+                disabled={!topics.length}
+                value={value.topic_id}
+                onChange={(e) => onChange({ ...value, topic_id: e.target.value })}
+              >
+                <option value="">{t("common.none")}</option>
+                {topics.map((tp) => (
+                  <option key={tp.id} value={tp.id}>
+                    {name(tp)}
+                  </option>
+                ))}
+              </NativeSelect>
+            </Field>
+          )}
         </>
       )}
     </div>

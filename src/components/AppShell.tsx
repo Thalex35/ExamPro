@@ -399,7 +399,9 @@ export function AppShell({
           </p>
           <div className="flex flex-col gap-1">
             {items.map(({ to, key, icon: Icon }) => {
-              const isActive = location.pathname === to || location.pathname.startsWith(`${to}/`);
+              const exactMatch = to === "/admin" || to === "/teacher" || to === "/dashboard";
+              const isActive =
+                location.pathname === to || (!exactMatch && location.pathname.startsWith(`${to}/`));
               return (
                 <Link
                   key={to}
@@ -412,7 +414,7 @@ export function AppShell({
                   )}
                   title={sidebarCollapsed ? t(key) : undefined}
                   activeOptions={{
-                    exact: to === "/admin" || to === "/teacher" || to === "/dashboard",
+                    exact: exactMatch,
                   }}
                   activeProps={{
                     className:

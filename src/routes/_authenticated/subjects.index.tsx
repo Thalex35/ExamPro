@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import { Empty, ErrorState, Loading } from "@/components/States";
 import { supabase } from "@/integrations/supabase/client";
-import { catalogQuery, chaptersFor, subjectsFor, trackFilter } from "@/lib/catalog";
+import { catalogQuery, chaptersFor, subjectsForLevel, trackFilter } from "@/lib/catalog";
 import { useI18n } from "@/lib/i18n";
 import { useMe } from "@/lib/session";
 
@@ -98,7 +98,7 @@ function Subjects() {
   const track = catalog.tracks.find(
     (item) => item.id === trackIdInProfile && item.level_id === levelIdInProfile,
   );
-  const subjects = subjectsFor(catalog, levelIdInProfile, trackIdInProfile);
+  const subjects = subjectsForLevel(catalog, levelIdInProfile, trackIdInProfile);
 
   return (
     <div className="space-y-6">
@@ -150,6 +150,14 @@ function Subjects() {
           {subjects.map((subject) => {
             const SubjectIcon = subjectIcons[subject.icon ?? ""] ?? BookOpen;
             const chapters = chaptersFor(catalog, subject.id, levelIdInProfile);
+            const subjectTracks = catalog.tracks.filter(
+              (item) =>
+                item.level_id === levelIdInProfile &&
+                catalog.trackSubjects.some(
+                  (association) =>
+                    association.track_id === item.id && association.subject_id === subject.id,
+                ),
+            );
             return (
               <Link
                 key={subject.id}
@@ -163,11 +171,14 @@ function Subjects() {
                   </span>
                   <span className="min-w-0 flex-1 pt-0.5">
                     <span className="mb-1.5 flex flex-wrap items-center gap-1.5">
-                      {track && (
-                        <span className="rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-bold text-deep">
-                          {track.code}
+                      {subjectTracks.map((subjectTrack) => (
+                        <span
+                          key={subjectTrack.id}
+                          className="rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-bold text-deep"
+                        >
+                          {subjectTrack.code}
                         </span>
-                      )}
+                      ))}
                     </span>
                     <span className="block truncate text-base font-bold text-heading">
                       {name(subject)}

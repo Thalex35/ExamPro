@@ -104,7 +104,7 @@ describe("subjects page", () => {
     };
   });
 
-  it("uses only the authenticated Terminale track and shows real resource counts", () => {
+  it("shows all Terminale subjects and reports real resource counts", () => {
     mocks.me = {
       profile: { level_id: "term", track_id: "smp" },
       isStudent: true,
@@ -113,15 +113,30 @@ describe("subjects page", () => {
 
     expect(screen.getByText("Mathématiques")).toBeInTheDocument();
     expect(screen.getByText("Physique")).toBeInTheDocument();
-    expect(screen.queryByText("Biologie")).not.toBeInTheDocument();
+    expect(screen.getByText("Biologie")).toBeInTheDocument();
     expect(screen.queryByText("Français")).not.toBeInTheDocument();
     expect(screen.getByText("3 subj.courses")).toBeInTheDocument();
     expect(screen.getByText("4 subj.examsShort")).toBeInTheDocument();
+    expect(screen.getAllByText("SMP")).toHaveLength(2);
     expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Mathématiques/ })).toHaveAttribute(
       "href",
       "/subjects/math",
     );
+  });
+
+  it("shows subjects associated with other Terminale tracks too", () => {
+    mocks.me = {
+      profile: { level_id: "term", track_id: "svt" },
+      isStudent: true,
+    };
+    renderSubjects();
+
+    expect(screen.getByText("Biologie")).toBeInTheDocument();
+    expect(screen.getByText("Mathématiques")).toBeInTheDocument();
+    expect(screen.getByText("Physique")).toBeInTheDocument();
+    expect(screen.queryByText("Français")).not.toBeInTheDocument();
+    expect(screen.getAllByText("SVT")).toHaveLength(1);
   });
 
   it("uses the registered 9e level without showing Terminale subjects or a level selector", () => {

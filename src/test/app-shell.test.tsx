@@ -5,6 +5,7 @@ import { AppShell } from "@/components/AppShell";
 
 const mocks = vi.hoisted(() => ({
   me: undefined as unknown,
+  pathname: "/dashboard",
   navigate: vi.fn(),
   signOut: vi.fn(),
 }));
@@ -24,7 +25,7 @@ vi.mock("@tanstack/react-router", async () => {
       activeOptions?: unknown;
       activeProps?: unknown;
     }) => React.createElement("a", { href: to, ...props }, children),
-    useLocation: () => ({ pathname: "/dashboard" }),
+    useLocation: () => ({ pathname: mocks.pathname }),
     useNavigate: () => mocks.navigate,
   };
 });
@@ -86,6 +87,7 @@ function createMe(role: "student" | "teacher" | "admin") {
 describe("shared role-aware sidebar", () => {
   beforeEach(() => {
     mocks.me = undefined;
+    mocks.pathname = "/dashboard";
     mocks.navigate.mockReset();
     mocks.signOut.mockReset().mockResolvedValue({ error: null });
   });
@@ -126,6 +128,17 @@ describe("shared role-aware sidebar", () => {
     expect(navigationText).toContain("nav.adminExams");
     expect(navigationText).not.toContain("dash.examArchive");
     expect(navigationText).not.toContain("nav.teacherExams");
+  });
+
+  it("marks only the matching administrator subpage as active", () => {
+    mocks.me = createMe("admin");
+    mocks.pathname = "/admin/users";
+    renderShell();
+
+    expect(screen.getByRole("link", { name: "nav.dashboard" })).not.toHaveClass(
+      "bg-sidebar-active",
+    );
+    expect(screen.getByRole("link", { name: "nav.adminUsers" })).toHaveClass("bg-sidebar-active");
   });
 
   it("places profile access and sign-out inside the bottom profile menu", async () => {

@@ -18,6 +18,7 @@ import lightWordmark from "@/assets/ExamPro wordmark on navy.png";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useI18n } from "@/lib/i18n";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 export function AuthLayout({ children }: { children: ReactNode }) {
   const { t } = useI18n();
@@ -74,9 +75,10 @@ export function AuthLayout({ children }: { children: ReactNode }) {
         </footer>
       </section>
 
-      <section className="flex min-h-[calc(100vh-16rem)] flex-col bg-[#f7f9fc] px-4 pb-8 pt-5 sm:min-h-[calc(100vh-18rem)] sm:px-8 sm:pt-7 md:min-h-screen md:px-10 md:py-8 lg:px-14">
-        <div className="flex justify-end">
+      <section className="flex min-h-[calc(100vh-16rem)] flex-col bg-background px-4 pb-8 pt-5 sm:min-h-[calc(100vh-18rem)] sm:px-8 sm:pt-7 md:min-h-screen md:px-10 md:py-8 lg:px-14">
+        <div className="flex justify-end gap-2">
           <LanguageSwitch />
+          <ThemeToggle />
         </div>
         <div className="mx-auto flex w-full max-w-[34rem] flex-1 items-center justify-center py-6 sm:py-8">
           {children}

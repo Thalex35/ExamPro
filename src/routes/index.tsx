@@ -19,6 +19,7 @@ import { LanguageSwitch } from "@/components/LanguageSwitch";
 import { PublicContactForm } from "@/components/PublicContactForm";
 import { useI18n } from "@/lib/i18n";
 import { useMe } from "@/lib/session";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -81,6 +82,7 @@ function Landing() {
             </nav>
             <div className="public-actions">
               <LanguageSwitch />
+              <ThemeToggle />
               {me ? (
                 <Button asChild size="sm">
                   <Link to="/dashboard">{t("nav.dashboard")}</Link>

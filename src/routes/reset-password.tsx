@@ -41,7 +41,7 @@ function ResetPassword() {
 
   return (
     <AuthLayout>
-      <div className="w-full rounded-[1.75rem] border border-sky-100/80 bg-white p-5 shadow-[0_22px_60px_-32px_rgba(7,37,86,0.3)] sm:p-8 lg:p-9">
+      <div className="w-full rounded-[1.75rem] border border-border bg-card p-5 text-card-foreground shadow-card sm:p-8 lg:p-9">
         <div className="mb-6 text-center">
           <AuthBrandLockup />
           <h1 className="mt-4 text-2xl font-extrabold tracking-tight text-heading sm:text-[1.8rem]">

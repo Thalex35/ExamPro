@@ -40,6 +40,7 @@ import { LanguageSwitch } from "./LanguageSwitch";
 import { ErrorState, Loading } from "./States";
 import { cn } from "@/lib/utils";
 import { NotificationCenter } from "@/components/NotificationCenter";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 type NavItem = {
   to:
@@ -290,6 +291,7 @@ export function AppShell({
           </Link>
           <div className="flex items-center gap-4">
             <LanguageSwitch />
+            <ThemeToggle />
             <button
               onClick={signOut}
               className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -580,6 +582,8 @@ export function AppShell({
           ) : (
             <div className="flex-1" />
           )}
+          <LanguageSwitch />
+          <ThemeToggle />
           {me && <NotificationCenter />}
         </header>
         <main className="mx-auto w-full max-w-[1440px] px-4 py-7 sm:px-8 sm:py-9">

@@ -145,7 +145,7 @@ function SubjectDetail() {
         )}
       </nav>
 
-      <header className="relative isolate overflow-hidden rounded-3xl border border-sky-100 bg-gradient-to-br from-white via-sky-50 to-blue-100 p-5 shadow-sm sm:p-8">
+      <header className="card-surface relative isolate overflow-hidden p-5 sm:p-8">
         <div className="relative z-10 flex items-center justify-between gap-5">
           <div className="max-w-2xl">
             <p className="mb-2 text-xs font-bold uppercase tracking-[0.16em] text-deep">
@@ -162,7 +162,7 @@ function SubjectDetail() {
                   : t("subj.chapterDescription")}
             </p>
           </div>
-          <span className="hidden h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-primary text-brand shadow-md sm:flex">
+          <span className="hidden h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-muted text-deep shadow-md sm:flex">
             {chapter ? (
               <BookOpen className="h-8 w-8" aria-hidden="true" />
             ) : (
@@ -172,7 +172,7 @@ function SubjectDetail() {
         </div>
         <div
           aria-hidden="true"
-          className="absolute -bottom-24 -right-10 -z-10 h-56 w-56 rounded-full bg-sky-200/50 blur-3xl"
+          className="absolute -bottom-24 -right-10 -z-10 h-56 w-56 rounded-full bg-brand/15 blur-3xl"
         />
       </header>
 
@@ -187,7 +187,7 @@ function SubjectDetail() {
             <h2 id="chapters-heading" className="text-xl font-bold text-heading">
               {t("subj.chapters")}
             </h2>
-            <span className="ml-auto rounded-full bg-sky-100 px-3 py-1 text-xs font-semibold text-deep">
+            <span className="ml-auto rounded-full bg-accent px-3 py-1 text-xs font-semibold text-accent-foreground">
               {chapters.length} {t("subj.chapters").toLowerCase()}
             </span>
           </div>
@@ -203,13 +203,13 @@ function SubjectDetail() {
                   to="/subjects/$subjectId"
                   params={{ subjectId }}
                   search={{ chapter: item.id }}
-                  className="group flex min-h-56 flex-col rounded-2xl border border-sky-100 bg-card p-5 shadow-card transition-all duration-200 hover:-translate-y-1 hover:border-brand/50 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  className="group flex min-h-56 flex-col rounded-2xl border border-border bg-card p-5 shadow-card transition-all duration-200 hover:-translate-y-1 hover:border-brand/50 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-brand">
                       <BookOpen className="h-6 w-6" aria-hidden="true" />
                     </span>
-                    <span className="rounded-full bg-sky-50 px-2.5 py-1 text-xs font-semibold text-deep">
+                    <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-semibold text-foreground">
                       {t("subj.chapterNumber")} {index + 1}
                     </span>
                   </div>
@@ -218,7 +218,7 @@ function SubjectDetail() {
                   </span>
                   <span className="mt-auto flex flex-wrap gap-2 pt-4 text-xs font-semibold text-deep">
                     <ResourceCount icon={BookOpen} count={courseCount} label={t("subj.courses")} />
-                    <span className="inline-flex items-center gap-1 rounded-full bg-sky-50 px-2.5 py-1.5">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-1.5">
                       <Brain className="h-3.5 w-3.5" aria-hidden="true" />
                       {t("quiz.demoLabel")}
                     </span>
@@ -280,7 +280,7 @@ function ResourceCount({
   label: string;
 }) {
   return (
-    <span className="inline-flex items-center gap-1 rounded-full bg-sky-50 px-2.5 py-1.5">
+    <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-1.5">
       <Icon className="h-3.5 w-3.5" aria-hidden="true" />
       {count} {label}
     </span>

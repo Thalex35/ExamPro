@@ -89,7 +89,7 @@ export function CourseListSection({
         </NativeSelect>
       </div>
       {filteredCourses.length === 0 ? (
-        <p className="rounded-2xl border border-sky-100 bg-card p-5 text-sm text-muted-foreground shadow-card">
+        <p className="rounded-2xl border border-border bg-card p-5 text-sm text-muted-foreground shadow-card">
           {emptyMessage}
         </p>
       ) : (
@@ -112,9 +112,9 @@ export function CourseListItem({ course }: { course: CourseListEntry }) {
     <Link
       to="/courses/$courseId"
       params={{ courseId: course.id }}
-      className="group grid min-w-0 grid-cols-[2.75rem_minmax(0,1fr)] items-center gap-x-3 gap-y-3 rounded-2xl border border-sky-100 bg-card p-4 shadow-card transition-colors duration-200 hover:border-sky-300 hover:bg-sky-50/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:grid-cols-[3rem_minmax(0,1fr)_auto] sm:gap-x-4 sm:p-5"
+      className="group grid min-w-0 grid-cols-[2.75rem_minmax(0,1fr)] items-center gap-x-3 gap-y-3 rounded-2xl border border-border bg-card p-4 shadow-card transition-colors duration-200 hover:border-brand/60 hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:grid-cols-[3rem_minmax(0,1fr)_auto] sm:gap-x-4 sm:p-5"
     >
-      <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-sky-50 text-deep sm:h-12 sm:w-12">
+      <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-accent text-accent-foreground sm:h-12 sm:w-12">
         <FileText className="h-6 w-6" aria-hidden="true" />
       </span>
       <span className="min-w-0">
@@ -151,7 +151,7 @@ export function ResourceNavigation({
   return (
     <nav
       aria-label={t("subj.resourceNavigation")}
-      className="flex gap-2 overflow-x-auto border-b border-sky-100 pb-2"
+      className="flex gap-2 overflow-x-auto border-b border-border pb-2"
     >
       <Link
         to="/subjects/$subjectId"
@@ -190,6 +190,6 @@ function resourceTabClass(active: boolean) {
   return `inline-flex min-h-10 shrink-0 items-center gap-2 rounded-full border px-4 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
     active
       ? "border-primary bg-primary text-primary-foreground shadow-sm"
-      : "border-sky-100 bg-card text-muted-foreground hover:border-sky-300 hover:text-heading"
+      : "border-border bg-card text-muted-foreground hover:border-brand/60 hover:text-heading"
   }`;
 }

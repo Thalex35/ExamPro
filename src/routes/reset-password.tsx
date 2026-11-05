@@ -1,11 +1,9 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
+import { AuthLayout, AuthPasswordField } from "@/components/AuthLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { BrandLogo } from "@/components/Brand";
 import { useI18n } from "@/lib/i18n";
 
 export const Route = createFileRoute("/reset-password")({
@@ -27,26 +25,45 @@ function ResetPassword() {
   const navigate = useNavigate();
   const [pw, setPw] = useState("");
   const [busy, setBusy] = useState(false);
+
   async function submit(e: FormEvent) {
     e.preventDefault();
     setBusy(true);
     const { error } = await supabase.auth.updateUser({ password: pw });
     setBusy(false);
-    if (error) { toast.error(errMsg(error)); return; }
+    if (error) {
+      toast.error(errMsg(error));
+      return;
+    }
     toast.success(t("auth.passwordUpdated"));
     navigate({ to: "/dashboard" });
   }
+
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-8 px-4">
-      <BrandLogo className="h-10" />
-      <form onSubmit={submit} className="card-surface flex w-full max-w-sm flex-col gap-4 p-6">
-        <h1 className="text-xl font-bold">{t("auth.forgotTitle")}</h1>
-        <div className="grid gap-1.5">
-          <Label htmlFor="pw">{t("auth.newPassword")}</Label>
-          <Input id="pw" type="password" minLength={8} required value={pw} onChange={(e) => setPw(e.target.value)} autoComplete="new-password" />
+    <AuthLayout>
+      <div className="w-full rounded-3xl border border-sky-100 bg-card p-5 shadow-[0_16px_48px_-28px_rgba(7,37,86,0.28)] sm:p-8 lg:p-10">
+        <div className="mb-7 text-center">
+          <h1 className="text-2xl font-extrabold tracking-tight text-heading sm:text-3xl">
+            {t("auth.forgotTitle")}
+          </h1>
+          <p className="mt-2 text-sm leading-6 text-muted-foreground">
+            {t("auth.resetPasswordDescription")}
+          </p>
         </div>
-        <Button type="submit" disabled={busy}>{t("auth.savePassword")}</Button>
-      </form>
-    </div>
+        <form onSubmit={submit} className="flex flex-col gap-5">
+          <AuthPasswordField
+            id="pw"
+            label={t("auth.newPassword")}
+            value={pw}
+            onChange={setPw}
+            minLength={8}
+            autoComplete="new-password"
+          />
+          <Button type="submit" disabled={busy} size="lg" className="h-12 w-full rounded-xl">
+            {t("auth.savePassword")}
+          </Button>
+        </form>
+      </div>
+    </AuthLayout>
   );
 }

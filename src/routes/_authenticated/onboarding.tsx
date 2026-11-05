@@ -18,6 +18,7 @@ import {
 } from "@/lib/onboarding";
 import { useMe } from "@/lib/session";
 import { useI18n } from "@/lib/i18n";
+import { AuthLayout } from "@/components/AuthLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field, NativeSelect } from "@/components/Field";
@@ -131,19 +132,41 @@ function Onboarding() {
   }, [assignments.data, assignments.isLoading, catalog.data, catalog.isLoading, me, meLoading]);
 
   if (meLoading || catalog.isLoading || (me?.isTeacher && assignments.isLoading)) {
-    return <Loading />;
+    return (
+      <AuthLayout>
+        <Loading />
+      </AuthLayout>
+    );
   }
   if (catalog.error || !catalog.data) {
-    return <ErrorState error={catalog.error} onRetry={() => catalog.refetch()} />;
+    return (
+      <AuthLayout>
+        <ErrorState error={catalog.error} onRetry={() => catalog.refetch()} />
+      </AuthLayout>
+    );
   }
   if (assignments.error) {
-    return <ErrorState error={assignments.error} onRetry={() => assignments.refetch()} />;
+    return (
+      <AuthLayout>
+        <ErrorState error={assignments.error} onRetry={() => assignments.refetch()} />
+      </AuthLayout>
+    );
   }
   if (!me?.profile) {
-    return <ErrorState error={new Error(t("onb.loadError"))} />;
+    return (
+      <AuthLayout>
+        <ErrorState error={new Error(t("onb.loadError"))} />
+      </AuthLayout>
+    );
   }
   const profile = me.profile;
-  if (!step || !initialized.current) return <Loading />;
+  if (!step || !initialized.current) {
+    return (
+      <AuthLayout>
+        <Loading />
+      </AuthLayout>
+    );
+  }
 
   const c = catalog.data;
   const savedAssignments = assignments.data ?? [];
@@ -903,19 +926,21 @@ function Onboarding() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-2xl">
-      <h1 className="text-2xl font-bold sm:text-3xl">{t("onb.title")}</h1>
-      <div className="mt-5 grid gap-2">
-        <div className="flex items-center justify-between text-xs text-muted-foreground">
-          <span>{t("onb.progress")}</span>
-          <span>
-            {stepIndex + 1} / {flow.length}
-          </span>
+    <AuthLayout>
+      <div className="mx-auto w-full max-w-2xl">
+        <h1 className="text-2xl font-bold sm:text-3xl">{t("onb.title")}</h1>
+        <div className="mt-5 grid gap-2">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span>{t("onb.progress")}</span>
+            <span>
+              {stepIndex + 1} / {flow.length}
+            </span>
+          </div>
+          <Progress value={progressValue} aria-label={t("onb.progress")} />
         </div>
-        <Progress value={progressValue} aria-label={t("onb.progress")} />
+        {content}
       </div>
-      {content}
-    </div>
+    </AuthLayout>
   );
 }
 

@@ -1,14 +1,12 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent } from "react";
 import { toast } from "sonner";
-import { ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { signInWithGoogle } from "@/lib/oauth";
+import { AuthLayout, AuthPasswordField } from "@/components/AuthLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { BrandLogo } from "@/components/Brand";
-import { LanguageSwitch } from "@/components/LanguageSwitch";
 import { useI18n } from "@/lib/i18n";
 
 type Mode = "login" | "signup" | "forgot";
@@ -199,187 +197,185 @@ function AuthPage() {
       : mode === "signup"
         ? t("auth.signupTitle")
         : t("auth.forgotTitle");
+  const description =
+    mode === "login"
+      ? t("auth.loginDescription")
+      : mode === "signup"
+        ? t("auth.signupDescription")
+        : t("auth.forgotDescription");
 
   return (
-    <div className="grid min-h-screen md:grid-cols-2">
-      <div className="hero-surface hidden flex-col justify-between p-10 md:flex">
-        <p className="text-sm font-semibold tracking-widest text-brand">{t("brand.tagline")}</p>
-        <h2 className="max-w-md text-3xl font-bold leading-snug text-primary-foreground">
-          {t("landing.title")}
-        </h2>
-        <p className="text-sm text-primary-foreground/70">EXAMPRO</p>
-      </div>
-      <div className="flex flex-col px-4 py-6 sm:px-10">
-        <div className="flex items-center justify-between">
-          <Link to="/">
-            <BrandLogo className="h-9" />
-          </Link>
-          <div className="flex items-center gap-4">
-            {mode === "signup" && (
-              <Link
-                to="/"
-                className="inline-flex items-center gap-1 text-sm font-medium text-deep hover:underline"
-              >
-                <ArrowLeft className="h-4 w-4" />
-                {t("auth.backHome")}
-              </Link>
-            )}
-            <LanguageSwitch />
-          </div>
+    <AuthLayout>
+      <div className="w-full rounded-3xl border border-sky-100 bg-card p-5 shadow-[0_16px_48px_-28px_rgba(7,37,86,0.28)] sm:p-8 lg:p-10">
+        <div className="mb-7 text-center">
+          <h1 className="text-2xl font-extrabold tracking-tight text-heading sm:text-3xl">
+            {title}
+          </h1>
+          <p className="mt-2 text-sm leading-6 text-muted-foreground">{description}</p>
         </div>
-        <div className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center py-10">
-          <h1 className="text-2xl font-bold">{title}</h1>
-          {isUnauthorized ? (
+        {isUnauthorized ? (
+          <p
+            className="mb-4 rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive"
+            role="alert"
+          >
+            {t("auth.unauthorized")}
+          </p>
+        ) : null}
+        {info ? (
+          <div
+            className="mb-4 rounded-xl border border-success/30 bg-success/5 p-4 text-sm text-success"
+            role="status"
+          >
+            {info}
+          </div>
+        ) : null}
+        <form onSubmit={submit} className="flex flex-col gap-5">
+          {formError && (
             <p
-              className="mt-4 rounded-lg border border-destructive/30 bg-card p-4 text-sm text-destructive"
+              className="rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive"
               role="alert"
             >
-              {t("auth.unauthorized")}
+              {formError}
             </p>
-          ) : null}
-          {info ? (
-            <div
-              className="mt-6 rounded-lg border border-success/30 bg-card p-4 text-sm text-success"
-              role="status"
-            >
-              {info}
-            </div>
-          ) : null}
-          <form onSubmit={submit} className="mt-6 flex flex-col gap-4">
-            {formError && (
-              <p className="text-sm text-destructive" role="alert">
-                {formError}
-              </p>
-            )}
-            {mode === "signup" && (
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="grid gap-1.5">
-                  <Label htmlFor="first-name">{t("auth.firstName")}</Label>
-                  <Input
-                    id="first-name"
-                    required
-                    maxLength={80}
-                    value={firstName}
-                    onChange={(e) => setFirstName(e.target.value)}
-                    autoComplete="given-name"
-                  />
-                </div>
-                <div className="grid gap-1.5">
-                  <Label htmlFor="last-name">{t("auth.lastName")}</Label>
-                  <Input
-                    id="last-name"
-                    required
-                    maxLength={80}
-                    value={lastName}
-                    onChange={(e) => setLastName(e.target.value)}
-                    autoComplete="family-name"
-                  />
-                </div>
-              </div>
-            )}
-            <div className="grid gap-1.5">
-              <Label htmlFor="email">{t("auth.email")}</Label>
-              <Input
-                id="email"
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                autoComplete="email"
-              />
-            </div>
-            {mode !== "forgot" && (
-              <div className="grid gap-1.5">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="password">{t("auth.password")}</Label>
-                  {mode === "login" && (
-                    <Link
-                      to="/auth"
-                      search={{ mode: "forgot" }}
-                      className="text-xs text-deep hover:underline"
-                    >
-                      {t("auth.forgot")}
-                    </Link>
-                  )}
-                </div>
-                <Input
-                  id="password"
-                  type="password"
-                  required
-                  minLength={8}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  autoComplete={mode === "login" ? "current-password" : "new-password"}
-                />
-              </div>
-            )}
-            {mode === "signup" && (
-              <div className="grid gap-1.5">
-                <Label htmlFor="confirm-password">{t("auth.confirmPassword")}</Label>
-                <Input
-                  id="confirm-password"
-                  type="password"
-                  required
-                  minLength={8}
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  autoComplete="new-password"
-                  aria-invalid={!!validationError}
-                  aria-describedby={validationError ? "confirm-password-error" : undefined}
-                />
-              </div>
-            )}
-            {validationError && (
-              <p id="confirm-password-error" className="text-sm text-destructive" role="alert">
-                {validationError}
-              </p>
-            )}
-            <Button type="submit" disabled={busy} size="lg">
-              {mode === "login"
-                ? t("auth.submitLogin")
-                : mode === "signup"
-                  ? t("auth.submitSignup")
-                  : t("auth.sendReset")}
-            </Button>
-          </form>
-          {mode !== "forgot" && (
-            <>
-              <div className="my-5 flex items-center gap-3 text-xs uppercase text-muted-foreground">
-                <span className="h-px flex-1 bg-border" /> {t("auth.or")}{" "}
-                <span className="h-px flex-1 bg-border" />
-              </div>
-              <Button variant="outline" size="lg" onClick={google} type="button" disabled={busy}>
-                {t("auth.google")}
-              </Button>
-            </>
           )}
-          <p className="mt-6 text-center text-sm text-muted-foreground">
-            {mode === "login" ? (
-              <>
-                {t("auth.noAccount")}{" "}
-                <Link
-                  to="/auth"
-                  search={{ mode: "signup" }}
-                  className="font-semibold text-deep hover:underline"
-                >
-                  {t("nav.signup")}
-                </Link>
-              </>
-            ) : mode === "signup" ? (
-              <>
-                {t("auth.haveAccount")}{" "}
-                <Link to="/auth" className="font-semibold text-deep hover:underline">
-                  {t("nav.login")}
-                </Link>
-              </>
-            ) : (
-              <Link to="/auth" className="font-semibold text-deep hover:underline">
-                {t("auth.back")}
+          {mode === "signup" && (
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-1.5">
+                <Label htmlFor="first-name">{t("auth.firstName")}</Label>
+                <Input
+                  id="first-name"
+                  required
+                  maxLength={80}
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  autoComplete="given-name"
+                  className="h-12 rounded-xl"
+                />
+              </div>
+              <div className="grid gap-1.5">
+                <Label htmlFor="last-name">{t("auth.lastName")}</Label>
+                <Input
+                  id="last-name"
+                  required
+                  maxLength={80}
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  autoComplete="family-name"
+                  className="h-12 rounded-xl"
+                />
+              </div>
+            </div>
+          )}
+          <div className="grid gap-1.5">
+            <Label htmlFor="email">{t("auth.email")}</Label>
+            <Input
+              id="email"
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              autoComplete="email"
+              className="h-12 rounded-xl"
+            />
+          </div>
+          {mode !== "forgot" && (
+            <AuthPasswordField
+              id="password"
+              label={t("auth.password")}
+              value={password}
+              onChange={setPassword}
+              autoComplete={mode === "login" ? "current-password" : "new-password"}
+              minLength={8}
+              action={
+                mode === "login" ? (
+                  <Link
+                    to="/auth"
+                    search={{ mode: "forgot" }}
+                    className="text-xs font-medium text-deep transition-colors hover:text-brand"
+                  >
+                    {t("auth.forgot")}
+                  </Link>
+                ) : undefined
+              }
+            />
+          )}
+          {mode === "signup" && (
+            <AuthPasswordField
+              id="confirm-password"
+              label={t("auth.confirmPassword")}
+              value={confirmPassword}
+              onChange={setConfirmPassword}
+              autoComplete="new-password"
+              minLength={8}
+              invalid={!!validationError}
+              describedBy={validationError ? "confirm-password-error" : undefined}
+            />
+          )}
+          {validationError && (
+            <p id="confirm-password-error" className="text-sm text-destructive" role="alert">
+              {validationError}
+            </p>
+          )}
+          <Button
+            type="submit"
+            disabled={busy}
+            size="lg"
+            className="h-12 w-full rounded-xl font-semibold"
+          >
+            {mode === "login"
+              ? t("auth.submitLogin")
+              : mode === "signup"
+                ? t("auth.submitSignup")
+                : t("auth.sendReset")}
+          </Button>
+        </form>
+        {mode !== "forgot" && (
+          <div className="mt-5">
+            <div className="mb-5 flex items-center gap-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              <span className="h-px flex-1 bg-border" /> {t("auth.or")}{" "}
+              <span className="h-px flex-1 bg-border" />
+            </div>
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={google}
+              type="button"
+              disabled={busy}
+              className="h-12 w-full rounded-xl bg-white font-semibold"
+            >
+              <span aria-hidden="true" className="text-lg font-bold text-[#4285f4]">
+                G
+              </span>
+              {t("auth.google")}
+            </Button>
+          </div>
+        )}
+        <p className="mt-7 text-center text-sm text-muted-foreground">
+          {mode === "login" ? (
+            <>
+              {t("auth.noAccount")}{" "}
+              <Link
+                to="/auth"
+                search={{ mode: "signup" }}
+                className="font-semibold text-deep hover:underline"
+              >
+                {t("nav.signup")}
               </Link>
-            )}
-          </p>
-        </div>
+            </>
+          ) : mode === "signup" ? (
+            <>
+              {t("auth.haveAccount")}{" "}
+              <Link to="/auth" className="font-semibold text-deep hover:underline">
+                {t("nav.login")}
+              </Link>
+            </>
+          ) : (
+            <Link to="/auth" className="font-semibold text-deep hover:underline">
+              {t("auth.back")}
+            </Link>
+          )}
+        </p>
       </div>
-    </div>
+    </AuthLayout>
   );
 }

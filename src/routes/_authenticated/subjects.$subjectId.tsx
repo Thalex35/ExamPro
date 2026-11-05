@@ -10,6 +10,7 @@ import {
   Layers3,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { CourseListSection, ResourceNavigation } from "@/components/CourseList";
 import { Empty, ErrorState, Loading } from "@/components/States";
 import { supabase } from "@/integrations/supabase/client";
 import { catalogQuery, chaptersFor, subjectsForLevel, trackFilter } from "@/lib/catalog";
@@ -50,7 +51,7 @@ function SubjectDetail() {
       const [courses, exams] = await Promise.all([
         supabase
           .from("courses")
-          .select("id,chapter_id")
+          .select("id,title,summary,resource_type,is_demo,chapter_id")
           .eq("status", "published")
           .eq("subject_id", subjectId)
           .eq("level_id", levelId!)
@@ -94,12 +95,14 @@ function SubjectDetail() {
     ? allExams.filter((exam) => !exam.chapter_id)
     : allExams.filter((exam) => exam.chapter_id === chapter?.id);
 
-  const activeResource = resource
+  const currentResource = resource ?? "courses";
+  const hasResourcePage = isSimpleSubject || !!chapter;
+  const activeResource = hasResourcePage
     ? {
         courses: t("subj.courses"),
         quiz: t("subj.quiz"),
         exams: t("subj.examsShort"),
-      }[resource]
+      }[currentResource]
     : undefined;
 
   return (
@@ -232,48 +235,25 @@ function SubjectDetail() {
             })}
           </div>
         </section>
-      ) : resource === "quiz" ? (
-        <UnavailableQuiz />
       ) : (
-        <section aria-labelledby="resources-heading" className="space-y-4">
-          <div className="flex items-center gap-2">
-            <Layers3 className="h-5 w-5 text-brand" aria-hidden="true" />
-            <h2 id="resources-heading" className="text-xl font-bold text-heading">
-              {t("subj.availableResources")}
-            </h2>
-          </div>
-          <div className="grid gap-4 md:grid-cols-3">
-            <ResourceCard
-              to="/courses"
-              search={{ subject: subjectId, chapter: chapter?.id }}
-              icon={BookOpen}
-              title={t("subj.courses")}
+        <div className="space-y-5">
+          <ResourceNavigation
+            subjectId={subjectId}
+            chapterId={chapter?.id}
+            active={currentResource}
+          />
+          {currentResource === "quiz" ? (
+            <UnavailableQuiz />
+          ) : (
+            <CourseListSection
+              courses={selectedCourses}
+              title={t("course.all")}
+              subjectName={chapter ? name(chapter) : name(subject)}
               description={t("subj.coursesDescription")}
-              count={selectedCourses.length}
+              emptyMessage={t("subj.noCoursesHere")}
             />
-            <Link
-              to="/subjects/$subjectId"
-              params={{ subjectId }}
-              search={{ chapter: chapter?.id, resource: "quiz" }}
-              className="group flex min-h-48 items-center gap-4 rounded-2xl border border-sky-100 bg-card p-5 shadow-card transition-all duration-200 hover:-translate-y-1 hover:border-brand/50 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              <ResourceCardContents
-                icon={Brain}
-                title={t("subj.quiz")}
-                description={t("subj.quizDescription")}
-                countLabel={t("subj.comingSoon")}
-              />
-            </Link>
-            <ResourceCard
-              to="/exams"
-              search={{ subject: subjectId, chapter: chapter?.id }}
-              icon={FileText}
-              title={t("subj.examsCategory")}
-              description={t("subj.examsDescription")}
-              count={selectedExams.length}
-            />
-          </div>
-        </section>
+          )}
+        </div>
       )}
     </div>
   );
@@ -293,71 +273,6 @@ function ResourceCount({
       <Icon className="h-3.5 w-3.5" aria-hidden="true" />
       {count} {label}
     </span>
-  );
-}
-
-function ResourceCard({
-  to,
-  search,
-  icon,
-  title,
-  description,
-  count,
-}: {
-  to: "/courses" | "/exams";
-  search: { subject: string; chapter?: string | undefined };
-  icon: LucideIcon;
-  title: string;
-  description: string;
-  count: number;
-}) {
-  const { t } = useI18n();
-  return (
-    <Link
-      to={to}
-      search={search}
-      className="group flex min-h-48 items-center gap-4 rounded-2xl border border-sky-100 bg-card p-5 shadow-card transition-all duration-200 hover:-translate-y-1 hover:border-brand/50 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-    >
-      <ResourceCardContents
-        icon={icon}
-        title={title}
-        description={description}
-        countLabel={`${count} ${t(count === 1 ? "subj.resourceSingular" : "subj.resourcesCount")}`}
-      />
-    </Link>
-  );
-}
-
-function ResourceCardContents({
-  icon: Icon,
-  title,
-  description,
-  countLabel,
-}: {
-  icon: LucideIcon;
-  title: string;
-  description: string;
-  countLabel: string;
-}) {
-  return (
-    <>
-      <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-primary text-brand">
-        <Icon className="h-7 w-7" aria-hidden="true" />
-      </span>
-      <span className="min-w-0 flex-1">
-        <span className="flex items-center justify-between gap-2">
-          <span className="text-lg font-bold text-heading">{title}</span>
-          <ArrowRight
-            className="h-5 w-5 shrink-0 text-brand transition-transform group-hover:translate-x-1"
-            aria-hidden="true"
-          />
-        </span>
-        <span className="mt-1 block text-sm text-muted-foreground">{description}</span>
-        <span className="mt-4 inline-flex rounded-full bg-sky-50 px-3 py-1.5 text-xs font-semibold text-deep">
-          {countLabel}
-        </span>
-      </span>
-    </>
   );
 }
 

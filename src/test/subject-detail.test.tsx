@@ -7,7 +7,14 @@ const mocks = vi.hoisted(() => ({
   catalog: undefined as unknown,
   me: undefined as unknown,
   resources: { courses: [], exams: [] } as {
-    courses: { id: string; chapter_id: string | null }[];
+    courses: {
+      id: string;
+      title: string;
+      summary: string | null;
+      resource_type: string;
+      is_demo: boolean;
+      chapter_id: string | null;
+    }[];
     exams: { id: string; chapter_id: string | null }[];
   },
   subjectId: "math",
@@ -40,9 +47,13 @@ vi.mock("@tanstack/react-router", async () => {
         .filter((entry): entry is [string, string] => !!entry[1])
         .map(([key, value]) => `${key}=${value}`)
         .join("&");
+      const target =
+        to === "/courses/$courseId"
+          ? `/courses/${(params as { courseId?: string })?.courseId}`
+          : path;
       return React.createElement(
         "a",
-        { href: query ? `${path}?${query}` : path, ...props },
+        { href: query ? `${target}?${query}` : target, ...props },
         children,
       );
     },
@@ -72,8 +83,10 @@ vi.mock("@/lib/i18n", () => ({
         "subj.chapterNumber": "Chapitre",
         "subj.openChapter": "Explorer ce chapitre",
         "subj.availableResources": "Ressources disponibles",
+        "subj.resourceNavigation": "Navigation des ressources",
         "subj.courses": "Cours",
         "subj.coursesDescription": "Leçons.",
+        "subj.noCoursesHere": "Aucun cours publié ici pour l'instant.",
         "subj.quiz": "Quiz",
         "subj.quizDescription": "Testez vos connaissances.",
         "subj.quizUnavailable": "Les quiz ne sont pas encore disponibles.",
@@ -84,6 +97,14 @@ vi.mock("@/lib/i18n", () => ({
         "subj.examsDescription": "Entraînez-vous.",
         "subj.resourcesCount": "ressources",
         "subj.empty": "Aucune matière.",
+        "course.count": "cours",
+        "course.filter": "Filtrer les cours",
+        "course.filterAll": "Tous les cours",
+        "course.summaryFallback": "Consultez le contenu de ce cours.",
+        "course.view": "Voir le cours",
+        "content.textLesson": "Cours rédigé",
+        "content.document": "Document PDF",
+        "content.externalLink": "Lien externe",
       })[key] ?? key,
     name: (value: { name_fr: string }) => value.name_fr,
   }),
@@ -100,10 +121,12 @@ function makeCatalog(): Catalog {
     subjects: [
       { id: "math", slug: "mathematiques", name_fr: "Mathématiques" },
       { id: "english", slug: "anglais", name_fr: "Anglais" },
+      { id: "french", slug: "francais", name_fr: "Français" },
     ],
     levelSubjects: [
       { level_id: "term", subject_id: "math" },
       { level_id: "term", subject_id: "english" },
+      { level_id: "term", subject_id: "french" },
     ],
     trackSubjects: [],
     chapters: [{ id: "geometry", subject_id: "math", level_id: "term", name_fr: "Géométrie" }],
@@ -123,9 +146,30 @@ describe("subject detail pages", () => {
     mocks.me = { profile: { level_id: "term", track_id: null } };
     mocks.resources = {
       courses: [
-        { id: "course-1", chapter_id: "geometry" },
-        { id: "course-2", chapter_id: "geometry" },
-        { id: "course-3", chapter_id: null },
+        {
+          id: "course-1",
+          title: "Géométrie plane",
+          summary: "Les propriétés des figures planes.",
+          resource_type: "text",
+          is_demo: false,
+          chapter_id: "geometry",
+        },
+        {
+          id: "course-2",
+          title: "Triangles",
+          summary: null,
+          resource_type: "document",
+          is_demo: false,
+          chapter_id: "geometry",
+        },
+        {
+          id: "course-3",
+          title: "Conversation",
+          summary: "Pratique de la conversation.",
+          resource_type: "external_link",
+          is_demo: false,
+          chapter_id: null,
+        },
       ],
       exams: [
         { id: "exam-1", chapter_id: "geometry" },
@@ -136,22 +180,46 @@ describe("subject detail pages", () => {
     mocks.search = {};
   });
 
-  it("shows three resource cards directly for a subject without chapters", () => {
+  it("shows the course list and active resource tabs for a subject without chapters", () => {
     mocks.subjectId = "english";
+    mocks.resources.courses = [mocks.resources.courses[2]!];
     renderSubject();
 
     expect(screen.getByRole("heading", { name: "Anglais" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Ressources disponibles" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Nos cours d'anglais" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Chapitres" })).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Cours/ })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Cours" })).toHaveAttribute(
       "href",
-      "/courses?subject=english",
+      "/subjects/english?resource=courses",
     );
-    expect(screen.getByRole("link", { name: /Examens/ })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Examens" })).toHaveAttribute(
       "href",
       "/exams?subject=english",
     );
-    expect(screen.getByRole("link", { name: /Quiz/ })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Cours" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByText("Conversation")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Voir le cours/ })).toHaveAttribute(
+      "href",
+      "/courses/course-3",
+    );
+  });
+
+  it("uses the selected French subject name in its course list title", () => {
+    mocks.subjectId = "french";
+    mocks.resources.courses = [
+      {
+        id: "course-fr",
+        title: "Grammaire française",
+        summary: "Les règles essentielles de grammaire.",
+        resource_type: "text",
+        is_demo: false,
+        chapter_id: null,
+      },
+    ];
+    renderSubject();
+
+    expect(screen.getByRole("heading", { name: "Nos cours de français" })).toBeInTheDocument();
+    expect(screen.getByText("Grammaire française")).toBeInTheDocument();
   });
 
   it("shows configured chapter cards with actual course and exam counts", () => {
@@ -170,23 +238,42 @@ describe("subject detail pages", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("shows the three resource categories for a selected chapter", () => {
+  it("shows the same course list and resource tabs for a selected chapter", () => {
     mocks.search = { chapter: "geometry" };
     renderSubject();
 
     expect(screen.getByRole("heading", { name: "Géométrie" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Cours/ })).toHaveAttribute(
+    expect(screen.getByRole("heading", { name: "Nos cours de géométrie" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Cours" })).toHaveAttribute(
       "href",
-      "/courses?subject=math&chapter=geometry",
+      "/subjects/math?chapter=geometry&resource=courses",
     );
-    expect(screen.getByRole("link", { name: /Examens/ })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Examens" })).toHaveAttribute(
       "href",
       "/exams?subject=math&chapter=geometry",
     );
-    expect(screen.getByRole("link", { name: /Quiz/ })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Quiz" })).toHaveAttribute(
       "href",
       "/subjects/math?chapter=geometry&resource=quiz",
     );
+    expect(
+      screen
+        .getAllByRole("link", { name: /Voir le cours/ })
+        .map((link) => link.getAttribute("href")),
+    ).toContain("/courses/course-1");
+  });
+
+  it("filters a chapter's courses by the resource type in the database", () => {
+    mocks.search = { chapter: "geometry" };
+    renderSubject();
+
+    fireEvent.change(screen.getByRole("combobox", { name: "Filtrer les cours" }), {
+      target: { value: "document" },
+    });
+
+    expect(screen.getByText("Triangles")).toBeInTheDocument();
+    expect(screen.getByText("Consultez le contenu de ce cours.")).toBeInTheDocument();
+    expect(screen.queryByText("Géométrie plane")).not.toBeInTheDocument();
   });
 
   it("does not imply quiz resources exist", () => {

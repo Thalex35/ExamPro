@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { DemoBadge } from "@/components/DemoBadge";
+import { ResourceNavigation } from "@/components/CourseList";
 
 export const Route = createFileRoute("/_authenticated/exams")({
   validateSearch: (
@@ -144,6 +145,10 @@ function Exams() {
         <h1 className="text-2xl font-bold sm:text-3xl">{t("exams.title")}</h1>
         <p className="mt-2 text-sm text-muted-foreground">{t("exams.subtitle")}</p>
       </div>
+
+      {subject && c.subjects.some((item) => item.id === subject) && (
+        <ResourceNavigation subjectId={subject} chapterId={chapter} active="exams" />
+      )}
 
       <section
         aria-label={t("exams.filters")}

@@ -1,10 +1,10 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { BookOpen, Search } from "lucide-react";
+import { Search } from "lucide-react";
 import { useState } from "react";
 import { NativeSelect } from "@/components/Field";
-import { DemoBadge } from "@/components/DemoBadge";
-import { Empty, ErrorState, Loading, PageHeader } from "@/components/States";
+import { CourseListSection, ResourceNavigation } from "@/components/CourseList";
+import { Empty, ErrorState, Loading } from "@/components/States";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { catalogQuery, subjectsForLevel, trackFilter } from "@/lib/catalog";
@@ -38,7 +38,9 @@ function CoursesPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("courses")
-        .select("id,title,summary,subject_id,chapter_id,topic_id,published_at,is_demo")
+        .select(
+          "id,title,summary,subject_id,chapter_id,topic_id,published_at,is_demo,resource_type",
+        )
         .eq("status", "published")
         .eq("level_id", levelId!)
         .or(trackFilter(trackId))
@@ -74,7 +76,7 @@ function CoursesPage() {
 
   return (
     <div>
-      {chapterId && (
+      {subjectId && (
         <nav
           className="mb-4 flex flex-wrap items-center gap-1 text-sm text-muted-foreground"
           aria-label="breadcrumb"
@@ -94,7 +96,7 @@ function CoursesPage() {
                 {name(selectedSubject)}
               </Link>
               <span aria-hidden="true">›</span>
-              {selectedChapter && (
+              {selectedChapter && chapterId && (
                 <Link
                   to="/subjects/$subjectId"
                   params={{ subjectId: selectedSubject.id }}
@@ -104,13 +106,19 @@ function CoursesPage() {
                   {name(selectedChapter)}
                 </Link>
               )}
-              <span aria-hidden="true">›</span>
+              {selectedChapter && chapterId && <span aria-hidden="true">›</span>}
             </>
           )}
           <span className="font-medium text-foreground">{t("subj.courses")}</span>
         </nav>
       )}
-      <PageHeader title={t("course.all")} subtitle={t("course.allDescription")} />
+      {selectedSubject && (
+        <ResourceNavigation
+          subjectId={selectedSubject.id}
+          chapterId={selectedChapter?.id}
+          active="courses"
+        />
+      )}
       <div className="card-surface mb-6 grid gap-3 p-3 sm:grid-cols-[minmax(0,1fr)_minmax(200px,280px)]">
         <div className="relative">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -152,38 +160,19 @@ function CoursesPage() {
       ) : results.length === 0 ? (
         <Empty>{t("course.noResults")}</Empty>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {results.map((course) => {
-            const subject = catalog.data!.subjects.find((entry) => entry.id === course.subject_id);
-            const chapter = catalog.data!.chapters.find((entry) => entry.id === course.chapter_id);
-            return (
-              <Link
-                key={course.id}
-                to="/courses/$courseId"
-                params={{ courseId: course.id }}
-                className="card-surface group flex min-h-52 flex-col p-5 transition-shadow hover:shadow-brand"
-              >
-                <span className="flex items-start justify-between gap-2">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent text-deep">
-                    <BookOpen className="h-5 w-5" />
-                  </span>
-                  {course.is_demo && <DemoBadge />}
-                </span>
-                <span className="mt-4 text-base font-semibold text-heading group-hover:text-deep">
-                  {course.title}
-                </span>
-                {course.summary && (
-                  <span className="mt-1 line-clamp-2 text-sm text-muted-foreground">
-                    {course.summary}
-                  </span>
-                )}
-                <span className="mt-auto pt-4 text-xs text-deep">
-                  {[subject && name(subject), chapter && name(chapter)].filter(Boolean).join(" · ")}
-                </span>
-              </Link>
-            );
-          })}
-        </div>
+        <CourseListSection
+          courses={results}
+          title={t("course.all")}
+          subjectName={
+            selectedChapter
+              ? name(selectedChapter)
+              : selectedSubject
+                ? name(selectedSubject)
+                : undefined
+          }
+          description={t("course.allDescription")}
+          emptyMessage={t("course.noResults")}
+        />
       )}
     </div>
   );

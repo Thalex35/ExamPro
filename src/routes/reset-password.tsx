@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
-import { AuthLayout, AuthPasswordField } from "@/components/AuthLayout";
+import { AuthBrandLockup, AuthLayout, AuthPasswordField } from "@/components/AuthLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n";
@@ -41,9 +41,10 @@ function ResetPassword() {
 
   return (
     <AuthLayout>
-      <div className="w-full rounded-3xl border border-sky-100 bg-card p-5 shadow-[0_16px_48px_-28px_rgba(7,37,86,0.28)] sm:p-8 lg:p-10">
-        <div className="mb-7 text-center">
-          <h1 className="text-2xl font-extrabold tracking-tight text-heading sm:text-3xl">
+      <div className="w-full rounded-[1.75rem] border border-sky-100/80 bg-white p-5 shadow-[0_22px_60px_-32px_rgba(7,37,86,0.3)] sm:p-8 lg:p-9">
+        <div className="mb-6 text-center">
+          <AuthBrandLockup />
+          <h1 className="mt-4 text-2xl font-extrabold tracking-tight text-heading sm:text-[1.8rem]">
             {t("auth.forgotTitle")}
           </h1>
           <p className="mt-2 text-sm leading-6 text-muted-foreground">
@@ -56,6 +57,7 @@ function ResetPassword() {
             label={t("auth.newPassword")}
             value={pw}
             onChange={setPw}
+            placeholder={t("auth.passwordPlaceholder")}
             minLength={8}
             autoComplete="new-password"
           />

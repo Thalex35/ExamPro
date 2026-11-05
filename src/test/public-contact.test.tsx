@@ -105,7 +105,7 @@ describe("public contact form", () => {
 
   it("translates all three fields and feedback into Haitian Creole", async () => {
     renderContactForm();
-    fireEvent.click(screen.getByRole("button", { name: "KR" }));
+    fireEvent.click(screen.getByRole("button", { name: "HT" }));
 
     expect(await screen.findByLabelText("Non konplè")).toBeInTheDocument();
     expect(screen.getByLabelText("Adrès imèl")).toHaveAttribute(

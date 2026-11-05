@@ -15,7 +15,7 @@ export function LanguageSwitch({
   const changeLang = onChange ?? setLang;
   const opts: { v: Lang; l: string }[] = [
     { v: "fr", l: "FR" },
-    { v: "ht", l: "KR" },
+    { v: "ht", l: "HT" },
   ];
   return (
     <div

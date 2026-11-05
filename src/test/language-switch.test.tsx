@@ -20,9 +20,9 @@ describe("LanguageSwitch", () => {
     render(<LanguageSwitch value="fr" onChange={onChange} />);
 
     expect(screen.getByRole("button", { name: "FR" })).toHaveAttribute("aria-pressed", "true");
-    expect(screen.getByRole("button", { name: "KR" })).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByRole("button", { name: "HT" })).toHaveAttribute("aria-pressed", "false");
 
-    fireEvent.click(screen.getByRole("button", { name: "KR" }));
+    fireEvent.click(screen.getByRole("button", { name: "HT" }));
 
     expect(onChange).toHaveBeenCalledWith("ht");
     expect(mocks.setLang).not.toHaveBeenCalled();

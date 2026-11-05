@@ -140,6 +140,15 @@ describe("authentication page UI", () => {
     mocks.signInWithGoogle.mockReset().mockResolvedValue({ error: null });
   });
 
+  it("uses the supported language codes in the language selector", () => {
+    renderAuth();
+    const languageSelector = screen.getByRole("group", { name: "Langue" });
+
+    expect(screen.getByRole("button", { name: "FR" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "HT" })).toBeInTheDocument();
+    expect(languageSelector).not.toHaveTextContent("KR");
+  });
+
   it("keeps email/password login and provides a password visibility toggle", async () => {
     renderAuth();
     const password = screen.getByLabelText("Mot de passe");

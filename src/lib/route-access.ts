@@ -11,7 +11,7 @@ const studentPaths = [
   "/evaluations",
   "/progress",
 ];
-const sharedPaths = ["/profile", "/onboarding"];
+const sharedPaths = ["/profile", "/onboarding", "/notifications"];
 const sharedPublishedContentPaths = ["/courses"];
 
 function isWithinPath(pathname: string, basePath: string) {

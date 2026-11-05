@@ -12,6 +12,8 @@ import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/Field";
 import { DemoBadge } from "@/components/DemoBadge";
 import { useMe } from "@/lib/session";
+import { ReportContentButton } from "@/components/ReportContentButton";
+import type { TKey } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_authenticated/courses/$courseId")({
   head: () => ({ meta: [{ title: "Cours — EXAMPRO" }] }),
@@ -42,6 +44,11 @@ function CourseView() {
   if (!q.data) return <Empty>{t("404.title")}</Empty>;
   const x = q.data;
   const c = cat.data;
+  const difficultyLabels: Record<string, TKey> = {
+    beginner: "content.difficulty.beginner",
+    intermediate: "content.difficulty.intermediate",
+    advanced: "content.difficulty.advanced",
+  };
   const filePath = x.file_path;
   const profile = me?.profile;
   const isOutOfScope =
@@ -79,7 +86,84 @@ function CourseView() {
           </span>
         )}
       </div>
+      {x.status === "published" &&
+        (me?.isStudent || me?.isTeacher) &&
+        me.user.id !== x.author_id && (
+          <div className="mt-3 flex flex-wrap gap-1">
+            <ReportContentButton targetType="course" targetId={x.id} />
+            <ReportContentButton targetType="user" targetId={x.author_id} />
+          </div>
+        )}
       {x.summary && <p className="mt-6 text-lg text-muted-foreground">{x.summary}</p>}
+      {x.description && (
+        <section className="mt-6 space-y-2">
+          <h2 className="text-lg font-semibold text-heading">{t("content.longDescription")}</h2>
+          <p className="whitespace-pre-wrap leading-relaxed text-muted-foreground">
+            {x.description}
+          </p>
+        </section>
+      )}
+      {x.preview && (
+        <section className="mt-6 rounded-xl border border-sky-100 bg-sky-50/60 p-4">
+          <h2 className="font-semibold text-heading">{t("content.preview")}</h2>
+          <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">
+            {x.preview}
+          </p>
+        </section>
+      )}
+      {(x.learning_objectives.length > 0 ||
+        x.skills.length > 0 ||
+        x.prerequisites.length > 0 ||
+        x.duration_minutes ||
+        x.difficulty) && (
+        <section className="mt-6 space-y-5 rounded-xl border bg-card p-5">
+          <h2 className="text-lg font-semibold text-heading">{t("content.pedagogy")}</h2>
+          <div className="flex flex-wrap gap-2 text-sm">
+            {x.duration_minutes && (
+              <span className="rounded-full bg-muted px-3 py-1">
+                {x.duration_minutes} {t("content.minutes")}
+              </span>
+            )}
+            {x.difficulty && (
+              <span className="rounded-full bg-muted px-3 py-1">
+                {t(difficultyLabels[x.difficulty] ?? "content.difficulty.beginner")}
+              </span>
+            )}
+          </div>
+          {x.learning_objectives.length > 0 && (
+            <div>
+              <h3 className="font-medium text-heading">{t("content.learningObjectives")}</h3>
+              <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-muted-foreground">
+                {x.learning_objectives.map((objective, index) => (
+                  <li key={`${index}-${objective}`}>{objective}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {x.skills.length > 0 && (
+            <div>
+              <h3 className="font-medium text-heading">{t("content.skills")}</h3>
+              <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-muted-foreground">
+                {x.skills.map((skill, index) => (
+                  <li key={`${index}-${skill}`}>{skill}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+          <div>
+            <h3 className="font-medium text-heading">{t("content.prerequisites")}</h3>
+            {x.prerequisites.length ? (
+              <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-muted-foreground">
+                {x.prerequisites.map((prerequisite, index) => (
+                  <li key={`${index}-${prerequisite}`}>{prerequisite}</li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mt-1 text-sm text-muted-foreground">{t("content.noPrerequisites")}</p>
+            )}
+          </div>
+        </section>
+      )}
       {x.is_demo && (
         <p className="mt-4 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm font-medium text-amber-900">
           {t("demo.warning")}

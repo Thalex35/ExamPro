@@ -165,6 +165,9 @@ function AdminOverview() {
             <Button asChild size="sm" variant="outline">
               <Link to="/admin/users">{t("admin.manageUsers")}</Link>
             </Button>
+            <Button asChild size="sm" variant="outline">
+              <Link to="/admin/reports">{t("admin.reports")}</Link>
+            </Button>
           </div>
         </div>
         {q.data.recent.length ? (

@@ -7,7 +7,16 @@ import { DemoBadge } from "@/components/DemoBadge";
 import { NativeSelect, StatusBadge } from "@/components/Field";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Empty, ErrorState, Loading, PageHeader } from "@/components/States";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 import { catalogQuery } from "@/lib/catalog";
@@ -35,6 +44,8 @@ export function ContentManagementPage({ role, kind }: { role: RoleArea; kind: Ki
   const [trackId, setTrackId] = useState("");
   const [subjectId, setSubjectId] = useState("");
   const [year, setYear] = useState("");
+  const [rejecting, setRejecting] = useState<ManagedRow | null>(null);
+  const [reviewNote, setReviewNote] = useState("");
   const isAdmin = role === "admin";
   const content = useQuery({
     queryKey: ["content-management", role, kind, me?.user.id],
@@ -133,7 +144,7 @@ export function ContentManagementPage({ role, kind }: { role: RoleArea; kind: Ki
   }
 
   async function setStatus(row: ManagedRow, status: "draft" | "published") {
-    const values = isAdmin ? { status, review_status: "none" } : { status };
+    const values = isAdmin ? { status, review_status: "none", review_note: null } : { status };
     const result =
       row.kind === "course"
         ? await supabase.from("courses").update(values).eq("id", row.id)
@@ -146,21 +157,23 @@ export function ContentManagementPage({ role, kind }: { role: RoleArea; kind: Ki
     await qc.invalidateQueries();
   }
 
-  async function rejectRow(row: ManagedRow) {
+  async function rejectRow(row: ManagedRow, note: string) {
     const result =
       row.kind === "course"
         ? await supabase
             .from("courses")
-            .update({ status: "draft", review_status: "rejected" })
+            .update({ status: "draft", review_status: "rejected", review_note: note })
             .eq("id", row.id)
         : await supabase
             .from("exams")
-            .update({ status: "draft", review_status: "rejected" })
+            .update({ status: "draft", review_status: "rejected", review_note: note })
             .eq("id", row.id);
     if (result.error) {
       toast.error(errMsg(result.error));
       return;
     }
+    setRejecting(null);
+    setReviewNote("");
     await qc.invalidateQueries();
   }
 
@@ -409,7 +422,14 @@ export function ContentManagementPage({ role, kind }: { role: RoleArea; kind: Ki
                     </Button>
                   )}
                 {isAdmin && row.review_status !== "rejected" && (
-                  <Button size="sm" variant="ghost" onClick={() => void rejectRow(row)}>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => {
+                      setRejecting(row);
+                      setReviewNote("");
+                    }}
+                  >
                     {t("admin.reject")}
                   </Button>
                 )}
@@ -434,6 +454,47 @@ export function ContentManagementPage({ role, kind }: { role: RoleArea; kind: Ki
           })}
         </ul>
       )}
+      <Dialog
+        open={!!rejecting}
+        onOpenChange={(isOpen) => {
+          if (!isOpen) {
+            setRejecting(null);
+            setReviewNote("");
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("content.rejectionReason")}</DialogTitle>
+            <DialogDescription>{t("content.rejectionHelp")}</DialogDescription>
+          </DialogHeader>
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              if (!rejecting || reviewNote.trim().length < 3) {
+                toast.error(t("content.rejectionReasonRequired"));
+                return;
+              }
+              void rejectRow(rejecting, reviewNote.trim());
+            }}
+            className="space-y-4"
+          >
+            <Textarea
+              autoFocus
+              required
+              minLength={3}
+              maxLength={500}
+              rows={4}
+              value={reviewNote}
+              onChange={(event) => setReviewNote(event.target.value)}
+              aria-label={t("content.rejectionReason")}
+            />
+            <DialogFooter>
+              <Button type="submit">{t("content.submitRejection")}</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

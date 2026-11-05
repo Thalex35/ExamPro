@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 import { catalogForTeacher, catalogQuery, teacherContentPermissionsQuery } from "@/lib/catalog";
 import { isSecureExternalUrl, validateCourseFile } from "@/lib/files";
+import { hasValidCourseDescriptionLength } from "@/lib/course-pedagogy";
 import { useMe } from "@/lib/session";
 import { useI18n } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
@@ -36,6 +37,15 @@ export function CourseForm({
   });
   const [title, setTitle] = useState(course?.title ?? "");
   const [summary, setSummary] = useState(course?.summary ?? "");
+  const [description, setDescription] = useState(course?.description ?? "");
+  const [objectives, setObjectives] = useState(course?.learning_objectives.join("\n") ?? "");
+  const [skills, setSkills] = useState(course?.skills.join("\n") ?? "");
+  const [prerequisites, setPrerequisites] = useState(course?.prerequisites.join("\n") ?? "");
+  const [durationMinutes, setDurationMinutes] = useState(
+    course?.duration_minutes?.toString() ?? "",
+  );
+  const [difficulty, setDifficulty] = useState(course?.difficulty ?? "");
+  const [preview, setPreview] = useState(course?.preview ?? "");
   const [body, setBody] = useState(course?.body ?? "");
   const [resourceType, setResourceType] = useState<ResourceType>(
     course?.resource_type === "external_link" || course?.resource_type === "document"
@@ -66,6 +76,35 @@ export function CourseForm({
     e?.preventDefault();
     if (!me) return;
     if (course?.review_status === "rejected" && !me.isAdmin) status = "draft";
+    const learningObjectives = objectives
+      .split("\n")
+      .map((item) => item.trim())
+      .filter(Boolean);
+    const learningSkills = skills
+      .split("\n")
+      .map((item) => item.trim())
+      .filter(Boolean);
+    const learningPrerequisites = prerequisites
+      .split("\n")
+      .map((item) => item.trim())
+      .filter(Boolean);
+    const duration = Number(durationMinutes);
+    if (!hasValidCourseDescriptionLength(description)) {
+      toast.error(t("content.descriptionWordCount"));
+      return;
+    }
+    if (
+      !learningObjectives.length ||
+      !learningSkills.length ||
+      !Number.isInteger(duration) ||
+      duration < 1 ||
+      duration > 1440 ||
+      !["beginner", "intermediate", "advanced"].includes(difficulty) ||
+      !preview.trim()
+    ) {
+      toast.error(t("content.pedagogyRequired"));
+      return;
+    }
     if (resourceType === "external_link" && !isSecureExternalUrl(externalUrl.trim())) {
       toast.error(errMsg("URL_HTTPS_REQUIRED"));
       return;
@@ -100,6 +139,13 @@ export function CourseForm({
     const row = {
       title: title.trim(),
       summary: summary.trim() || null,
+      description: description.trim(),
+      learning_objectives: learningObjectives,
+      skills: learningSkills,
+      prerequisites: learningPrerequisites,
+      duration_minutes: duration,
+      difficulty,
+      preview: preview.trim(),
       body,
       level_id: cls.level_id,
       track_id: cls.track_id || null,
@@ -180,6 +226,90 @@ export function CourseForm({
           rows={2}
           value={summary}
           onChange={(e) => setSummary(e.target.value)}
+        />
+      </Field>
+      <Field
+        label={t("content.longDescription")}
+        htmlFor="c-description"
+        hint={t("content.descriptionWordCount")}
+      >
+        <Textarea
+          id="c-description"
+          rows={5}
+          required
+          value={description}
+          onChange={(event) => setDescription(event.target.value)}
+        />
+      </Field>
+      <Field label={t("content.learningObjectives")} htmlFor="c-objectives">
+        <Textarea
+          id="c-objectives"
+          rows={4}
+          required
+          value={objectives}
+          onChange={(event) => setObjectives(event.target.value)}
+          placeholder={t("content.listOnePerLine")}
+        />
+      </Field>
+      <Field label={t("content.skills")} htmlFor="c-skills">
+        <Textarea
+          id="c-skills"
+          rows={3}
+          required
+          value={skills}
+          onChange={(event) => setSkills(event.target.value)}
+          placeholder={t("content.listOnePerLine")}
+        />
+      </Field>
+      <Field
+        label={t("content.prerequisites")}
+        htmlFor="c-prerequisites"
+        hint={t("content.prerequisitesHint")}
+      >
+        <Textarea
+          id="c-prerequisites"
+          rows={3}
+          value={prerequisites}
+          onChange={(event) => setPrerequisites(event.target.value)}
+          placeholder={t("content.listOnePerLine")}
+        />
+      </Field>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field label={t("content.durationMinutes")} htmlFor="c-duration">
+          <Input
+            id="c-duration"
+            type="number"
+            required
+            min={1}
+            max={1440}
+            step={1}
+            value={durationMinutes}
+            onChange={(event) => setDurationMinutes(event.target.value)}
+          />
+        </Field>
+        <Field label={t("content.difficulty")} htmlFor="c-difficulty">
+          <select
+            id="c-difficulty"
+            required
+            className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+            value={difficulty}
+            onChange={(event) => setDifficulty(event.target.value)}
+          >
+            <option value="">{t("common.select")}</option>
+            <option value="beginner">{t("content.difficulty.beginner")}</option>
+            <option value="intermediate">{t("content.difficulty.intermediate")}</option>
+            <option value="advanced">{t("content.difficulty.advanced")}</option>
+          </select>
+        </Field>
+      </div>
+      <Field label={t("content.preview")} htmlFor="c-preview">
+        <Textarea
+          id="c-preview"
+          rows={4}
+          required
+          maxLength={1000}
+          value={preview}
+          onChange={(event) => setPreview(event.target.value)}
         />
       </Field>
       {resourceType === "text" && (

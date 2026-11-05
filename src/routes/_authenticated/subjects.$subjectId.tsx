@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { CourseListSection, ResourceNavigation } from "@/components/CourseList";
+import { DemoQuiz } from "@/components/DemoQuiz";
 import { Empty, ErrorState, Loading } from "@/components/States";
 import { supabase } from "@/integrations/supabase/client";
 import { catalogQuery, chaptersFor, subjectsForLevel, trackFilter } from "@/lib/catalog";
@@ -219,7 +220,7 @@ function SubjectDetail() {
                     <ResourceCount icon={BookOpen} count={courseCount} label={t("subj.courses")} />
                     <span className="inline-flex items-center gap-1 rounded-full bg-sky-50 px-2.5 py-1.5">
                       <Brain className="h-3.5 w-3.5" aria-hidden="true" />
-                      {t("subj.comingSoon")}
+                      {t("quiz.demoLabel")}
                     </span>
                     <ResourceCount icon={FileText} count={examCount} label={t("subj.examsShort")} />
                   </span>
@@ -243,7 +244,17 @@ function SubjectDetail() {
             active={currentResource}
           />
           {currentResource === "quiz" ? (
-            <UnavailableQuiz />
+            me?.isStudent ? (
+              <DemoQuiz
+                subjectId={subjectId}
+                chapterId={chapter?.id}
+                title={name(chapter ?? subject)}
+              />
+            ) : (
+              <p className="rounded-xl border bg-card p-5 text-sm text-muted-foreground">
+                {t("quiz.studentOnly")}
+              </p>
+            )
           ) : (
             <CourseListSection
               courses={selectedCourses}
@@ -273,20 +284,5 @@ function ResourceCount({
       <Icon className="h-3.5 w-3.5" aria-hidden="true" />
       {count} {label}
     </span>
-  );
-}
-
-function UnavailableQuiz() {
-  const { t } = useI18n();
-  return (
-    <div className="rounded-2xl border border-sky-100 bg-card p-8 text-center shadow-card">
-      <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary text-brand">
-        <Brain className="h-7 w-7" aria-hidden="true" />
-      </span>
-      <h2 className="mt-4 text-xl font-bold text-heading">{t("subj.quiz")}</h2>
-      <p className="mx-auto mt-2 max-w-lg text-sm text-muted-foreground">
-        {t("subj.quizUnavailable")}
-      </p>
-    </div>
   );
 }

@@ -89,7 +89,8 @@ vi.mock("@/lib/i18n", () => ({
         "subj.noCoursesHere": "Aucun cours publié ici pour l'instant.",
         "subj.quiz": "Quiz",
         "subj.quizDescription": "Testez vos connaissances.",
-        "subj.quizUnavailable": "Les quiz ne sont pas encore disponibles.",
+        "quiz.studentOnly": "Le quiz est réservé aux élèves.",
+        "quiz.demoLabel": "Quiz démo",
         "subj.comingSoon": "Bientôt",
         "subj.exams": "Examens",
         "subj.examsCategory": "Examens",
@@ -232,7 +233,7 @@ describe("subject detail pages", () => {
     );
     expect(screen.getByText("2 Cours")).toBeInTheDocument();
     expect(screen.getByText("1 examens")).toBeInTheDocument();
-    expect(screen.getAllByText("Bientôt")).toHaveLength(1);
+    expect(screen.getAllByText("Quiz démo")).toHaveLength(1);
     expect(
       screen.queryByRole("heading", { name: "Ressources disponibles" }),
     ).not.toBeInTheDocument();
@@ -276,10 +277,10 @@ describe("subject detail pages", () => {
     expect(screen.queryByText("Géométrie plane")).not.toBeInTheDocument();
   });
 
-  it("does not imply quiz resources exist", () => {
+  it("keeps the demonstration quiz restricted to student accounts", () => {
     mocks.search = { chapter: "geometry", resource: "quiz" };
     renderSubject();
 
-    expect(screen.getByText("Les quiz ne sont pas encore disponibles.")).toBeInTheDocument();
+    expect(screen.getByText("Le quiz est réservé aux élèves.")).toBeInTheDocument();
   });
 });

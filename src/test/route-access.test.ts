@@ -25,10 +25,18 @@ describe("role-specific route access", () => {
     expect(canAccessRolePath("/admin/courses", ["teacher"])).toBe(false);
     expect(canAccessRolePath("/teacher/exams", ["teacher"])).toBe(true);
     expect(canAccessRolePath("/admin/users", ["admin"])).toBe(true);
+    expect(canAccessRolePath("/admin/reports", ["admin"])).toBe(true);
+    expect(canAccessRolePath("/admin/reports", ["teacher"])).toBe(false);
   });
 
   it("allows shared profile and onboarding routes", () => {
     expect(canAccessRolePath("/profile", ["teacher"])).toBe(true);
     expect(canAccessRolePath("/onboarding", ["student"])).toBe(true);
+  });
+
+  it("allows each authenticated role to access their own notification history", () => {
+    expect(canAccessRolePath("/notifications", ["student"])).toBe(true);
+    expect(canAccessRolePath("/notifications", ["teacher"])).toBe(true);
+    expect(canAccessRolePath("/notifications", ["admin"])).toBe(true);
   });
 });

@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { DemoBadge } from "@/components/DemoBadge";
 import { ResourceNavigation } from "@/components/CourseList";
+import { ReportContentButton } from "@/components/ReportContentButton";
 
 export const Route = createFileRoute("/_authenticated/exams")({
   validateSearch: (
@@ -53,7 +54,7 @@ function Exams() {
       const { data, error } = await supabase
         .from("exams")
         .select(
-          "id,title,description,exam_year,session,subject_id,chapter_id,file_path,is_demo,demo_content",
+          "id,title,description,exam_year,session,subject_id,chapter_id,file_path,is_demo,demo_content,author_id",
         )
         .eq("status", "published")
         .eq("level_id", levelId!)
@@ -358,6 +359,12 @@ function Exams() {
                         {t("exams.view")}
                         <ArrowRight className="h-4 w-4" />
                       </Button>
+                      {(me?.isStudent || me?.isTeacher) && me.user.id !== exam.author_id && (
+                        <div className="mt-2 flex flex-wrap justify-center gap-1">
+                          <ReportContentButton targetType="exam" targetId={exam.id} />
+                          <ReportContentButton targetType="user" targetId={exam.author_id} />
+                        </div>
+                      )}
                     </div>
                   </article>
                 );

@@ -4,7 +4,6 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   Archive,
   BarChart3,
-  Bell,
   Bookmark,
   BookOpen,
   Bot,
@@ -40,6 +39,7 @@ import { BrandIcon, BrandLogo } from "./Brand";
 import { LanguageSwitch } from "./LanguageSwitch";
 import { ErrorState, Loading } from "./States";
 import { cn } from "@/lib/utils";
+import { NotificationCenter } from "@/components/NotificationCenter";
 
 type NavItem = {
   to:
@@ -239,7 +239,6 @@ export function AppShell({
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
 
   const needsOnboarding = !!me && !me.profile?.onboarded && !me.isAdmin;
@@ -581,28 +580,7 @@ export function AppShell({
           ) : (
             <div className="flex-1" />
           )}
-          {isStudent && (
-            <div className="relative shrink-0">
-              <button
-                type="button"
-                onClick={() => setNotificationsOpen((shown) => !shown)}
-                aria-label={t("dash.notifications")}
-                aria-expanded={notificationsOpen}
-                className="flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition-colors duration-[var(--motion-fast-value)] hover:bg-muted hover:text-foreground"
-              >
-                <Bell className="h-4 w-4" />
-              </button>
-              {notificationsOpen && (
-                <div
-                  className="absolute right-0 top-12 z-50 w-72 rounded-xl border bg-card p-4 shadow-card"
-                  role="status"
-                >
-                  <p className="font-semibold text-heading">{t("dash.notifications")}</p>
-                  <p className="mt-2 text-sm text-muted-foreground">{t("dash.noNotifications")}</p>
-                </div>
-              )}
-            </div>
-          )}
+          {me && <NotificationCenter />}
         </header>
         <main className="mx-auto w-full max-w-[1440px] px-4 py-7 sm:px-8 sm:py-9">
           {isLoading ? <Loading /> : children}

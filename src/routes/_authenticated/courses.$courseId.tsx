@@ -104,7 +104,7 @@ function CourseView() {
         </section>
       )}
       {x.preview && (
-        <section className="mt-6 rounded-xl border border-sky-100 bg-sky-50/60 p-4">
+        <section className="mt-6 rounded-xl border border-border bg-muted/60 p-4">
           <h2 className="font-semibold text-heading">{t("content.preview")}</h2>
           <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">
             {x.preview}

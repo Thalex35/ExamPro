@@ -70,7 +70,7 @@ function Subjects() {
     <div className="space-y-6">
       <div className="grid gap-5 xl:grid-cols-[minmax(18rem,0.9fr)_minmax(24rem,1.1fr)] xl:items-center">
         <div className="flex items-center gap-3">
-          <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-sky-100 text-deep">
+          <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-accent text-accent-foreground">
             <BookOpen className="h-7 w-7" aria-hidden="true" />
           </span>
           <span>
@@ -82,7 +82,7 @@ function Subjects() {
             </p>
           </span>
         </div>
-        <section className="relative isolate flex min-h-28 items-center justify-between overflow-hidden rounded-2xl border border-sky-100 bg-gradient-to-r from-sky-50 via-cyan-50 to-blue-100 px-5 py-5 shadow-sm sm:px-7">
+        <section className="card-surface relative isolate flex min-h-28 items-center justify-between overflow-hidden px-5 py-5 sm:px-7">
           <div className="relative z-10 max-w-md">
             <p className="text-base font-bold leading-snug text-deep sm:text-lg">
               {t("subj.bannerTitle")}
@@ -93,14 +93,14 @@ function Subjects() {
             aria-hidden="true"
             className="relative ml-3 flex h-16 w-24 shrink-0 items-center justify-center sm:h-20 sm:w-32"
           >
-            <span className="absolute bottom-1 h-8 w-20 -rotate-6 rounded-lg border-b-4 border-sky-300 bg-white shadow-md sm:w-28" />
-            <span className="absolute bottom-3 h-7 w-16 rotate-3 rounded-lg border-b-4 border-cyan-400 bg-sky-100 shadow-sm sm:w-24" />
+            <span className="absolute bottom-1 h-8 w-20 -rotate-6 rounded-lg border-b-4 border-brand bg-card shadow-md sm:w-28" />
+            <span className="absolute bottom-3 h-7 w-16 rotate-3 rounded-lg border-b-4 border-brand bg-accent shadow-sm sm:w-24" />
             <GraduationCap className="absolute top-0 h-12 w-12 -rotate-6 text-deep drop-shadow-sm sm:h-14 sm:w-14" />
             <Sparkles className="absolute right-0 top-1 h-4 w-4 text-brand sm:h-5 sm:w-5" />
           </div>
           <div
             aria-hidden="true"
-            className="absolute -right-10 -top-20 -z-10 h-48 w-48 rounded-full bg-sky-200/50 blur-2xl"
+            className="absolute -right-10 -top-20 -z-10 h-48 w-48 rounded-full bg-brand/15 blur-2xl"
           />
         </section>
       </div>
@@ -129,7 +129,7 @@ function Subjects() {
                 key={subject.id}
                 to="/subjects/$subjectId"
                 params={{ subjectId: subject.id }}
-                className="group relative flex min-h-40 flex-col justify-between rounded-2xl border border-sky-100 bg-card p-4 shadow-card transition-all duration-200 hover:-translate-y-0.5 hover:border-brand/60 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:p-5"
+                className="group relative flex min-h-40 flex-col justify-between rounded-2xl border border-border bg-card p-4 shadow-card transition-all duration-200 hover:-translate-y-0.5 hover:border-brand/60 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:p-5"
               >
                 <span className="flex min-w-0 items-start gap-3">
                   <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary text-brand shadow-sm">
@@ -140,7 +140,7 @@ function Subjects() {
                       {subjectTracks.map((subjectTrack) => (
                         <span
                           key={subjectTrack.id}
-                          className="rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-bold text-deep"
+                          className="rounded-full bg-accent px-2 py-0.5 text-[10px] font-bold text-accent-foreground"
                         >
                           {subjectTrack.code}
                         </span>
@@ -153,19 +153,19 @@ function Subjects() {
                 </span>
 
                 <span className="mt-5 grid grid-cols-3 gap-1.5">
-                  <span className="flex min-w-0 items-center justify-center gap-1.5 rounded-lg bg-sky-50 px-1.5 py-2 text-[10px] font-medium text-deep sm:text-xs">
+                  <span className="flex min-w-0 items-center justify-center gap-1.5 rounded-lg bg-muted px-1.5 py-2 text-[10px] font-medium text-foreground sm:text-xs">
                     <BookOpen className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                     <span className="truncate">
                       {chapters.length} {t("subj.chapters").toLowerCase()}
                     </span>
                   </span>
-                  <span className="flex min-w-0 items-center justify-center gap-1.5 rounded-lg bg-sky-50 px-1.5 py-2 text-[10px] font-medium text-deep sm:text-xs">
+                  <span className="flex min-w-0 items-center justify-center gap-1.5 rounded-lg bg-muted px-1.5 py-2 text-[10px] font-medium text-foreground sm:text-xs">
                     <Play className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                     <span className="truncate">
                       {resources.data?.courses[subject.id] ?? 0} {t("subj.courses").toLowerCase()}
                     </span>
                   </span>
-                  <span className="flex min-w-0 items-center justify-center gap-1.5 rounded-lg bg-sky-50 px-1.5 py-2 text-[10px] font-medium text-deep sm:text-xs">
+                  <span className="flex min-w-0 items-center justify-center gap-1.5 rounded-lg bg-muted px-1.5 py-2 text-[10px] font-medium text-foreground sm:text-xs">
                     <FileText className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                     <span className="truncate">
                       {resources.data?.exams[subject.id] ?? 0} {t("subj.examsShort")}

@@ -97,11 +97,7 @@ function Exams() {
     );
   });
   const hasActiveFilters = !!search || !!subject || !!chapter || !!year || !!session;
-  const accentTones = [
-    "from-sky-50 to-blue-50 text-sky-700",
-    "from-violet-50 to-purple-50 text-violet-700",
-    "from-emerald-50 to-teal-50 text-emerald-700",
-  ];
+  const accentTones = ["bg-accent text-accent-foreground", "bg-muted text-foreground"];
 
   return (
     <div className="space-y-6">

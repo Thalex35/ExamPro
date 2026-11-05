@@ -105,6 +105,48 @@
   --sidebar-ring: oklch(0.74 0.13 207);
 }
 
+.dark {
+  color-scheme: dark;
+  --background: oklch(0.17 0.025 257);
+  --foreground: oklch(0.91 0.012 250);
+  --heading: oklch(0.96 0.008 250);
+  --card: oklch(0.215 0.027 257);
+  --card-foreground: oklch(0.9 0.012 250);
+  --popover: oklch(0.23 0.03 257);
+  --popover-foreground: oklch(0.92 0.01 250);
+  --primary: oklch(0.74 0.13 207);
+  --primary-foreground: oklch(0.19 0.04 257);
+  --secondary: oklch(0.29 0.035 257);
+  --secondary-foreground: oklch(0.92 0.01 250);
+  --muted: oklch(0.27 0.03 257);
+  --muted-foreground: oklch(0.72 0.025 250);
+  --accent: oklch(0.32 0.055 225);
+  --accent-foreground: oklch(0.85 0.09 205);
+  --brand: oklch(0.78 0.12 205);
+  --brand-foreground: oklch(0.19 0.04 257);
+  --deep: oklch(0.8 0.1 205);
+  --destructive: oklch(0.68 0.17 27);
+  --destructive-foreground: oklch(0.98 0.005 250);
+  --success: oklch(0.72 0.14 150);
+  --warning: oklch(0.78 0.14 70);
+  --info: oklch(0.76 0.1 240);
+  --border: oklch(0.34 0.035 257);
+  --input: oklch(0.36 0.035 257);
+  --ring: oklch(0.78 0.12 205);
+  --shadow-brand-value: 0 10px 30px -12px oklch(0.78 0.12 205 / 0.38);
+  --shadow-card-value:
+    0 1px 2px oklch(0.08 0.02 257 / 0.3), 0 8px 24px -16px oklch(0.08 0.02 257 / 0.5);
+  --sidebar: oklch(0.13 0.025 257);
+  --sidebar-active: oklch(0.25 0.045 257);
+  --sidebar-foreground: oklch(0.93 0.01 250);
+  --sidebar-primary: oklch(0.78 0.12 205);
+  --sidebar-primary-foreground: oklch(0.18 0.04 257);
+  --sidebar-accent: oklch(0.24 0.035 257);
+  --sidebar-accent-foreground: oklch(0.96 0.008 250);
+  --sidebar-border: oklch(0.29 0.03 257);
+  --sidebar-ring: oklch(0.78 0.12 205);
+}
+
 @layer base {
   * {
     border-color: var(--color-border);
@@ -162,6 +204,99 @@
 
 .public-site a {
   text-decoration: none;
+}
+
+.dark .public-site {
+  --public-ink: var(--heading);
+  --public-muted: var(--muted-foreground);
+  --public-line: var(--border);
+  background: var(--background);
+  color: var(--foreground);
+}
+
+.dark .public-header {
+  border-color: var(--border);
+  background: oklch(0.17 0.025 257 / 94%);
+}
+
+.dark .public-links a,
+.dark .public-footer-links a {
+  color: var(--muted-foreground);
+}
+
+.dark .public-preview-window,
+.dark .public-feature-card,
+.dark .public-learning-card,
+.dark .public-audience-card,
+.dark .public-faq-list details,
+.dark .public-contact-card {
+  border-color: var(--border);
+  background: var(--card);
+  color: var(--card-foreground);
+}
+
+.dark .public-preview-top,
+.dark .public-preview-subject,
+.dark .public-learning-card-header,
+.dark .public-learning-step,
+.dark .public-faq-list summary {
+  border-color: var(--border);
+  background: var(--muted);
+}
+
+.dark .public-preview-search,
+.dark .public-preview-subject small,
+.dark .public-learning-card-header small,
+.dark .public-learning-step small,
+.dark .public-contact-heading p,
+.dark .public-contact-field label {
+  color: var(--muted-foreground);
+}
+
+.dark .public-preview-content > strong,
+.dark .public-preview-subject b,
+.dark .public-feature-card h3,
+.dark .public-feature-card p,
+.dark .public-audience-card h3,
+.dark .public-audience-card p,
+.dark .public-faq-list summary,
+.dark .public-faq-list details > p,
+.dark .public-contact-heading h2 {
+  color: var(--heading);
+}
+
+.dark .public-preview-sidebar,
+.dark .public-float-card,
+.dark .public-feature-icon,
+.dark .public-audience-icon,
+.dark .public-step > span,
+.dark .public-contact-field input,
+.dark .public-contact-field textarea {
+  border-color: var(--border);
+  background: var(--muted);
+  color: var(--foreground);
+}
+
+.dark .public-contact-field input::placeholder,
+.dark .public-contact-field textarea::placeholder {
+  color: var(--muted-foreground);
+}
+
+.dark .public-contact-field input:focus,
+.dark .public-contact-field textarea:focus {
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px oklch(0.78 0.12 205 / 18%);
+}
+
+.dark .public-steps-section,
+.dark .public-faq-section,
+.dark .public-contact-section {
+  background: var(--background);
+}
+
+.dark .public-footer {
+  border-color: var(--border);
+  background: oklch(0.13 0.025 257);
 }
 
 .public-header {

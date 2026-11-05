@@ -65,6 +65,10 @@ vi.mock("@/lib/oauth", () => ({
   signInWithGoogle: mocks.signInWithGoogle,
 }));
 
+vi.mock("@/components/ThemeToggle", () => ({
+  ThemeToggle: () => <button type="button">Theme</button>,
+}));
+
 vi.mock("@/lib/i18n", () => ({
   useI18n: () => ({
     lang: "fr",

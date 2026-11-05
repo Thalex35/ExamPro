@@ -46,6 +46,10 @@ vi.mock("@/components/LanguageSwitch", () => ({
   LanguageSwitch: () => <div>Language</div>,
 }));
 
+vi.mock("@/components/ThemeToggle", () => ({
+  ThemeToggle: () => <button type="button">Theme</button>,
+}));
+
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: { auth: { signOut: mocks.signOut } },
 }));
@@ -104,7 +108,7 @@ describe("shared role-aware sidebar", () => {
     expect(navigationText).not.toContain("dash.help");
     expect(navigationText).not.toContain("nav.teacherExams");
     expect(navigationText).not.toContain("nav.adminUsers");
-    expect(screen.queryByText("Language")).not.toBeInTheDocument();
+    expect(screen.getByText("Language")).toBeInTheDocument();
   });
 
   it("shows teacher navigation without student or administrator actions", () => {

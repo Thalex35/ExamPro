@@ -1,9 +1,10 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent } from "react";
 import { toast } from "sonner";
+import { Mail } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { signInWithGoogle } from "@/lib/oauth";
-import { AuthLayout, AuthPasswordField } from "@/components/AuthLayout";
+import { AuthBrandLockup, AuthLayout, AuthPasswordField } from "@/components/AuthLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -206,9 +207,10 @@ function AuthPage() {
 
   return (
     <AuthLayout>
-      <div className="w-full rounded-3xl border border-sky-100 bg-card p-5 shadow-[0_16px_48px_-28px_rgba(7,37,86,0.28)] sm:p-8 lg:p-10">
-        <div className="mb-7 text-center">
-          <h1 className="text-2xl font-extrabold tracking-tight text-heading sm:text-3xl">
+      <div className="w-full rounded-[1.75rem] border border-sky-100/80 bg-white p-5 shadow-[0_22px_60px_-32px_rgba(7,37,86,0.3)] sm:p-8 lg:p-9">
+        <div className="mb-6 text-center">
+          <AuthBrandLockup />
+          <h1 className="mt-4 text-2xl font-extrabold tracking-tight text-heading sm:text-[1.8rem]">
             {title}
           </h1>
           <p className="mt-2 text-sm leading-6 text-muted-foreground">{description}</p>
@@ -266,17 +268,24 @@ function AuthPage() {
               </div>
             </div>
           )}
-          <div className="grid gap-1.5">
+          <div className="grid gap-2">
             <Label htmlFor="email">{t("auth.email")}</Label>
-            <Input
-              id="email"
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              autoComplete="email"
-              className="h-12 rounded-xl"
-            />
+            <div className="relative">
+              <Mail
+                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+                aria-hidden="true"
+              />
+              <Input
+                id="email"
+                type="email"
+                required
+                placeholder={t("auth.emailPlaceholder")}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
+                className="h-12 rounded-xl pl-10"
+              />
+            </div>
           </div>
           {mode !== "forgot" && (
             <AuthPasswordField
@@ -284,6 +293,7 @@ function AuthPage() {
               label={t("auth.password")}
               value={password}
               onChange={setPassword}
+              placeholder={t("auth.passwordPlaceholder")}
               autoComplete={mode === "login" ? "current-password" : "new-password"}
               minLength={8}
               action={
@@ -305,6 +315,7 @@ function AuthPage() {
               label={t("auth.confirmPassword")}
               value={confirmPassword}
               onChange={setConfirmPassword}
+              placeholder={t("auth.confirmPasswordPlaceholder")}
               autoComplete="new-password"
               minLength={8}
               invalid={!!validationError}
@@ -343,7 +354,10 @@ function AuthPage() {
               disabled={busy}
               className="h-12 w-full rounded-xl bg-white font-semibold"
             >
-              <span aria-hidden="true" className="text-lg font-bold text-[#4285f4]">
+              <span
+                aria-hidden="true"
+                className="bg-[conic-gradient(from_30deg,#4285f4_0_25%,#34a853_25%_50%,#fbbc05_50%_70%,#ea4335_70%_85%,#4285f4_85%)] bg-clip-text text-lg font-bold text-transparent"
+              >
                 G
               </span>
               {t("auth.google")}

@@ -5,7 +5,7 @@ import { NativeSelect } from "@/components/Field";
 import { DemoBadge } from "@/components/DemoBadge";
 import { useI18n, type Lang } from "@/lib/i18n";
 
-type CourseResourceType = "text" | "document" | "external_link";
+type CourseResourceType = "text" | "document" | "external_link" | "video";
 
 export type CourseListEntry = {
   id: string;
@@ -15,7 +15,7 @@ export type CourseListEntry = {
   is_demo: boolean;
 };
 
-const resourceTypes: CourseResourceType[] = ["text", "document", "external_link"];
+const resourceTypes: CourseResourceType[] = ["text", "document", "external_link", "video"];
 
 function isCourseResourceType(value: string): value is CourseResourceType {
   return resourceTypes.some((type) => type === value);
@@ -82,7 +82,9 @@ export function CourseListSection({
                   ? "content.textLesson"
                   : type === "document"
                     ? "content.document"
-                    : "content.externalLink",
+                    : type === "video"
+                      ? "content.video"
+                      : "content.externalLink",
               )}
             </option>
           ))}

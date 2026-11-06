@@ -1,6 +1,6 @@
 import { useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
@@ -17,7 +17,24 @@ import { ClassificationFields, type Classification } from "./ClassificationField
 import { ErrorState, Loading } from "./States";
 
 type Course = Database["public"]["Tables"]["courses"]["Row"];
-type ResourceType = "text" | "external_link" | "document";
+type ResourceType = "text" | "external_link" | "document" | "video";
+type SupplementType = "external_link" | "video" | "document";
+type CourseResource = Database["public"]["Tables"]["course_resources"]["Row"];
+type ResourceDraft = {
+  author_id?: string;
+  id?: string;
+  title: string;
+  resource_type: SupplementType;
+  external_url: string;
+  file_path: string | null;
+  file_name: string | null;
+  file: File | null;
+};
+
+function getSupplementType(value: string): SupplementType {
+  if (value === "video" || value === "document") return value;
+  return "external_link";
+}
 
 export function CourseForm({
   course,
@@ -31,6 +48,21 @@ export function CourseForm({
   const qc = useQueryClient();
   const { data: me } = useMe();
   const cat = useQuery(catalogQuery);
+  const resourcesQuery = useQuery({
+    queryKey: ["course-resources", course?.id],
+    enabled: !!course?.id,
+    queryFn: async () => {
+      if (!course?.id) return [];
+      const { data, error } = await supabase
+        .from("course_resources")
+        .select("*")
+        .eq("course_id", course.id)
+        .order("sort_order")
+        .order("created_at");
+      if (error) throw error;
+      return data;
+    },
+  });
   const permissions = useQuery({
     ...teacherContentPermissionsQuery(me?.user.id ?? ""),
     enabled: !!me?.user.id && !me.isAdmin,
@@ -48,12 +80,15 @@ export function CourseForm({
   const [preview, setPreview] = useState(course?.preview ?? "");
   const [body, setBody] = useState(course?.body ?? "");
   const [resourceType, setResourceType] = useState<ResourceType>(
-    course?.resource_type === "external_link" || course?.resource_type === "document"
+    course?.resource_type === "external_link" ||
+      course?.resource_type === "document" ||
+      course?.resource_type === "video"
       ? course.resource_type
       : "text",
   );
   const [externalUrl, setExternalUrl] = useState(course?.external_url ?? "");
   const [file, setFile] = useState<File | null>(null);
+  const [resources, setResources] = useState<ResourceDraft[]>([]);
   const [cls, setCls] = useState<Classification>({
     level_id: course?.level_id ?? "",
     track_id: course?.track_id ?? "",
@@ -62,10 +97,29 @@ export function CourseForm({
     topic_id: course?.topic_id ?? "",
   });
   const [busy, setBusy] = useState(false);
+  const bodyRef = useRef<HTMLTextAreaElement>(null);
+  useEffect(() => {
+    if (resourcesQuery.data) {
+      setResources(
+        resourcesQuery.data.map((resource: CourseResource) => ({
+          author_id: resource.author_id,
+          id: resource.id,
+          title: resource.title,
+          resource_type: getSupplementType(resource.resource_type),
+          external_url: resource.external_url ?? "",
+          file_path: resource.file_path,
+          file_name: resource.file_name,
+          file: null,
+        })),
+      );
+    }
+  }, [resourcesQuery.data]);
   const isVerified = me?.profile?.teacher_verification_status === "approved" || me?.isAdmin;
 
-  if (cat.isLoading || (!me?.isAdmin && (!me || permissions.isLoading))) return <Loading />;
+  if (cat.isLoading || resourcesQuery.isLoading || (!me?.isAdmin && (!me || permissions.isLoading)))
+    return <Loading />;
   if (cat.error || !cat.data) return <ErrorState error={cat.error} />;
+  if (resourcesQuery.error) return <ErrorState error={resourcesQuery.error} />;
   if (!me?.isAdmin && permissions.error) return <ErrorState error={permissions.error} />;
   if (!me) return <Loading />;
   const formCatalog =
@@ -109,6 +163,14 @@ export function CourseForm({
       toast.error(errMsg("URL_HTTPS_REQUIRED"));
       return;
     }
+    if (resourceType === "video" && !isSecureExternalUrl(externalUrl.trim())) {
+      toast.error(errMsg("URL_HTTPS_REQUIRED"));
+      return;
+    }
+    if (resourceType === "text" && !body.trim()) {
+      toast.error(t("content.bodyRequired"));
+      return;
+    }
     if (resourceType === "document") {
       const fileError = file
         ? validateCourseFile(file)
@@ -118,6 +180,28 @@ export function CourseForm({
       if (fileError) {
         toast.error(errMsg(fileError));
         return;
+      }
+    }
+    for (const resource of resources) {
+      if (!resource.title.trim() || resource.title.trim().length > 160) {
+        toast.error(t("content.resourceTitleRequired"));
+        return;
+      }
+      if (resource.resource_type === "external_link" || resource.resource_type === "video") {
+        if (!isSecureExternalUrl(resource.external_url.trim())) {
+          toast.error(errMsg("URL_HTTPS_REQUIRED"));
+          return;
+        }
+      } else {
+        const fileError = resource.file
+          ? validateCourseFile(resource.file)
+          : resource.file_path
+            ? null
+            : "FILE_REQUIRED";
+        if (fileError) {
+          toast.error(errMsg(fileError));
+          return;
+        }
       }
     }
     setBusy(true);
@@ -153,24 +237,125 @@ export function CourseForm({
       chapter_id: cls.chapter_id || null,
       topic_id: cls.topic_id || null,
       resource_type: resourceType,
-      external_url: resourceType === "external_link" ? externalUrl.trim() : null,
+      external_url:
+        resourceType === "external_link" || resourceType === "video" ? externalUrl.trim() : null,
       file_path: filePath,
       file_name: fileName,
       status,
       ...(me.isAdmin ? { review_status: "none" as const } : {}),
     };
-    const res = course
-      ? await supabase.from("courses").update(row).eq("id", course.id)
-      : await supabase.from("courses").insert({ ...row, author_id: me.user.id });
-    setBusy(false);
-    if (res.error) {
-      if (file && filePath) {
-        const cleanup = await supabase.storage.from("course-files").remove([filePath]);
-        if (cleanup.error) toast.error(errMsg(cleanup.error));
+    let savedCourseId = course?.id;
+    if (course) {
+      const res = await supabase.from("courses").update(row).eq("id", course.id);
+      if (res.error) {
+        setBusy(false);
+        if (file && filePath && filePath !== oldPath) {
+          const cleanup = await supabase.storage.from("course-files").remove([filePath]);
+          if (cleanup.error) toast.error(errMsg(cleanup.error));
+        }
+        toast.error(errMsg(res.error));
+        return;
       }
-      toast.error(errMsg(res.error));
+    } else {
+      const res = await supabase
+        .from("courses")
+        .insert({ ...row, author_id: me.user.id })
+        .select("id")
+        .single();
+      if (res.error) {
+        setBusy(false);
+        if (file && filePath) {
+          const cleanup = await supabase.storage.from("course-files").remove([filePath]);
+          if (cleanup.error) toast.error(errMsg(cleanup.error));
+        }
+        toast.error(errMsg(res.error));
+        return;
+      }
+      savedCourseId = res.data.id;
+    }
+    if (!savedCourseId) {
+      setBusy(false);
+      toast.error(t("common.error"));
       return;
     }
+
+    const newResourcePaths: string[] = [];
+    const resourceRows = [];
+    for (const [index, resource] of resources.entries()) {
+      let resourcePath = resource.file_path;
+      let resourceFileName = resource.file_name;
+      if (resource.resource_type === "document" && resource.file) {
+        const resourceOwnerId = resource.author_id ?? course?.author_id ?? me.user.id;
+        resourcePath = `${resourceOwnerId}/courses/${crypto.randomUUID()}.pdf`;
+        resourceFileName = resource.file.name;
+        const upload = await supabase.storage
+          .from("course-files")
+          .upload(resourcePath, resource.file, {
+            contentType: "application/pdf",
+          });
+        if (upload.error) {
+          const cleanup = newResourcePaths.length
+            ? await supabase.storage.from("course-files").remove(newResourcePaths)
+            : null;
+          if (cleanup?.error) toast.error(errMsg(cleanup.error));
+          setBusy(false);
+          toast.error(errMsg(upload.error));
+          return;
+        }
+        newResourcePaths.push(resourcePath);
+      }
+      resourceRows.push({
+        ...(resource.id ? { id: resource.id } : {}),
+        course_id: savedCourseId,
+        author_id: resource.author_id ?? course?.author_id ?? me.user.id,
+        title: resource.title.trim(),
+        resource_type: resource.resource_type,
+        external_url:
+          resource.resource_type === "external_link" || resource.resource_type === "video"
+            ? resource.external_url.trim()
+            : null,
+        file_path: resource.resource_type === "document" ? resourcePath : null,
+        file_name: resource.resource_type === "document" ? resourceFileName : null,
+        sort_order: index,
+      });
+    }
+    const savedResources = resourceRows.length
+      ? await supabase.from("course_resources").upsert(resourceRows, { onConflict: "id" })
+      : { error: null };
+    if (savedResources.error) {
+      const cleanup = newResourcePaths.length
+        ? await supabase.storage.from("course-files").remove(newResourcePaths)
+        : null;
+      if (cleanup?.error) toast.error(errMsg(cleanup.error));
+      setBusy(false);
+      toast.error(errMsg(savedResources.error));
+      return;
+    }
+    const previousResources = resourcesQuery.data ?? [];
+    for (const resource of previousResources) {
+      const updated = resourceRows.find((entry) => entry.id === resource.id);
+      if (resource.file_path && updated?.file_path !== resource.file_path) {
+        const cleanup = await supabase.storage.from("course-files").remove([resource.file_path]);
+        if (cleanup.error) toast.error(errMsg(cleanup.error));
+      }
+    }
+    const retainedIds = new Set(
+      resources.flatMap((resource) => (resource.id ? [resource.id] : [])),
+    );
+    const removedResources = previousResources.filter((resource) => !retainedIds.has(resource.id));
+    for (const resource of removedResources) {
+      const removed = await supabase.from("course_resources").delete().eq("id", resource.id);
+      if (removed.error) {
+        setBusy(false);
+        toast.error(errMsg(removed.error));
+        return;
+      }
+      if (resource.file_path) {
+        const cleanup = await supabase.storage.from("course-files").remove([resource.file_path]);
+        if (cleanup.error) toast.error(errMsg(cleanup.error));
+      }
+    }
+    setBusy(false);
     if (oldPath && oldPath !== filePath) {
       const cleanup = await supabase.storage.from("course-files").remove([oldPath]);
       if (cleanup.error) toast.error(errMsg(cleanup.error));
@@ -217,6 +402,7 @@ export function CourseForm({
         >
           <option value="text">{t("content.textLesson")}</option>
           <option value="external_link">{t("content.externalLink")}</option>
+          <option value="video">{t("content.video")}</option>
           <option value="document">{t("content.document")}</option>
         </select>
       </Field>
@@ -314,16 +500,60 @@ export function CourseForm({
       </Field>
       {resourceType === "text" && (
         <Field label={t("form.body")} htmlFor="c-body">
+          <div
+            className="flex flex-wrap gap-2"
+            role="toolbar"
+            aria-label={t("content.editorTools")}
+          >
+            {[
+              ["H2", "## ", ""],
+              ["B", "**", "**"],
+              ["I", "*", "*"],
+              ["•", "- ", ""],
+              ["1.", "1. ", ""],
+              ["Lien", "[", "](https://)"],
+              ["ƒx", "$$", "$$"],
+            ].map(([label, before, after]) => (
+              <Button
+                key={label}
+                type="button"
+                variant="outline"
+                size="sm"
+                aria-label={`${t("content.insert")} ${label}`}
+                onClick={() => {
+                  const input = bodyRef.current;
+                  if (!input) return;
+                  const start = input.selectionStart;
+                  const end = input.selectionEnd;
+                  const selected = body.slice(start, end);
+                  const next = `${body.slice(0, start)}${before}${selected}${after}${body.slice(end)}`;
+                  setBody(next);
+                  requestAnimationFrame(() => {
+                    input.focus();
+                    const cursor = start + before.length + selected.length;
+                    input.setSelectionRange(cursor, cursor);
+                  });
+                }}
+              >
+                {label}
+              </Button>
+            ))}
+          </div>
           <Textarea
             id="c-body"
+            ref={bodyRef}
             rows={14}
             required
             value={body}
             onChange={(e) => setBody(e.target.value)}
+            placeholder={t("content.markdownHint")}
           />
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            {t("content.markdownHelp")}
+          </p>
         </Field>
       )}
-      {resourceType === "external_link" && (
+      {(resourceType === "external_link" || resourceType === "video") && (
         <Field label={t("content.externalUrl")} htmlFor="c-external-url">
           <Input
             id="c-external-url"
@@ -350,6 +580,144 @@ export function CourseForm({
           )}
         </Field>
       )}
+      <section className="space-y-4 rounded-xl border border-border p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="font-semibold text-heading">{t("content.supplementaryResources")}</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {t("content.supplementaryResourcesHint")}
+            </p>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() =>
+              setResources((current) => [
+                ...current,
+                {
+                  title: "",
+                  resource_type: "external_link",
+                  external_url: "",
+                  file_path: null,
+                  file_name: null,
+                  file: null,
+                },
+              ])
+            }
+          >
+            {t("content.addResource")}
+          </Button>
+        </div>
+        {resources.map((resource, index) => (
+          <div
+            key={resource.id ?? `new-${index}`}
+            className="grid gap-4 rounded-lg bg-muted/40 p-4"
+          >
+            <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_200px]">
+              <Field label={t("content.resourceTitle")} htmlFor={`c-resource-title-${index}`}>
+                <Input
+                  id={`c-resource-title-${index}`}
+                  required
+                  maxLength={160}
+                  value={resource.title}
+                  onChange={(event) =>
+                    setResources((current) =>
+                      current.map((entry, entryIndex) =>
+                        entryIndex === index ? { ...entry, title: event.target.value } : entry,
+                      ),
+                    )
+                  }
+                />
+              </Field>
+              <Field label={t("content.resourceType")} htmlFor={`c-resource-type-${index}`}>
+                <select
+                  id={`c-resource-type-${index}`}
+                  className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+                  value={resource.resource_type}
+                  onChange={(event) =>
+                    setResources((current) =>
+                      current.map((entry, entryIndex) =>
+                        entryIndex === index
+                          ? {
+                              ...entry,
+                              resource_type: getSupplementType(event.target.value),
+                              file_path: null,
+                              file_name: null,
+                              file: null,
+                              external_url: "",
+                            }
+                          : entry,
+                      ),
+                    )
+                  }
+                >
+                  <option value="external_link">{t("content.externalLink")}</option>
+                  <option value="video">{t("content.video")}</option>
+                  <option value="document">{t("content.document")}</option>
+                </select>
+              </Field>
+            </div>
+            {resource.resource_type === "document" ? (
+              <Field
+                label={t("form.file")}
+                htmlFor={`c-resource-file-${index}`}
+                hint={t("form.fileHint")}
+              >
+                <Input
+                  id={`c-resource-file-${index}`}
+                  type="file"
+                  accept="application/pdf,.pdf"
+                  required={!resource.file_path}
+                  onChange={(event) =>
+                    setResources((current) =>
+                      current.map((entry, entryIndex) =>
+                        entryIndex === index
+                          ? { ...entry, file: event.target.files?.[0] ?? null }
+                          : entry,
+                      ),
+                    )
+                  }
+                />
+                {resource.file_name && (
+                  <p className="mt-1 text-xs text-muted-foreground">{resource.file_name}</p>
+                )}
+              </Field>
+            ) : (
+              <Field label={t("content.externalUrl")} htmlFor={`c-resource-url-${index}`}>
+                <Input
+                  id={`c-resource-url-${index}`}
+                  type="url"
+                  required
+                  pattern="https://.*"
+                  placeholder="https://..."
+                  value={resource.external_url}
+                  onChange={(event) =>
+                    setResources((current) =>
+                      current.map((entry, entryIndex) =>
+                        entryIndex === index
+                          ? { ...entry, external_url: event.target.value }
+                          : entry,
+                      ),
+                    )
+                  }
+                />
+              </Field>
+            )}
+            <div className="flex justify-end">
+              <Button
+                type="button"
+                variant="ghost"
+                className="text-destructive hover:text-destructive"
+                onClick={() =>
+                  setResources((current) => current.filter((_, entryIndex) => entryIndex !== index))
+                }
+              >
+                {t("content.removeResource")}
+              </Button>
+            </div>
+          </div>
+        ))}
+      </section>
       <div className="flex flex-wrap justify-end gap-3">
         <Button
           type="button"

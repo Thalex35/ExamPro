@@ -18,13 +18,13 @@ import {
 } from "@/lib/onboarding";
 import { useMe } from "@/lib/session";
 import { useI18n } from "@/lib/i18n";
-import { AuthLayout } from "@/components/AuthLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field, NativeSelect } from "@/components/Field";
 import { ErrorState, Loading } from "@/components/States";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
+import { BrandIcon } from "@/components/Brand";
 
 async function assertRpc(request: PromiseLike<{ error: { message: string } | null }>) {
   const { error } = await request;
@@ -133,38 +133,38 @@ function Onboarding() {
 
   if (meLoading || catalog.isLoading || (me?.isTeacher && assignments.isLoading)) {
     return (
-      <AuthLayout>
+      <OnboardingFrame>
         <Loading />
-      </AuthLayout>
+      </OnboardingFrame>
     );
   }
   if (catalog.error || !catalog.data) {
     return (
-      <AuthLayout>
+      <OnboardingFrame>
         <ErrorState error={catalog.error} onRetry={() => catalog.refetch()} />
-      </AuthLayout>
+      </OnboardingFrame>
     );
   }
   if (assignments.error) {
     return (
-      <AuthLayout>
+      <OnboardingFrame>
         <ErrorState error={assignments.error} onRetry={() => assignments.refetch()} />
-      </AuthLayout>
+      </OnboardingFrame>
     );
   }
   if (!me?.profile) {
     return (
-      <AuthLayout>
+      <OnboardingFrame>
         <ErrorState error={new Error(t("onb.loadError"))} />
-      </AuthLayout>
+      </OnboardingFrame>
     );
   }
   const profile = me.profile;
   if (!step || !initialized.current) {
     return (
-      <AuthLayout>
+      <OnboardingFrame>
         <Loading />
-      </AuthLayout>
+      </OnboardingFrame>
     );
   }
 
@@ -926,8 +926,8 @@ function Onboarding() {
   }
 
   return (
-    <AuthLayout>
-      <div className="mx-auto w-full max-w-2xl">
+    <OnboardingFrame>
+      <div className="w-full max-w-xl">
         <h1 className="text-2xl font-bold sm:text-3xl">{t("onb.title")}</h1>
         <div className="mt-5 grid gap-2">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
@@ -940,7 +940,18 @@ function Onboarding() {
         </div>
         {content}
       </div>
-    </AuthLayout>
+    </OnboardingFrame>
+  );
+}
+
+function OnboardingFrame({ children }: { children: ReactNode }) {
+  return (
+    <main className="flex min-h-screen w-full items-center justify-center bg-background px-4 py-8 sm:px-6">
+      <div className="w-full max-w-xl">
+        <BrandIcon className="mb-5 h-9 w-9" />
+        {children}
+      </div>
+    </main>
   );
 }
 

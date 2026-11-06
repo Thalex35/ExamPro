@@ -253,7 +253,7 @@ function QuizAttemptReview({
         <span className="min-w-0 flex-1 text-sm font-medium text-heading">
           {new Date(createdAt).toLocaleString(lang === "ht" ? "fr-HT" : "fr-FR")}
         </span>
-        <span className="rounded-full bg-primary px-3 py-1 text-sm font-bold text-brand">
+        <span className="rounded-full bg-brand px-3 py-1 text-sm font-bold text-brand-foreground">
           {score}%
         </span>
         <span className="text-xs text-muted-foreground">

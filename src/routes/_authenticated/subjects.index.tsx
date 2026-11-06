@@ -132,7 +132,7 @@ function Subjects() {
                 className="group relative flex min-h-40 flex-col justify-between rounded-2xl border border-border bg-card p-4 shadow-card transition-all duration-200 hover:-translate-y-0.5 hover:border-brand/60 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:p-5"
               >
                 <span className="flex min-w-0 items-start gap-3">
-                  <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary text-brand shadow-sm">
+                  <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-brand text-brand-foreground shadow-sm">
                     <SubjectIcon className="h-6 w-6" aria-hidden="true" />
                   </span>
                   <span className="min-w-0 flex-1 pt-0.5">

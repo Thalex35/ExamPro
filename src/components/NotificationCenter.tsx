@@ -288,7 +288,7 @@ function NotificationItems({
                 if (await onMarkRead(item.id)) window.location.assign(item.href);
               }
             }}
-            className={`block p-4 transition-colors hover:bg-muted/50 ${item.read_at ? "" : "bg-sky-50/60"}`}
+            className={`block p-4 transition-colors hover:bg-muted/50 ${item.read_at ? "" : "bg-accent/50"}`}
           >
             <div className="flex items-start gap-3">
               <span

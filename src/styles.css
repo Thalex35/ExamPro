@@ -160,6 +160,7 @@
     font-weight: var(--font-weight-body-value);
     -webkit-font-smoothing: antialiased;
   }
+
   h1,
   h2,
   h3,
@@ -167,6 +168,17 @@
     color: var(--color-heading);
     letter-spacing: -0.02em;
   }
+}
+
+.onboarding-panel :is(input, select) {
+  height: 3rem;
+  padding-inline: 1rem;
+  font-size: 1rem;
+}
+
+.onboarding-panel label,
+.onboarding-panel p {
+  font-size: 1rem;
 }
 
 @utility hero-surface {

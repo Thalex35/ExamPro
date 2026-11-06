@@ -534,7 +534,7 @@ function Onboarding() {
       <Icon className="mt-0.5 h-6 w-6 text-deep" />
       <span>
         <span className="block font-semibold text-heading">{title}</span>
-        <span className="mt-1 block text-sm text-muted-foreground">{description}</span>
+        <span className="mt-1 block text-base text-muted-foreground">{description}</span>
       </span>
     </button>
   );
@@ -542,13 +542,13 @@ function Onboarding() {
   function formQuestion(title: string, content: ReactNode, onSubmit: () => void) {
     return (
       <form
-        className="card-surface mt-6 flex flex-col gap-6 p-6 sm:p-8"
+        className="onboarding-panel card-surface mt-6 flex flex-col gap-6 p-7 sm:p-10"
         onSubmit={(event: FormEvent<HTMLFormElement>) => {
           event.preventDefault();
           void onSubmit();
         }}
       >
-        <h2 className="text-2xl font-semibold text-heading">{title}</h2>
+        <h2 className="text-2xl font-semibold text-heading sm:text-3xl">{title}</h2>
         {content}
         {validationError && (
           <p className="text-sm text-destructive" role="alert">
@@ -570,8 +570,8 @@ function Onboarding() {
   let content: ReactNode;
   if (step === "role") {
     content = (
-      <section className="card-surface mt-6 flex flex-col gap-6 p-6 sm:p-8">
-        <h2 className="text-2xl font-semibold text-heading">{t("onb.roleQuestion")}</h2>
+      <section className="onboarding-panel card-surface mt-6 flex flex-col gap-6 p-7 sm:p-10">
+        <h2 className="text-2xl font-semibold text-heading sm:text-3xl">{t("onb.roleQuestion")}</h2>
         <div className="flex flex-col gap-3 sm:flex-row">
           {roleCard("student", GraduationCap, t("onb.student"), t("onb.studentD"))}
           {roleCard("teacher", PenSquare, t("onb.teacher"), t("onb.teacherD"))}
@@ -582,10 +582,22 @@ function Onboarding() {
           </p>
         )}
         <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
-          <Button type="button" variant="outline" disabled={busy} onClick={() => setStep("name")}>
+          <Button
+            type="button"
+            variant="outline"
+            className="h-12 px-8 text-base"
+            disabled={busy}
+            onClick={() => setStep("name")}
+          >
             {t("onb.back")}
           </Button>
-          <Button type="button" size="lg" disabled={busy} onClick={() => void chooseRole()}>
+          <Button
+            type="button"
+            size="lg"
+            className="h-12 px-8 text-base"
+            disabled={busy}
+            onClick={() => void chooseRole()}
+          >
             {t("onb.submit")}
           </Button>
         </div>
@@ -895,8 +907,10 @@ function Onboarding() {
   } else {
     const isTeacherComplete = step === "teacher-complete";
     content = (
-      <section className="card-surface mt-6 flex flex-col items-start gap-5 p-6 sm:p-8">
-        <h2 className="text-2xl font-semibold text-heading">{t("onb.completeTitle")}</h2>
+      <section className="onboarding-panel card-surface mt-6 flex flex-col items-start gap-5 p-7 sm:p-10">
+        <h2 className="text-2xl font-semibold text-heading sm:text-3xl">
+          {t("onb.completeTitle")}
+        </h2>
         <p className="text-sm text-muted-foreground">
           {t(isTeacherComplete ? "onb.teacherComplete" : "onb.studentComplete")}
         </p>
@@ -907,13 +921,19 @@ function Onboarding() {
         )}
         <div className="flex w-full justify-end">
           {isTeacherComplete ? (
-            <Button type="button" size="lg" onClick={() => void navigate({ to: "/teacher" })}>
+            <Button
+              type="button"
+              size="lg"
+              className="h-12 px-8 text-base"
+              onClick={() => void navigate({ to: "/teacher" })}
+            >
               {t("onb.goToDashboard")}
             </Button>
           ) : (
             <Button
               type="button"
               size="lg"
+              className="h-12 px-8 text-base"
               disabled={busy}
               onClick={() => void submitStudentCompletion()}
             >
@@ -927,10 +947,10 @@ function Onboarding() {
 
   return (
     <OnboardingFrame>
-      <div className="w-full max-w-2xl">
-        <h1 className="text-3xl font-bold sm:text-4xl">{t("onb.title")}</h1>
-        <div className="mt-6 grid gap-3">
-          <div className="flex items-center justify-between text-sm text-muted-foreground">
+      <div className="w-full max-w-[900px]">
+        <h1 className="text-4xl font-bold sm:text-5xl">{t("onb.title")}</h1>
+        <div className="mt-7 grid gap-3">
+          <div className="flex items-center justify-between text-base text-muted-foreground">
             <span>{t("onb.progress")}</span>
             <span>
               {stepIndex + 1} / {flow.length}
@@ -947,8 +967,8 @@ function Onboarding() {
 function OnboardingFrame({ children }: { children: ReactNode }) {
   return (
     <main className="flex min-h-screen w-full items-center justify-center bg-background px-4 py-8 sm:px-6">
-      <div className="w-full max-w-2xl">
-        <BrandIcon className="mb-6 h-10 w-10" />
+      <div className="w-full max-w-[900px]">
+        <BrandIcon className="mb-7 h-12 w-12" />
         {children}
       </div>
     </main>
@@ -1033,13 +1053,19 @@ function StepActions({
   return (
     <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
       {showBack ? (
-        <Button type="button" variant="outline" onClick={onBack} disabled={busy}>
+        <Button
+          type="button"
+          variant="outline"
+          className="h-12 px-8 text-base"
+          onClick={onBack}
+          disabled={busy}
+        >
           {backLabel}
         </Button>
       ) : (
         <span />
       )}
-      <Button type="submit" size="lg" disabled={busy}>
+      <Button type="submit" size="lg" className="h-12 px-8 text-base" disabled={busy}>
         {busy ? busyLabel : continueLabel}
       </Button>
     </div>

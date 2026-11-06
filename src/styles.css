@@ -177,6 +177,11 @@
   color: var(--primary-foreground);
 }
 
+.dark .hero-surface {
+  --primary: oklch(0.24 0.06 257);
+  --primary-foreground: oklch(1 0 0);
+}
+
 @utility card-surface {
   background: var(--card);
   border: 1px solid var(--border);

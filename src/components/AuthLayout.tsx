@@ -182,7 +182,7 @@ export function AuthPasswordField({
 function BrandFeature({ icon: Icon, label }: { icon: LucideIcon; label: string }) {
   return (
     <div className="flex min-w-0 flex-col items-center gap-2 text-center text-[10px] font-medium leading-4 text-primary-foreground/90 sm:text-xs">
-      <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-primary-foreground/10 bg-white/5 text-brand sm:h-11 sm:w-11">
+      <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-primary-foreground/20 bg-white/10 text-brand sm:h-11 sm:w-11">
         <Icon className="h-4 w-4 sm:h-5 sm:w-5" aria-hidden="true" />
       </span>
       <span>{label}</span>

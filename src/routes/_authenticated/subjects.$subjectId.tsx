@@ -206,7 +206,7 @@ function SubjectDetail() {
                   className="group flex min-h-56 flex-col rounded-2xl border border-border bg-card p-5 shadow-card transition-all duration-200 hover:-translate-y-1 hover:border-brand/50 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   <div className="flex items-start justify-between gap-3">
-                    <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-brand">
+                    <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-brand text-brand-foreground">
                       <BookOpen className="h-6 w-6" aria-hidden="true" />
                     </span>
                     <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-semibold text-foreground">

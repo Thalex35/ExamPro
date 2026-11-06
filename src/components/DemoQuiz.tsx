@@ -243,7 +243,7 @@ export function DemoQuiz({
       <header className="card-surface space-y-5 p-5 sm:p-7">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="flex min-w-0 items-start gap-4">
-            <span className="hidden h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-primary text-brand sm:flex">
+            <span className="hidden h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-brand text-brand-foreground sm:flex">
               <CheckCircle2 className="h-7 w-7" aria-hidden="true" />
             </span>
             <div className="max-w-3xl space-y-2">

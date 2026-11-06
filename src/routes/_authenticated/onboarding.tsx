@@ -542,13 +542,13 @@ function Onboarding() {
   function formQuestion(title: string, content: ReactNode, onSubmit: () => void) {
     return (
       <form
-        className="card-surface mt-6 flex flex-col gap-5 p-5 sm:p-7"
+        className="card-surface mt-6 flex flex-col gap-6 p-6 sm:p-8"
         onSubmit={(event: FormEvent<HTMLFormElement>) => {
           event.preventDefault();
           void onSubmit();
         }}
       >
-        <h2 className="text-xl font-semibold text-heading">{title}</h2>
+        <h2 className="text-2xl font-semibold text-heading">{title}</h2>
         {content}
         {validationError && (
           <p className="text-sm text-destructive" role="alert">
@@ -570,8 +570,8 @@ function Onboarding() {
   let content: ReactNode;
   if (step === "role") {
     content = (
-      <section className="card-surface mt-6 flex flex-col gap-5 p-5 sm:p-7">
-        <h2 className="text-xl font-semibold text-heading">{t("onb.roleQuestion")}</h2>
+      <section className="card-surface mt-6 flex flex-col gap-6 p-6 sm:p-8">
+        <h2 className="text-2xl font-semibold text-heading">{t("onb.roleQuestion")}</h2>
         <div className="flex flex-col gap-3 sm:flex-row">
           {roleCard("student", GraduationCap, t("onb.student"), t("onb.studentD"))}
           {roleCard("teacher", PenSquare, t("onb.teacher"), t("onb.teacherD"))}
@@ -895,8 +895,8 @@ function Onboarding() {
   } else {
     const isTeacherComplete = step === "teacher-complete";
     content = (
-      <section className="card-surface mt-6 flex flex-col items-start gap-4 p-5 sm:p-7">
-        <h2 className="text-xl font-semibold text-heading">{t("onb.completeTitle")}</h2>
+      <section className="card-surface mt-6 flex flex-col items-start gap-5 p-6 sm:p-8">
+        <h2 className="text-2xl font-semibold text-heading">{t("onb.completeTitle")}</h2>
         <p className="text-sm text-muted-foreground">
           {t(isTeacherComplete ? "onb.teacherComplete" : "onb.studentComplete")}
         </p>
@@ -927,10 +927,10 @@ function Onboarding() {
 
   return (
     <OnboardingFrame>
-      <div className="w-full max-w-xl">
-        <h1 className="text-2xl font-bold sm:text-3xl">{t("onb.title")}</h1>
-        <div className="mt-5 grid gap-2">
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
+      <div className="w-full max-w-2xl">
+        <h1 className="text-3xl font-bold sm:text-4xl">{t("onb.title")}</h1>
+        <div className="mt-6 grid gap-3">
+          <div className="flex items-center justify-between text-sm text-muted-foreground">
             <span>{t("onb.progress")}</span>
             <span>
               {stepIndex + 1} / {flow.length}
@@ -947,8 +947,8 @@ function Onboarding() {
 function OnboardingFrame({ children }: { children: ReactNode }) {
   return (
     <main className="flex min-h-screen w-full items-center justify-center bg-background px-4 py-8 sm:px-6">
-      <div className="w-full max-w-xl">
-        <BrandIcon className="mb-5 h-9 w-9" />
+      <div className="w-full max-w-2xl">
+        <BrandIcon className="mb-6 h-10 w-10" />
         {children}
       </div>
     </main>

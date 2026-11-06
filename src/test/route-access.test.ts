@@ -11,6 +11,7 @@ describe("role-specific route access", () => {
   it("allows academic resource browsing but keeps student learning areas restricted", () => {
     expect(canAccessRolePath("/dashboard", ["student"])).toBe(true);
     expect(canAccessRolePath("/courses/example", ["teacher"])).toBe(true);
+    expect(canAccessRolePath("/courses/resource/example/primary", ["student"])).toBe(true);
     expect(canAccessRolePath("/exams", ["teacher"])).toBe(false);
   });
 

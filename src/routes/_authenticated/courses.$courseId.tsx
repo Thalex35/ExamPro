@@ -1,16 +1,17 @@
-import { createFileRoute, useRouter } from "@tanstack/react-router";
+import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import {
-  ArrowUpRight,
   Bookmark,
   BookOpenText,
   CheckCircle2,
   Clock3,
   Download,
   ExternalLink,
+  FileText,
   GraduationCap,
   Heart,
+  Info,
   ListChecks,
   Video,
 } from "lucide-react";
@@ -23,7 +24,6 @@ import { DemoBadge } from "@/components/DemoBadge";
 import { ReportContentButton } from "@/components/ReportContentButton";
 import { supabase } from "@/integrations/supabase/client";
 import { catalogQuery } from "@/lib/catalog";
-import { openCourseFile } from "@/lib/files";
 import { useI18n, type TKey } from "@/lib/i18n";
 import { useMe } from "@/lib/session";
 import { subjectIcons } from "@/lib/subject-icons";
@@ -33,36 +33,12 @@ export const Route = createFileRoute("/_authenticated/courses/$courseId")({
   component: CourseView,
 });
 
-function getVideoEmbedUrl(url: string | null) {
-  if (!url) return null;
-  try {
-    const parsed = new URL(url);
-    if (parsed.protocol !== "https:") return null;
-    if (parsed.hostname === "youtu.be") {
-      const id = parsed.pathname.slice(1);
-      return id ? `https://www.youtube-nocookie.com/embed/${encodeURIComponent(id)}` : null;
-    }
-    if (parsed.hostname === "www.youtube.com" || parsed.hostname === "youtube.com") {
-      const id = parsed.searchParams.get("v");
-      return id ? `https://www.youtube-nocookie.com/embed/${encodeURIComponent(id)}` : null;
-    }
-    if (parsed.hostname === "vimeo.com" || parsed.hostname === "www.vimeo.com") {
-      const id = parsed.pathname.split("/").filter(Boolean)[0];
-      return id && /^\d+$/.test(id) ? `https://player.vimeo.com/video/${id}` : null;
-    }
-  } catch {
-    return null;
-  }
-  return null;
-}
-
 function CourseView() {
   const { courseId } = Route.useParams();
   const { t, name, lang, errMsg } = useI18n();
   const { data: me } = useMe();
   const router = useRouter();
   const queryClient = useQueryClient();
-  const [downloading, setDownloading] = useState(false);
   const [reading, setReading] = useState(false);
   const cat = useQuery(catalogQuery);
   const q = useQuery({
@@ -160,7 +136,6 @@ function CourseView() {
   const crumbs = [subject, chapter, topic].filter(Boolean).map((entry) => name(entry!));
   const currentProgress = progress.data?.progress_percent ?? 0;
   const isComplete = currentProgress === 100;
-  const videoEmbedUrl = x.resource_type === "video" ? getVideoEmbedUrl(x.external_url) : null;
   const resourceTypeLabel =
     x.resource_type === "document"
       ? t("content.document")
@@ -169,6 +144,25 @@ function CourseView() {
         : x.resource_type === "external_link"
           ? t("content.externalLink")
           : t("content.textLesson");
+  const courseResources = [
+    ...(x.resource_type !== "text"
+      ? [
+          {
+            id: "primary",
+            title: x.file_name || x.title,
+            resource_type: x.resource_type,
+            file_path: x.file_path,
+            external_url: x.external_url,
+          },
+        ]
+      : []),
+    ...(resources.data ?? []),
+  ].filter(
+    (resource) =>
+      (resource.resource_type === "document" && !!resource.file_path) ||
+      ((resource.resource_type === "video" || resource.resource_type === "external_link") &&
+        !!resource.external_url),
+  );
 
   async function saveProgress(value: number, complete = false) {
     if (!me?.isStudent) return;
@@ -287,8 +281,20 @@ function CourseView() {
                 <BookOpenText className="h-3.5 w-3.5" />
                 {resourceTypeLabel}
               </span>
+              {subject && (
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-brand/30 bg-background px-3 py-1.5 text-xs font-semibold text-primary">
+                  <SubjectIcon className="h-3.5 w-3.5" />
+                  {name(subject)}
+                </span>
+              )}
+              {chapter && (
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-brand/30 bg-background px-3 py-1.5 text-xs font-semibold text-primary">
+                  <GraduationCap className="h-3.5 w-3.5" />
+                  {name(chapter)}
+                </span>
+              )}
               {x.difficulty && (
-                <span className="rounded-full border border-border bg-background/70 px-3 py-1.5 text-xs font-medium">
+                <span className="rounded-full border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-800 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
                   {t(difficultyLabels[x.difficulty] ?? "content.difficulty.beginner")}
                 </span>
               )}
@@ -304,12 +310,6 @@ function CourseView() {
               {x.title}
             </h1>
             <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-              {chapter && (
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-accent/70 px-3 py-1.5 font-medium text-accent-foreground">
-                  <GraduationCap className="h-4 w-4" />
-                  {name(chapter)}
-                </span>
-              )}
               {x.status !== "published" && (
                 <StatusBadge status={x.status} label={t(`status.${x.status}`)} />
               )}
@@ -326,46 +326,25 @@ function CourseView() {
                 {x.summary}
               </p>
             )}
-            <div className="mt-6 flex flex-wrap gap-3">
-              {x.resource_type === "text" ? (
-                <Button variant="hero" onClick={() => setReading(true)}>
-                  <BookOpenText className="mr-2 h-4 w-4" />
-                  {isComplete
-                    ? t("course.reviewCourse")
-                    : currentProgress > 0
-                      ? t("course.continue")
-                      : t("course.start")}
-                  <ArrowUpRight className="ml-2 h-4 w-4" />
-                </Button>
-              ) : x.resource_type === "document" && x.file_path ? (
-                <Button
-                  variant="hero"
-                  disabled={downloading}
-                  onClick={() => {
-                    setDownloading(true);
-                    void openCourseFile(x.file_path!)
-                      .catch((error: unknown) => toast.error(errMsg(error)))
-                      .finally(() => setDownloading(false));
-                  }}
-                >
-                  <Download className="mr-2 h-4 w-4" />
-                  {downloading ? t("common.loading") : t("content.download")}
-                </Button>
-              ) : x.external_url ? (
-                <a
-                  href={x.external_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex min-h-11 items-center rounded-md bg-primary px-4 py-2 font-semibold text-primary-foreground hover:opacity-90"
-                >
-                  {x.resource_type === "video" ? (
-                    <Video className="mr-2 h-4 w-4" />
-                  ) : (
-                    <ExternalLink className="mr-2 h-4 w-4" />
-                  )}
-                  {x.resource_type === "video" ? t("content.watchVideo") : t("content.openLink")}
-                </a>
-              ) : null}
+            <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm font-semibold text-primary">
+              {x.learning_objectives.length > 0 && (
+                <span className="inline-flex items-center gap-2">
+                  <ListChecks className="h-4 w-4" />
+                  {t("content.learningObjectives")} : {x.learning_objectives.length}
+                </span>
+              )}
+              {x.skills.length > 0 && (
+                <span className="inline-flex items-center gap-2 border-l border-border pl-4">
+                  <CheckCircle2 className="h-4 w-4" />
+                  {t("content.skills")} : {x.skills.length}
+                </span>
+              )}
+              {x.prerequisites.length > 0 && (
+                <span className="inline-flex items-center gap-2 border-l border-border pl-4">
+                  <Bookmark className="h-4 w-4" />
+                  {t("content.prerequisites")} : {x.prerequisites[0]}
+                </span>
+              )}
             </div>
             {me?.isStudent && currentProgress > 0 && x.resource_type === "text" && (
               <div className="mt-5 max-w-lg">
@@ -453,149 +432,121 @@ function CourseView() {
               </p>
             </section>
           )}
-          {x.resource_type === "video" && videoEmbedUrl && (
-            <section className="card-surface overflow-hidden p-2 sm:p-3">
-              <div className="aspect-video overflow-hidden rounded-lg bg-muted">
-                <iframe
-                  src={videoEmbedUrl}
-                  title={x.title}
-                  className="h-full w-full"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  referrerPolicy="strict-origin-when-cross-origin"
-                  allowFullScreen
-                />
-              </div>
-            </section>
-          )}
         </div>
 
         <aside className="space-y-5">
-          <section className="card-surface p-5">
-            <h2 className="flex items-center gap-2 text-lg font-bold text-heading">
-              <BookOpenText className="h-5 w-5 text-deep" />
-              {t("content.courseResource")}
-            </h2>
-            <div className="mt-4 rounded-xl bg-accent/70 p-4">
-              <div className="flex items-center gap-3">
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-background text-deep shadow-sm">
-                  {x.resource_type === "document" ? (
-                    <Download className="h-5 w-5" />
-                  ) : x.resource_type === "video" ? (
-                    <Video className="h-5 w-5" />
-                  ) : x.resource_type === "external_link" ? (
-                    <ExternalLink className="h-5 w-5" />
-                  ) : (
-                    <BookOpenText className="h-5 w-5" />
-                  )}
-                </span>
-                <div className="min-w-0">
-                  <p className="font-semibold text-heading">{x.file_name || x.title}</p>
-                  <p className="mt-1 text-sm text-muted-foreground">{resourceTypeLabel}</p>
-                </div>
-              </div>
-              {x.resource_type !== "text" && (
+          {(courseResources.length > 0 || x.resource_type === "text") && (
+            <section className="card-surface p-5">
+              <h2 className="flex items-center gap-2 text-lg font-bold text-heading">
+                <FileText className="h-5 w-5 text-deep" />
+                {t("course.resourcesTitle")}
+              </h2>
+              {!courseResources.length && (
                 <p className="mt-3 text-sm text-muted-foreground">
                   {t("content.optionalResourceHint")}
                 </p>
               )}
-            </div>
-            {x.duration_minutes && (
-              <div className="mt-4 flex items-center gap-3 rounded-xl border border-border bg-background p-4">
-                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-accent text-deep">
-                  <Clock3 className="h-5 w-5" />
-                </span>
-                <div>
-                  <p className="font-semibold text-heading">{t("quiz.estimatedDuration")}</p>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {x.duration_minutes} {t("content.minutes")}
-                  </p>
-                </div>
+              <div className="mt-4 space-y-3">
+                {courseResources.map((resource, index) => {
+                  const isDocument = resource.resource_type === "document";
+                  const isVideo = resource.resource_type === "video";
+                  const resourceType = isDocument
+                    ? t("content.document")
+                    : isVideo
+                      ? t("content.video")
+                      : t("content.externalLink");
+                  return (
+                    <div key={resource.id} className="space-y-3">
+                      <div className="flex min-w-0 items-center gap-3 rounded-xl border border-border bg-accent/45 p-3 sm:p-4">
+                        {isVideo ? (
+                          <span className="relative flex h-14 w-20 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-gradient-to-br from-sky-950 via-sky-800 to-cyan-700 text-white">
+                            <span className="absolute inset-0 bg-white/10" />
+                            <Video className="relative h-6 w-6" />
+                          </span>
+                        ) : (
+                          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-background text-deep shadow-sm">
+                            {isDocument ? (
+                              <FileText className="h-6 w-6" />
+                            ) : (
+                              <ExternalLink className="h-5 w-5" />
+                            )}
+                          </span>
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <h3 className="truncate text-sm font-semibold text-heading">
+                            {resource.title}
+                          </h3>
+                          <p className="mt-1 text-xs text-muted-foreground">{resourceType}</p>
+                        </div>
+                        <Link
+                          to="/courses/resource/$courseId/$resourceId"
+                          params={{ courseId: x.id, resourceId: resource.id }}
+                          className="inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-full border border-brand/35 bg-background px-3 text-sm font-semibold text-primary transition-colors hover:bg-accent sm:px-4"
+                        >
+                          {isDocument ? (
+                            <Download className="h-4 w-4" />
+                          ) : isVideo ? (
+                            <Video className="h-4 w-4" />
+                          ) : (
+                            <ExternalLink className="h-4 w-4" />
+                          )}
+                          <span className="hidden sm:inline">
+                            {isDocument
+                              ? t("content.download")
+                              : isVideo
+                                ? t("content.watchVideo")
+                                : t("content.openLink")}
+                          </span>
+                          <span className="sr-only sm:hidden">
+                            {isDocument
+                              ? t("content.download")
+                              : isVideo
+                                ? t("content.watchVideo")
+                                : t("content.openLink")}
+                          </span>
+                        </Link>
+                      </div>
+                      {index < courseResources.length - 1 && (
+                        <div className="flex items-center gap-3 text-xs font-medium text-muted-foreground">
+                          <span className="h-px flex-1 bg-border" />
+                          <span>{t("course.resourceSeparator")}</span>
+                          <span className="h-px flex-1 bg-border" />
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
-            )}
-          </section>
+              {x.resource_type === "text" && (
+                <Button
+                  variant="default"
+                  className="mt-4 h-12 w-full bg-primary text-base font-semibold text-primary-foreground hover:bg-primary/90"
+                  onClick={() => setReading(true)}
+                >
+                  <BookOpenText className="mr-2 h-5 w-5" />
+                  {isComplete
+                    ? t("course.reviewCourse")
+                    : currentProgress > 0
+                      ? t("course.continue")
+                      : t("course.start")}
+                </Button>
+              )}
+            </section>
+          )}
         </aside>
       </div>
-      {!!resources.data?.length && (
-        <section className="mt-6 space-y-4" aria-labelledby="course-supplementary-resources">
-          <div>
-            <h2 id="course-supplementary-resources" className="text-xl font-bold text-heading">
-              {t("content.supplementaryResources")}
-            </h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {t("content.supplementaryResourcesHint")}
-            </p>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            {resources.data.map((resource) => {
-              const embedUrl =
-                resource.resource_type === "video" ? getVideoEmbedUrl(resource.external_url) : null;
-              return (
-                <article key={resource.id} className="card-surface flex min-w-0 flex-col p-4">
-                  <div className="flex items-start gap-3">
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent text-deep">
-                      {resource.resource_type === "document" ? (
-                        <Download className="h-5 w-5" />
-                      ) : resource.resource_type === "video" ? (
-                        <Video className="h-5 w-5" />
-                      ) : (
-                        <ExternalLink className="h-5 w-5" />
-                      )}
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <h3 className="font-semibold text-heading">{resource.title}</h3>
-                      <p className="mt-1 text-sm text-muted-foreground">
-                        {resource.resource_type === "document"
-                          ? t("content.document")
-                          : resource.resource_type === "video"
-                            ? t("content.video")
-                            : t("content.externalLink")}
-                      </p>
-                    </div>
-                  </div>
-                  {embedUrl && (
-                    <div className="mt-3 aspect-video overflow-hidden rounded-lg bg-muted">
-                      <iframe
-                        src={embedUrl}
-                        title={resource.title}
-                        className="h-full w-full"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                        referrerPolicy="strict-origin-when-cross-origin"
-                        allowFullScreen
-                      />
-                    </div>
-                  )}
-                  {resource.resource_type === "document" && resource.file_path ? (
-                    <Button
-                      variant="outline"
-                      className="mt-4 self-start"
-                      onClick={() =>
-                        void openCourseFile(resource.file_path!).catch((error: unknown) =>
-                          toast.error(errMsg(error)),
-                        )
-                      }
-                    >
-                      <Download className="mr-2 h-4 w-4" />
-                      {t("content.download")}
-                    </Button>
-                  ) : resource.external_url ? (
-                    <a
-                      href={resource.external_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mt-4 inline-flex min-h-10 items-center self-start rounded-md border border-border px-3 py-2 text-sm font-medium hover:bg-muted"
-                    >
-                      {resource.resource_type === "video"
-                        ? t("content.watchVideo")
-                        : t("content.openLink")}
-                      <ExternalLink className="ml-2 h-4 w-4" />
-                    </a>
-                  ) : null}
-                </article>
-              );
-            })}
-          </div>
-        </section>
-      )}
+      <div className="mt-5 flex flex-col gap-3 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sky-950 dark:border-sky-900 dark:bg-sky-950/40 dark:text-sky-100 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+        <p className="flex items-center gap-3 text-sm font-medium">
+          <Info className="h-5 w-5 shrink-0 text-sky-600 dark:text-sky-300" />
+          {t("course.studyTip")}
+        </p>
+        {x.duration_minutes && (
+          <p className="flex shrink-0 items-center gap-2 text-sm font-semibold">
+            <Clock3 className="h-4 w-4" />
+            {t("quiz.estimatedDuration")} : {x.duration_minutes} {t("content.minutes")}
+          </p>
+        )}
+      </div>
     </article>
   );
 }

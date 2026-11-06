@@ -35,7 +35,7 @@ import { openExamFile } from "@/lib/files";
 import { formatExamYear } from "@/lib/exam-years";
 import { useMe } from "@/lib/session";
 import { useI18n, type TKey } from "@/lib/i18n";
-import { BrandIcon, BrandLogo } from "./Brand";
+import { BrandIcon } from "./Brand";
 import { LanguageSwitch } from "./LanguageSwitch";
 import { ErrorState, Loading } from "./States";
 import { cn } from "@/lib/utils";
@@ -283,29 +283,7 @@ export function AppShell({
     items.push({ to: "/progress", key: "dash.performance", icon: BarChart3 });
   }
   if (onboardingOnly) {
-    return (
-      <div className="min-h-screen bg-background">
-        <header className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-4 py-4 sm:px-8">
-          <Link to="/" aria-label="EXAMPRO">
-            <BrandLogo className="h-8" />
-          </Link>
-          <div className="flex items-center gap-4">
-            <LanguageSwitch />
-            <ThemeToggle />
-            <button
-              onClick={signOut}
-              className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
-            >
-              <LogOut className="h-4 w-4" />
-              {t("nav.logout")}
-            </button>
-          </div>
-        </header>
-        <main className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-8">
-          {isLoading ? <Loading /> : children}
-        </main>
-      </div>
-    );
+    return <div className="min-h-screen bg-background">{isLoading ? <Loading /> : children}</div>;
   }
 
   const fullName =

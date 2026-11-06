@@ -1,6 +1,6 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState, type ReactNode } from "react";
+import { useState } from "react";
 import {
   ArrowUpRight,
   Bookmark,
@@ -26,6 +26,7 @@ import { catalogQuery } from "@/lib/catalog";
 import { openCourseFile } from "@/lib/files";
 import { useI18n, type TKey } from "@/lib/i18n";
 import { useMe } from "@/lib/session";
+import { subjectIcons } from "@/lib/subject-icons";
 
 export const Route = createFileRoute("/_authenticated/courses/$courseId")({
   head: () => ({ meta: [{ title: "Cours — EXAMPRO" }] }),
@@ -155,6 +156,7 @@ function CourseView() {
   const subject = c.subjects.find((entry) => entry.id === x.subject_id);
   const chapter = c.chapters.find((entry) => entry.id === x.chapter_id);
   const topic = c.topics.find((entry) => entry.id === x.topic_id);
+  const SubjectIcon = subjectIcons[subject?.icon ?? ""] ?? GraduationCap;
   const crumbs = [subject, chapter, topic].filter(Boolean).map((entry) => name(entry!));
   const currentProgress = progress.data?.progress_percent ?? 0;
   const isComplete = currentProgress === 100;
@@ -225,128 +227,169 @@ function CourseView() {
   }
 
   return (
-    <article className="mx-auto max-w-5xl">
+    <article className="mx-auto max-w-7xl">
       <Button variant="ghost" size="sm" onClick={() => router.history.back()} className="mb-4">
         ← {t("common.back")}
       </Button>
-      <header className="card-surface relative isolate overflow-hidden p-5 sm:p-8">
-        <div className="absolute -right-10 -top-14 -z-10 h-48 w-48 rounded-full bg-accent/70 blur-3xl" />
-        <nav aria-label={t("course.breadcrumb")} className="text-sm text-muted-foreground">
-          {crumbs.join(" · ")}
-        </nav>
-        <div className="mt-5 flex flex-wrap items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-accent px-3 py-1 text-xs font-semibold text-deep">
-            <BookOpenText className="h-3.5 w-3.5" />
-            {resourceTypeLabel}
-          </span>
-          {x.difficulty && (
-            <span className="rounded-full border border-border bg-background/70 px-3 py-1 text-xs font-medium">
-              {t(difficultyLabels[x.difficulty] ?? "content.difficulty.beginner")}
-            </span>
-          )}
-          {x.duration_minutes && (
-            <span className="inline-flex items-center gap-1 rounded-full border border-border bg-background/70 px-3 py-1 text-xs font-medium">
-              <Clock3 className="h-3.5 w-3.5" />
-              {x.duration_minutes} {t("content.minutes")}
-            </span>
-          )}
-        </div>
-        <h1 className="mt-4 max-w-3xl text-3xl font-bold leading-tight text-heading sm:text-4xl">
-          {x.title}
-        </h1>
-        <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-          {x.status !== "published" && (
-            <StatusBadge status={x.status} label={t(`status.${x.status}`)} />
-          )}
-          {x.is_demo && <DemoBadge />}
-          {x.published_at && (
-            <span>
-              {t("course.by")}{" "}
-              {new Date(x.published_at).toLocaleDateString(lang === "ht" ? "fr-HT" : "fr-FR")}
-            </span>
-          )}
-        </div>
-        {x.summary && (
-          <p className="mt-5 max-w-3xl text-lg leading-relaxed text-muted-foreground">
-            {x.summary}
-          </p>
-        )}
-        <div className="mt-6 flex flex-wrap gap-3">
-          {x.resource_type === "text" ? (
-            <Button variant="hero" onClick={() => setReading(true)}>
-              <BookOpenText className="mr-2 h-4 w-4" />
-              {isComplete
-                ? t("course.reviewCourse")
-                : currentProgress > 0
-                  ? t("course.continue")
-                  : t("course.start")}
-              <ArrowUpRight className="ml-2 h-4 w-4" />
-            </Button>
-          ) : x.resource_type === "document" && x.file_path ? (
-            <Button
-              variant="hero"
-              disabled={downloading}
-              onClick={() => {
-                setDownloading(true);
-                void openCourseFile(x.file_path!)
-                  .catch((error: unknown) => toast.error(errMsg(error)))
-                  .finally(() => setDownloading(false));
-              }}
-            >
-              <Download className="mr-2 h-4 w-4" />
-              {downloading ? t("common.loading") : t("content.download")}
-            </Button>
-          ) : x.external_url ? (
-            <a
-              href={x.external_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex min-h-11 items-center rounded-md bg-primary px-4 py-2 font-semibold text-primary-foreground hover:opacity-90"
-            >
-              {x.resource_type === "video" ? (
-                <Video className="mr-2 h-4 w-4" />
-              ) : (
-                <ExternalLink className="mr-2 h-4 w-4" />
-              )}
-              {x.resource_type === "video" ? t("content.watchVideo") : t("content.openLink")}
-            </a>
-          ) : null}
-          {me?.isStudent && (
-            <Button
-              variant="outline"
-              onClick={() => void toggleFavorite()}
-              disabled={favorite.isFetching}
-            >
-              {favorite.data ? (
-                <Heart className="mr-2 h-4 w-4 fill-current text-rose-500" />
-              ) : (
-                <Bookmark className="mr-2 h-4 w-4" />
-              )}
-              {favorite.data ? t("course.removeFavorite") : t("course.addFavorite")}
-            </Button>
-          )}
-        </div>
-        {me?.isStudent && currentProgress > 0 && x.resource_type === "text" && (
-          <div className="mt-5 max-w-lg">
-            <div className="mb-1 flex justify-between text-xs text-muted-foreground">
-              <span>{isComplete ? t("course.completed") : t("course.readingProgress")}</span>
-              <span>{currentProgress}%</span>
-            </div>
+      <header className="card-surface overflow-hidden p-3 sm:p-4">
+        <div className="grid gap-5 md:grid-cols-[minmax(240px,0.72fr)_minmax(0,1.6fr)] md:gap-7">
+          <div
+            role="img"
+            aria-label={subject ? name(subject) : t("content.pedagogy")}
+            className="relative flex min-h-52 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-sky-950 via-sky-800 to-cyan-700 p-6 text-white sm:min-h-64 md:min-h-full"
+          >
             <div
-              className="h-2 overflow-hidden rounded-full bg-muted"
-              role="progressbar"
-              aria-valuenow={currentProgress}
-              aria-valuemin={0}
-              aria-valuemax={100}
-              aria-label={t("course.readingProgress")}
-            >
-              <div
-                className="h-full rounded-full bg-brand"
-                style={{ width: `${currentProgress}%` }}
-              />
+              aria-hidden="true"
+              className="absolute -right-14 -top-16 h-52 w-52 rounded-full border border-white/15 bg-white/10"
+            />
+            <div
+              aria-hidden="true"
+              className="absolute -bottom-24 -left-12 h-56 w-56 rounded-full border border-white/15 bg-white/10"
+            />
+            <div className="relative flex h-36 w-36 items-center justify-center rounded-[2rem] border border-white/30 bg-white/10 shadow-2xl backdrop-blur-sm sm:h-44 sm:w-44">
+              <SubjectIcon className="h-20 w-20 text-white sm:h-24 sm:w-24" strokeWidth={1.4} />
             </div>
+            {subject && (
+              <span className="absolute bottom-4 left-4 rounded-full border border-white/25 bg-sky-950/70 px-3 py-1.5 text-sm font-semibold text-white backdrop-blur-sm">
+                {name(subject)}
+              </span>
+            )}
           </div>
-        )}
+
+          <div className="flex min-w-0 flex-col justify-center p-3 sm:p-5 md:py-6 md:pr-6">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <nav
+                aria-label={t("course.breadcrumb")}
+                className="min-w-0 text-sm text-muted-foreground"
+              >
+                {crumbs.join(" · ")}
+              </nav>
+              {me?.isStudent && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="shrink-0 rounded-full border-brand/30 bg-background px-4"
+                  onClick={() => void toggleFavorite()}
+                  disabled={favorite.isFetching}
+                >
+                  {favorite.data ? (
+                    <Heart className="mr-2 h-4 w-4 fill-current text-rose-500" />
+                  ) : (
+                    <Bookmark className="mr-2 h-4 w-4" />
+                  )}
+                  {favorite.data ? t("course.removeFavorite") : t("course.addFavorite")}
+                </Button>
+              )}
+            </div>
+
+            <div className="mt-4 flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-accent px-3 py-1.5 text-xs font-semibold text-deep">
+                <BookOpenText className="h-3.5 w-3.5" />
+                {resourceTypeLabel}
+              </span>
+              {x.difficulty && (
+                <span className="rounded-full border border-border bg-background/70 px-3 py-1.5 text-xs font-medium">
+                  {t(difficultyLabels[x.difficulty] ?? "content.difficulty.beginner")}
+                </span>
+              )}
+              {x.duration_minutes && (
+                <span className="inline-flex items-center gap-1 rounded-full border border-border bg-background/70 px-3 py-1.5 text-xs font-medium">
+                  <Clock3 className="h-3.5 w-3.5" />
+                  {x.duration_minutes} {t("content.minutes")}
+                </span>
+              )}
+            </div>
+
+            <h1 className="mt-4 text-3xl font-bold leading-tight text-heading sm:text-4xl">
+              {x.title}
+            </h1>
+            <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+              {chapter && (
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-accent/70 px-3 py-1.5 font-medium text-accent-foreground">
+                  <GraduationCap className="h-4 w-4" />
+                  {name(chapter)}
+                </span>
+              )}
+              {x.status !== "published" && (
+                <StatusBadge status={x.status} label={t(`status.${x.status}`)} />
+              )}
+              {x.is_demo && <DemoBadge />}
+              {x.published_at && (
+                <span>
+                  {t("course.by")}{" "}
+                  {new Date(x.published_at).toLocaleDateString(lang === "ht" ? "fr-HT" : "fr-FR")}
+                </span>
+              )}
+            </div>
+            {x.summary && (
+              <p className="mt-4 max-w-3xl text-base leading-relaxed text-muted-foreground sm:text-lg">
+                {x.summary}
+              </p>
+            )}
+            <div className="mt-6 flex flex-wrap gap-3">
+              {x.resource_type === "text" ? (
+                <Button variant="hero" onClick={() => setReading(true)}>
+                  <BookOpenText className="mr-2 h-4 w-4" />
+                  {isComplete
+                    ? t("course.reviewCourse")
+                    : currentProgress > 0
+                      ? t("course.continue")
+                      : t("course.start")}
+                  <ArrowUpRight className="ml-2 h-4 w-4" />
+                </Button>
+              ) : x.resource_type === "document" && x.file_path ? (
+                <Button
+                  variant="hero"
+                  disabled={downloading}
+                  onClick={() => {
+                    setDownloading(true);
+                    void openCourseFile(x.file_path!)
+                      .catch((error: unknown) => toast.error(errMsg(error)))
+                      .finally(() => setDownloading(false));
+                  }}
+                >
+                  <Download className="mr-2 h-4 w-4" />
+                  {downloading ? t("common.loading") : t("content.download")}
+                </Button>
+              ) : x.external_url ? (
+                <a
+                  href={x.external_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex min-h-11 items-center rounded-md bg-primary px-4 py-2 font-semibold text-primary-foreground hover:opacity-90"
+                >
+                  {x.resource_type === "video" ? (
+                    <Video className="mr-2 h-4 w-4" />
+                  ) : (
+                    <ExternalLink className="mr-2 h-4 w-4" />
+                  )}
+                  {x.resource_type === "video" ? t("content.watchVideo") : t("content.openLink")}
+                </a>
+              ) : null}
+            </div>
+            {me?.isStudent && currentProgress > 0 && x.resource_type === "text" && (
+              <div className="mt-5 max-w-lg">
+                <div className="mb-1 flex justify-between text-xs text-muted-foreground">
+                  <span>{isComplete ? t("course.completed") : t("course.readingProgress")}</span>
+                  <span>{currentProgress}%</span>
+                </div>
+                <div
+                  className="h-2 overflow-hidden rounded-full bg-muted"
+                  role="progressbar"
+                  aria-valuenow={currentProgress}
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-label={t("course.readingProgress")}
+                >
+                  <div
+                    className="h-full rounded-full bg-brand"
+                    style={{ width: `${currentProgress}%` }}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       </header>
 
       {x.status === "published" &&
@@ -363,8 +406,39 @@ function CourseView() {
         </p>
       )}
 
-      <div className="mt-6 grid gap-5 lg:grid-cols-[minmax(0,1.5fr)_minmax(260px,0.8fr)]">
+      <div className="mt-6 grid items-start gap-5 lg:grid-cols-[minmax(0,1.45fr)_minmax(280px,0.9fr)]">
         <div className="space-y-5">
+          {x.learning_objectives.length > 0 && (
+            <section className="card-surface p-5 sm:p-6">
+              <h2 className="flex items-center gap-3 text-xl font-bold text-heading">
+                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent text-deep">
+                  <ListChecks className="h-5 w-5" />
+                </span>
+                {t("content.learningObjectives")}
+              </h2>
+              <PedagogyList values={x.learning_objectives} />
+            </section>
+          )}
+          {x.skills.length > 0 && (
+            <section className="card-surface p-5 sm:p-6">
+              <h2 className="flex items-center gap-3 text-xl font-bold text-heading">
+                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent text-deep">
+                  <CheckCircle2 className="h-5 w-5" />
+                </span>
+                {t("content.skills")}
+              </h2>
+              <PedagogyList values={x.skills} />
+            </section>
+          )}
+          <section className="card-surface p-5 sm:p-6">
+            <h2 className="flex items-center gap-3 text-xl font-bold text-heading">
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent text-deep">
+                <Bookmark className="h-5 w-5" />
+              </span>
+              {t("content.prerequisites")}
+            </h2>
+            <PedagogyList values={x.prerequisites} fallback={t("content.noPrerequisites")} />
+          </section>
           <section className="card-surface p-5 sm:p-6">
             <h2 className="text-xl font-bold text-heading">{t("content.longDescription")}</h2>
             <p className="mt-3 whitespace-pre-wrap leading-8 text-muted-foreground">
@@ -398,57 +472,47 @@ function CourseView() {
         <aside className="space-y-5">
           <section className="card-surface p-5">
             <h2 className="flex items-center gap-2 text-lg font-bold text-heading">
-              <GraduationCap className="h-5 w-5 text-deep" />
-              {t("content.pedagogy")}
+              <BookOpenText className="h-5 w-5 text-deep" />
+              {t("content.courseResource")}
             </h2>
-            <div className="mt-4 space-y-4">
-              <PedagogyList
-                icon={<ListChecks className="h-4 w-4" />}
-                title={t("content.learningObjectives")}
-                values={x.learning_objectives}
-              />
-              <PedagogyList
-                icon={<CheckCircle2 className="h-4 w-4" />}
-                title={t("content.skills")}
-                values={x.skills}
-              />
-              <PedagogyList
-                icon={<Bookmark className="h-4 w-4" />}
-                title={t("content.prerequisites")}
-                values={x.prerequisites}
-                fallback={t("content.noPrerequisites")}
-              />
-            </div>
-          </section>
-          {x.resource_type !== "text" && (
-            <section className="card-surface p-5">
-              <h2 className="text-lg font-bold text-heading">{t("content.courseResource")}</h2>
-              <div className="mt-3 flex items-start gap-3">
-                {x.resource_type === "document" ? (
-                  <Download className="mt-0.5 h-5 w-5 text-deep" />
-                ) : x.resource_type === "video" ? (
-                  <Video className="mt-0.5 h-5 w-5 text-deep" />
-                ) : (
-                  <ExternalLink className="mt-0.5 h-5 w-5 text-deep" />
-                )}
+            <div className="mt-4 rounded-xl bg-accent/70 p-4">
+              <div className="flex items-center gap-3">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-background text-deep shadow-sm">
+                  {x.resource_type === "document" ? (
+                    <Download className="h-5 w-5" />
+                  ) : x.resource_type === "video" ? (
+                    <Video className="h-5 w-5" />
+                  ) : x.resource_type === "external_link" ? (
+                    <ExternalLink className="h-5 w-5" />
+                  ) : (
+                    <BookOpenText className="h-5 w-5" />
+                  )}
+                </span>
                 <div className="min-w-0">
-                  <p className="font-medium text-heading">
-                    {x.file_name ??
-                      t(
-                        x.resource_type === "video"
-                          ? "content.video"
-                          : x.resource_type === "document"
-                            ? "content.document"
-                            : "content.externalLink",
-                      )}
-                  </p>
+                  <p className="font-semibold text-heading">{x.file_name || x.title}</p>
+                  <p className="mt-1 text-sm text-muted-foreground">{resourceTypeLabel}</p>
+                </div>
+              </div>
+              {x.resource_type !== "text" && (
+                <p className="mt-3 text-sm text-muted-foreground">
+                  {t("content.optionalResourceHint")}
+                </p>
+              )}
+            </div>
+            {x.duration_minutes && (
+              <div className="mt-4 flex items-center gap-3 rounded-xl border border-border bg-background p-4">
+                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-accent text-deep">
+                  <Clock3 className="h-5 w-5" />
+                </span>
+                <div>
+                  <p className="font-semibold text-heading">{t("quiz.estimatedDuration")}</p>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    {t("content.optionalResourceHint")}
+                    {x.duration_minutes} {t("content.minutes")}
                   </p>
                 </div>
               </div>
-            </section>
-          )}
+            )}
+          </section>
         </aside>
       </div>
       {!!resources.data?.length && (
@@ -536,34 +600,18 @@ function CourseView() {
   );
 }
 
-function PedagogyList({
-  icon,
-  title,
-  values,
-  fallback,
-}: {
-  icon: ReactNode;
-  title: string;
-  values: string[];
-  fallback?: string;
-}) {
+function PedagogyList({ values, fallback }: { values: string[]; fallback?: string }) {
+  if (!values.length) {
+    return fallback ? <p className="mt-3 text-sm text-muted-foreground">{fallback}</p> : null;
+  }
   return (
-    <div>
-      <h3 className="flex items-center gap-2 font-semibold text-heading">
-        <span className="text-deep">{icon}</span>
-        {title}
-      </h3>
-      {values.length ? (
-        <ul className="mt-2 space-y-1.5 pl-6 text-sm leading-6 text-muted-foreground">
-          {values.map((value, index) => (
-            <li key={`${index}-${value}`} className="list-disc">
-              {value}
-            </li>
-          ))}
-        </ul>
-      ) : (
-        fallback && <p className="mt-2 pl-6 text-sm text-muted-foreground">{fallback}</p>
-      )}
-    </div>
+    <ul className="mt-3 space-y-2 text-sm leading-6 text-muted-foreground sm:text-base">
+      {values.map((value, index) => (
+        <li key={`${index}-${value}`} className="flex items-start gap-2.5">
+          <CheckCircle2 className="mt-1 h-4 w-4 shrink-0 text-deep" aria-hidden="true" />
+          <span>{value}</span>
+        </li>
+      ))}
+    </ul>
   );
 }

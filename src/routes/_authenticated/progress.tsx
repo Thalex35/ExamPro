@@ -1,7 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { ArrowRight, BookOpen, CalendarDays, ChartNoAxesColumn, Clock3 } from "lucide-react";
+import {
+  ArrowRight,
+  BookOpen,
+  CalendarDays,
+  ChartNoAxesColumn,
+  CheckCircle2,
+  Clock3,
+} from "lucide-react";
 import { DemoBadge } from "@/components/DemoBadge";
 import { Empty, ErrorState, Loading, PageHeader } from "@/components/States";
 import { Button } from "@/components/ui/button";
@@ -38,11 +45,40 @@ function ProgressPage() {
       return data;
     },
   });
-  if (records.isLoading || catalog.isLoading || attempts.isLoading) return <Loading />;
+  const courseReading = useQuery({
+    queryKey: ["course-reading-history", me?.user.id],
+    enabled: !!me?.user.id && !!me.isStudent,
+    queryFn: async () => {
+      if (!me?.user.id) return [];
+      const { data: progress, error: progressError } = await supabase
+        .from("course_progress")
+        .select("course_id,progress_percent,completed_at,updated_at")
+        .eq("student_id", me.user.id)
+        .order("updated_at", { ascending: false });
+      if (progressError) throw progressError;
+      if (!progress.length) return [];
+      const { data: courses, error: coursesError } = await supabase
+        .from("courses")
+        .select("id,title,summary")
+        .in(
+          "id",
+          progress.map((entry) => entry.course_id),
+        );
+      if (coursesError) throw coursesError;
+      return progress.flatMap((entry) => {
+        const course = courses.find((item) => item.id === entry.course_id);
+        return course ? [{ ...entry, course }] : [];
+      });
+    },
+  });
+  if (records.isLoading || catalog.isLoading || attempts.isLoading || courseReading.isLoading)
+    return <Loading />;
   if (catalog.error || !catalog.data)
     return <ErrorState error={catalog.error} onRetry={() => void catalog.refetch()} />;
   if (attempts.error)
     return <ErrorState error={attempts.error} onRetry={() => void attempts.refetch()} />;
+  if (courseReading.error)
+    return <ErrorState error={courseReading.error} onRetry={() => void courseReading.refetch()} />;
   const items = records.data ?? [];
   const quizAttempts = attempts.data ?? [];
   const groupedAttempts = new Map<string, typeof quizAttempts>();
@@ -62,6 +98,50 @@ function ProgressPage() {
     <div>
       <PageHeader title={t("dash.performance")} subtitle={t("demo.progressDescription")} />
       <div className="space-y-8">
+        {me?.isStudent && (
+          <section aria-labelledby="course-reading-history-title" className="space-y-4">
+            <div>
+              <h2 id="course-reading-history-title" className="text-xl font-bold text-heading">
+                {t("course.readingHistory")}
+              </h2>
+            </div>
+            {!courseReading.data?.length ? (
+              <Empty>{t("course.noReadingHistory")}</Empty>
+            ) : (
+              <div className="card-surface divide-y">
+                {courseReading.data.map((entry) => (
+                  <Link
+                    key={entry.course_id}
+                    to="/courses/$courseId"
+                    params={{ courseId: entry.course_id }}
+                    className="flex flex-wrap items-center gap-3 p-4 hover:bg-muted/40"
+                  >
+                    {entry.completed_at ? (
+                      <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                    ) : (
+                      <BookOpen className="h-5 w-5 text-deep" />
+                    )}
+                    <span className="min-w-0 flex-1">
+                      <span className="block font-medium text-heading">{entry.course.title}</span>
+                      <span className="mt-1 block text-xs text-muted-foreground">
+                        {entry.completed_at
+                          ? `${t("course.completed")} · ${new Date(entry.completed_at).toLocaleDateString(lang === "ht" ? "fr-HT" : "fr-FR")}`
+                          : `${t("course.readingProgress")} · ${entry.progress_percent}%`}
+                      </span>
+                    </span>
+                    <span className="h-2 w-24 overflow-hidden rounded-full bg-muted">
+                      <span
+                        className="block h-full rounded-full bg-brand"
+                        style={{ width: `${entry.progress_percent}%` }}
+                      />
+                    </span>
+                    <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                  </Link>
+                ))}
+              </div>
+            )}
+          </section>
+        )}
         {me?.isStudent && (
           <section aria-labelledby="quiz-performance-title" className="space-y-4">
             <div>

@@ -335,6 +335,132 @@ export type Database = {
           },
         ];
       };
+      course_favorites: {
+        Row: {
+          course_id: string;
+          created_at: string;
+          student_id: string;
+        };
+        Insert: {
+          course_id: string;
+          created_at?: string;
+          student_id: string;
+        };
+        Update: {
+          course_id?: string;
+          created_at?: string;
+          student_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "course_favorites_course_id_fkey";
+            columns: ["course_id"];
+            isOneToOne: false;
+            referencedRelation: "courses";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "course_favorites_student_id_fkey";
+            columns: ["student_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      course_progress: {
+        Row: {
+          completed_at: string | null;
+          course_id: string;
+          progress_percent: number;
+          student_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          completed_at?: string | null;
+          course_id: string;
+          progress_percent?: number;
+          student_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          completed_at?: string | null;
+          course_id?: string;
+          progress_percent?: number;
+          student_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "course_progress_course_id_fkey";
+            columns: ["course_id"];
+            isOneToOne: false;
+            referencedRelation: "courses";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "course_progress_student_id_fkey";
+            columns: ["student_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      course_resources: {
+        Row: {
+          author_id: string;
+          course_id: string;
+          created_at: string;
+          external_url: string | null;
+          file_name: string | null;
+          file_path: string | null;
+          id: string;
+          resource_type: string;
+          sort_order: number;
+          title: string;
+        };
+        Insert: {
+          author_id: string;
+          course_id: string;
+          created_at?: string;
+          external_url?: string | null;
+          file_name?: string | null;
+          file_path?: string | null;
+          id?: string;
+          resource_type: string;
+          sort_order?: number;
+          title: string;
+        };
+        Update: {
+          author_id?: string;
+          course_id?: string;
+          created_at?: string;
+          external_url?: string | null;
+          file_name?: string | null;
+          file_path?: string | null;
+          id?: string;
+          resource_type?: string;
+          sort_order?: number;
+          title?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "course_resources_author_id_fkey";
+            columns: ["author_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "course_resources_course_id_fkey";
+            columns: ["course_id"];
+            isOneToOne: false;
+            referencedRelation: "courses";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       demo_student_records: {
         Row: {
           course_id: string | null;

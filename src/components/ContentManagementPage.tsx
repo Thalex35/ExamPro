@@ -179,6 +179,20 @@ export function ContentManagementPage({ role, kind }: { role: RoleArea; kind: Ki
 
   async function deleteRow(row: ManagedRow) {
     if (!confirm(t("admin.confirmDeleteContent"))) return;
+    let supplementalPaths: string[] = [];
+    if (row.kind === "course") {
+      const { data: resources, error: resourcesError } = await supabase
+        .from("course_resources")
+        .select("file_path")
+        .eq("course_id", row.id);
+      if (resourcesError) {
+        toast.error(errMsg(resourcesError));
+        return;
+      }
+      supplementalPaths = resources.flatMap((resource) =>
+        resource.file_path ? [resource.file_path] : [],
+      );
+    }
     const result =
       row.kind === "course"
         ? await supabase.from("courses").delete().eq("id", row.id)
@@ -191,6 +205,12 @@ export function ContentManagementPage({ role, kind }: { role: RoleArea; kind: Ki
     const bucket = row.kind === "course" ? "course-files" : "exams";
     if (row.file_path) {
       const { error: fileError } = await supabase.storage.from(bucket).remove([row.file_path]);
+      if (fileError) toast.error(errMsg(fileError));
+    }
+    if (supplementalPaths.length) {
+      const { error: fileError } = await supabase.storage
+        .from("course-files")
+        .remove(supplementalPaths);
       if (fileError) toast.error(errMsg(fileError));
     }
     await qc.invalidateQueries();
@@ -352,7 +372,9 @@ export function ContentManagementPage({ role, kind }: { role: RoleArea; kind: Ki
                         ? "content.externalLink"
                         : row.resource_type === "document"
                           ? "content.document"
-                          : "content.textLesson",
+                          : row.resource_type === "video"
+                            ? "content.video"
+                            : "content.textLesson",
                     )}
                   </span>
                 )}
@@ -369,7 +391,7 @@ export function ContentManagementPage({ role, kind }: { role: RoleArea; kind: Ki
                   </Button>
                 )}
                 {row.kind === "course" &&
-                  row.resource_type === "external_link" &&
+                  (row.resource_type === "external_link" || row.resource_type === "video") &&
                   row.external_url && (
                     <a
                       href={row.external_url}
@@ -378,7 +400,7 @@ export function ContentManagementPage({ role, kind }: { role: RoleArea; kind: Ki
                       className="inline-flex h-9 items-center rounded-md border px-3 text-sm font-medium hover:bg-muted"
                     >
                       <ExternalLink className="mr-1 h-4 w-4" />
-                      {t("content.openLink")}
+                      {t(row.resource_type === "video" ? "content.watchVideo" : "content.openLink")}
                     </a>
                   )}
                 {row.kind === "course" && row.resource_type === "document" && row.file_path && (

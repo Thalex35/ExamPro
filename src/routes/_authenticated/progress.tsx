@@ -220,17 +220,18 @@ function ProgressPage() {
           )}
         </section>
 
-        <section className="card-surface flex flex-col items-center justify-center rounded-2xl bg-gradient-to-br from-sky-50 via-blue-50 to-indigo-100 p-6 text-center dark:from-sky-950/50 dark:via-blue-950/40 dark:to-indigo-950/50 sm:p-8">
-          <span className="flex h-20 w-20 items-center justify-center rounded-full bg-amber-100 text-amber-500 shadow-sm dark:bg-amber-400/10 dark:text-amber-300">
-            <Trophy className="h-11 w-11" aria-hidden="true" />
-          </span>
-          <h2 className="mt-4 text-xl font-extrabold text-heading">
+        <section className="card-surface flex min-h-60 flex-col items-center justify-center rounded-2xl border-sky-100 bg-gradient-to-br from-sky-100 via-blue-50 to-blue-100 p-4 text-center dark:border-sky-900 dark:from-sky-950/70 dark:via-blue-950/55 dark:to-indigo-950/70 sm:p-5">
+          <EncouragementIllustration />
+          <h2 className="mt-1 text-lg font-extrabold text-heading">
             {t("progress.encouragementTitle")}
           </h2>
-          <p className="mt-2 max-w-sm text-sm text-muted-foreground">
+          <p className="mt-1 max-w-xs text-sm leading-5 text-muted-foreground">
             {t("progress.encouragementBody")}
           </p>
-          <Button asChild className="mt-5 rounded-full px-5">
+          <Button
+            asChild
+            className="mt-3 h-9 rounded-full bg-slate-950 px-5 text-white hover:bg-slate-800 dark:bg-sky-100 dark:text-slate-950 dark:hover:bg-white"
+          >
             <Link to="/evaluations">
               <Play className="mr-2 h-4 w-4 fill-current" aria-hidden="true" />
               {t("progress.viewQuizzes")}
@@ -431,6 +432,102 @@ function StatCard({
         <p className="mt-1 text-2xl font-extrabold leading-none text-heading">{value}</p>
       </div>
     </section>
+  );
+}
+
+function EncouragementIllustration() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 320 150"
+      className="h-28 w-full max-w-[19rem] shrink-0"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <defs>
+        <linearGradient
+          id="trophy-gold"
+          x1="120"
+          y1="25"
+          x2="202"
+          y2="104"
+          gradientUnits="userSpaceOnUse"
+        >
+          <stop stopColor="#FFE65A" />
+          <stop offset=".48" stopColor="#FFB900" />
+          <stop offset="1" stopColor="#F28C00" />
+        </linearGradient>
+        <linearGradient
+          id="leaf-green"
+          x1="88"
+          y1="70"
+          x2="232"
+          y2="126"
+          gradientUnits="userSpaceOnUse"
+        >
+          <stop stopColor="#A6D92B" />
+          <stop offset="1" stopColor="#22A65A" />
+        </linearGradient>
+      </defs>
+      <path
+        d="M66 110C80 102 95 92 103 77M254 110C240 102 225 92 217 77"
+        stroke="url(#leaf-green)"
+        strokeWidth="3"
+        strokeLinecap="round"
+      />
+      <path
+        d="M79 105C68 98 62 90 59 82M91 96C80 89 76 81 75 73M102 85C94 77 92 69 93 62M241 105C252 98 258 90 261 82M229 96C240 89 244 81 245 73M218 85C226 77 228 69 227 62"
+        stroke="url(#leaf-green)"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+      />
+      <ellipse cx="67" cy="94" rx="5" ry="12" transform="rotate(-43 67 94)" fill="#8CCB28" />
+      <ellipse cx="80" cy="84" rx="5" ry="12" transform="rotate(-35 80 84)" fill="#56BB45" />
+      <ellipse cx="96" cy="73" rx="5" ry="12" transform="rotate(-25 96 73)" fill="#9BD22B" />
+      <ellipse cx="78" cy="103" rx="5" ry="12" transform="rotate(-62 78 103)" fill="#24A85B" />
+      <ellipse cx="91" cy="94" rx="5" ry="12" transform="rotate(-52 91 94)" fill="#70C442" />
+      <ellipse cx="107" cy="82" rx="5" ry="12" transform="rotate(-42 107 82)" fill="#55B958" />
+      <ellipse cx="253" cy="94" rx="5" ry="12" transform="rotate(43 253 94)" fill="#8CCB28" />
+      <ellipse cx="240" cy="84" rx="5" ry="12" transform="rotate(35 240 84)" fill="#56BB45" />
+      <ellipse cx="224" cy="73" rx="5" ry="12" transform="rotate(25 224 73)" fill="#9BD22B" />
+      <ellipse cx="242" cy="103" rx="5" ry="12" transform="rotate(62 242 103)" fill="#24A85B" />
+      <ellipse cx="229" cy="94" rx="5" ry="12" transform="rotate(52 229 94)" fill="#70C442" />
+      <ellipse cx="213" cy="82" rx="5" ry="12" transform="rotate(42 213 82)" fill="#55B958" />
+      <path
+        d="M127 33H193V59C193 80 179 97 160 102C141 97 127 80 127 59V33Z"
+        fill="url(#trophy-gold)"
+        stroke="#F59E0B"
+        strokeWidth="3"
+      />
+      <path
+        d="M127 43H113C104 43 101 52 106 60C110 67 119 70 131 70M193 43H207C216 43 219 52 214 60C210 67 201 70 189 70"
+        stroke="#F5A000"
+        strokeWidth="8"
+        strokeLinecap="round"
+      />
+      <path
+        d="M127 43H115C110 43 109 49 112 54C115 59 121 62 130 63M193 43H205C210 43 211 49 208 54C205 59 199 62 190 63"
+        stroke="#FFD43B"
+        strokeWidth="3"
+        strokeLinecap="round"
+      />
+      <path
+        d="M160 46L164 55L174 56L167 63L169 73L160 68L151 73L153 63L146 56L156 55L160 46Z"
+        fill="#FFF2A6"
+      />
+      <path d="M151 99V111M169 99V111" stroke="#E89100" strokeWidth="8" strokeLinecap="round" />
+      <path d="M144 112H176" stroke="#E89100" strokeWidth="8" strokeLinecap="round" />
+      <path d="M136 121H184L190 130H130L136 121Z" fill="#14233D" />
+      <path d="M132 131H188" stroke="#F5A000" strokeWidth="5" strokeLinecap="round" />
+      <path
+        d="M98 31L100 37L106 39L100 41L98 47L96 41L90 39L96 37L98 31ZM222 31L224 37L230 39L224 41L222 47L220 41L214 39L220 37L222 31ZM113 53L115 57L119 59L115 61L113 65L111 61L107 59L111 57L113 53ZM207 53L209 57L213 59L209 61L207 65L205 61L201 59L205 57L207 53Z"
+        fill="#16B8E8"
+      />
+      <path
+        d="M84 55L86 61L92 63L86 65L84 71L82 65L76 63L82 61L84 55ZM236 55L238 61L244 63L238 65L236 71L234 65L228 63L234 61L236 55Z"
+        fill="#F9C400"
+      />
+    </svg>
   );
 }
 

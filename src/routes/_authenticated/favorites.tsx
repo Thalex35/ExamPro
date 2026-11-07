@@ -1,11 +1,17 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Bookmark, BookOpen, Heart } from "lucide-react";
-import { DemoBadge } from "@/components/DemoBadge";
+import { useState } from "react";
+import { BookOpen, FileText } from "lucide-react";
+import { toast } from "sonner";
+import { FavoriteButton } from "@/components/FavoriteButton";
 import { Empty, ErrorState, Loading, PageHeader } from "@/components/States";
-import { useI18n } from "@/lib/i18n";
-import { demoRecordsQuery } from "@/lib/demo-data";
+import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { catalogQuery } from "@/lib/catalog";
+import { formatExamYear } from "@/lib/exam-years";
+import { useFavoriteIds } from "@/lib/favorites";
+import { openExamFile } from "@/lib/files";
+import { useI18n } from "@/lib/i18n";
 import { useMe } from "@/lib/session";
 
 export const Route = createFileRoute("/_authenticated/favorites")({
@@ -14,96 +20,193 @@ export const Route = createFileRoute("/_authenticated/favorites")({
 });
 
 function FavoritesPage() {
-  const { t } = useI18n();
+  const { t, name, errMsg } = useI18n();
   const { data: me } = useMe();
-  const records = useQuery(
-    demoRecordsQuery(me?.profile?.level_id, me?.profile?.track_id, "favorite"),
-  );
-  const favorites = useQuery({
-    queryKey: ["course-favorites", me?.user.id],
-    enabled: !!me?.user.id && !!me.isStudent,
+  const [category, setCategory] = useState<"courses" | "exams">("courses");
+  const userId = me?.isStudent ? me.user.id : undefined;
+  const courseFavorites = useFavoriteIds("course", userId, !!userId);
+  const examFavorites = useFavoriteIds("exam", userId, !!userId);
+  const catalog = useQuery(catalogQuery);
+  const courseIds = courseFavorites.data ?? [];
+  const examIds = examFavorites.data ?? [];
+  const library = useQuery({
+    queryKey: ["favorite-library", userId, courseIds, examIds],
+    enabled: !!userId && !courseFavorites.isLoading && !examFavorites.isLoading,
     queryFn: async () => {
-      if (!me?.user.id) return [];
-      const { data: saved, error: savedError } = await supabase
-        .from("course_favorites")
-        .select("course_id,created_at")
-        .eq("student_id", me.user.id)
-        .order("created_at", { ascending: false });
-      if (savedError) throw savedError;
-      if (!saved.length) return [];
-      const { data: courses, error: coursesError } = await supabase
-        .from("courses")
-        .select("id,title,summary")
-        .in(
-          "id",
-          saved.map((favorite) => favorite.course_id),
-        );
-      if (coursesError) throw coursesError;
-      return saved.flatMap((favorite) => {
-        const course = courses.find((entry) => entry.id === favorite.course_id);
-        return course ? [{ ...favorite, course }] : [];
-      });
+      const [courseResult, examResult] = await Promise.all([
+        courseIds.length
+          ? supabase
+              .from("courses")
+              .select("id,title,subject_id,chapter_id,resource_type")
+              .in("id", courseIds)
+          : Promise.resolve({ data: [], error: null }),
+        examIds.length
+          ? supabase
+              .from("exams")
+              .select(
+                "id,title,subject_id,chapter_id,exam_year,level_id,track_id,file_path,demo_content,session",
+              )
+              .in("id", examIds)
+          : Promise.resolve({ data: [], error: null }),
+      ]);
+      if (courseResult.error) throw courseResult.error;
+      if (examResult.error) throw examResult.error;
+      return { courses: courseResult.data, exams: examResult.data };
     },
+    placeholderData: (previous) => previous,
   });
-  if (records.isLoading || favorites.isLoading) return <Loading />;
-  if (favorites.error)
-    return <ErrorState error={favorites.error} onRetry={() => void favorites.refetch()} />;
-  if (records.error)
-    return <ErrorState error={records.error} onRetry={() => void records.refetch()} />;
+
+  if (
+    courseFavorites.isLoading ||
+    examFavorites.isLoading ||
+    catalog.isLoading ||
+    library.isLoading
+  )
+    return <Loading />;
+  if (courseFavorites.error)
+    return (
+      <ErrorState error={courseFavorites.error} onRetry={() => void courseFavorites.refetch()} />
+    );
+  if (examFavorites.error)
+    return <ErrorState error={examFavorites.error} onRetry={() => void examFavorites.refetch()} />;
+  if (catalog.error || !catalog.data)
+    return <ErrorState error={catalog.error} onRetry={() => void catalog.refetch()} />;
+  if (library.error)
+    return <ErrorState error={library.error} onRetry={() => void library.refetch()} />;
+
+  const courses = (library.data?.courses ?? []).filter((course) => courseIds.includes(course.id));
+  const exams = (library.data?.exams ?? []).filter((exam) => examIds.includes(exam.id));
+  const displayedCount = courseIds.length + examIds.length;
+
   return (
-    <div>
-      <PageHeader title={t("dash.favorites")} subtitle={t("course.favoritesDescription")} />
-      {favorites.data?.length ? (
-        <section className="mb-8 space-y-3">
-          <h2 className="text-lg font-semibold text-heading">{t("course.savedCourses")}</h2>
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {favorites.data.map(({ course, course_id }) => (
-              <Link
-                key={course_id}
-                to="/courses/$courseId"
-                params={{ courseId }}
-                className="card-surface flex min-h-40 flex-col p-5 transition-shadow hover:shadow-brand"
+    <div className="space-y-6">
+      <PageHeader title={t("dash.favorites")} subtitle={t("favorite.description")} />
+      <div className="card-surface flex flex-wrap items-center justify-between gap-3 p-4">
+        <p className="text-sm text-muted-foreground">
+          <strong className="text-heading">{displayedCount}</strong> {t("favorite.savedCount")}
+        </p>
+        <div
+          className="inline-flex rounded-lg border border-border bg-background p-1"
+          role="tablist"
+        >
+          {(["courses", "exams"] as const).map((id) => (
+            <button
+              key={id}
+              type="button"
+              role="tab"
+              aria-selected={category === id}
+              onClick={() => setCategory(id)}
+              className={`rounded-md px-4 py-2 text-sm font-semibold transition-colors ${
+                category === id
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:bg-muted"
+              }`}
+            >
+              {t(id === "courses" ? "favorite.myCourses" : "favorite.myExams")}
+              <span className="ml-2 text-xs opacity-75">
+                ({id === "courses" ? courseIds.length : examIds.length})
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {category === "courses" ? (
+        courses.length ? (
+          <ul className="space-y-3">
+            {courses.map((course) => {
+              const subject = catalog.data.subjects.find((item) => item.id === course.subject_id);
+              const chapter = catalog.data.chapters.find((item) => item.id === course.chapter_id);
+              const typeLabel =
+                course.resource_type === "text"
+                  ? t("content.textLesson")
+                  : course.resource_type === "document"
+                    ? t("content.document")
+                    : course.resource_type === "video"
+                      ? t("content.video")
+                      : t("content.externalLink");
+              return (
+                <li
+                  key={course.id}
+                  className="card-surface flex flex-wrap items-center gap-3 p-4 sm:p-5"
+                >
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent text-accent-foreground">
+                    <BookOpen className="h-5 w-5" aria-hidden="true" />
+                  </span>
+                  <Link
+                    to="/courses/$courseId"
+                    params={{ courseId: course.id }}
+                    className="min-w-0 flex-1"
+                  >
+                    <span className="block font-semibold text-heading">{course.title}</span>
+                    <span className="mt-1 block text-sm text-muted-foreground">
+                      {[subject && name(subject), chapter && name(chapter), typeLabel]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </span>
+                  </Link>
+                  <FavoriteButton
+                    kind="course"
+                    resourceId={course.id}
+                    iconOnly
+                    className="text-rose-600 dark:text-rose-400"
+                  />
+                </li>
+              );
+            })}
+          </ul>
+        ) : (
+          <Empty>{t("favorite.empty")}</Empty>
+        )
+      ) : exams.length ? (
+        <ul className="space-y-3">
+          {exams.map((exam) => {
+            const subject = catalog.data.subjects.find((item) => item.id === exam.subject_id);
+            const chapter = catalog.data.chapters.find((item) => item.id === exam.chapter_id);
+            const level = catalog.data.levels.find((item) => item.id === exam.level_id);
+            const track = catalog.data.tracks.find((item) => item.id === exam.track_id);
+            return (
+              <li
+                key={exam.id}
+                className="card-surface flex flex-wrap items-center gap-3 p-4 sm:p-5"
               >
-                <span className="flex items-center justify-between">
-                  <Heart className="h-5 w-5 fill-current text-rose-500" />
-                  <BookOpen className="h-4 w-4 text-deep" />
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent text-accent-foreground">
+                  <FileText className="h-5 w-5" aria-hidden="true" />
                 </span>
-                <span className="mt-5 font-semibold text-heading">{course.title}</span>
-                <span className="mt-2 text-sm text-muted-foreground">
-                  {course.summary || t("course.summaryFallback")}
-                </span>
-              </Link>
-            ))}
-          </div>
-        </section>
-      ) : null}
-      {!records.data?.length && !favorites.data?.length ? (
-        <Empty>{t("demo.favoritesEmpty")}</Empty>
-      ) : records.data?.length ? (
-        <section className="space-y-3">
-          <h2 className="text-lg font-semibold text-heading">{t("demo.favoritesDescription")}</h2>
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {records.data.map((record) => (
-              <Link
-                key={record.id}
-                to="/courses/$courseId"
-                params={{ courseId: record.course_id! }}
-                className="card-surface flex min-h-48 flex-col p-5 hover:shadow-brand"
-              >
-                <span className="flex items-center justify-between">
-                  <Bookmark className="h-5 w-5 text-deep" />
-                  <DemoBadge />
-                </span>
-                <span className="mt-5 flex items-center gap-2 font-semibold text-heading">
-                  <BookOpen className="h-4 w-4" />
-                  {record.title}
-                </span>
-                <span className="mt-2 text-sm text-muted-foreground">{record.description}</span>
-              </Link>
-            ))}
-          </div>
-        </section>
-      ) : null}
+                <div className="min-w-0 flex-1">
+                  <h2 className="font-semibold text-heading">{exam.title}</h2>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {[
+                      subject && name(subject),
+                      chapter && name(chapter),
+                      formatExamYear(exam.exam_year),
+                      level && name(level),
+                      track?.code,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    openExamFile(exam.file_path, exam.demo_content).catch((error) =>
+                      toast.error(errMsg(error)),
+                    )
+                  }
+                >
+                  {t("favorite.viewExam")}
+                </Button>
+                <FavoriteButton kind="exam" resourceId={exam.id} iconOnly />
+              </li>
+            );
+          })}
+        </ul>
+      ) : (
+        <Empty>{t("favorite.empty")}</Empty>
+      )}
     </div>
   );
 }

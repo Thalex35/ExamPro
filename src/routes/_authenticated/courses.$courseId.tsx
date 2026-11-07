@@ -10,7 +10,6 @@ import {
   ExternalLink,
   FileText,
   GraduationCap,
-  Heart,
   Info,
   ListChecks,
   Video,
@@ -27,6 +26,7 @@ import { catalogQuery } from "@/lib/catalog";
 import { useI18n, type TKey } from "@/lib/i18n";
 import { useMe } from "@/lib/session";
 import { subjectIcons } from "@/lib/subject-icons";
+import { FavoriteButton } from "@/components/FavoriteButton";
 
 export const Route = createFileRoute("/_authenticated/courses/$courseId")({
   head: () => ({ meta: [{ title: "Cours — EXAMPRO" }] }),
@@ -82,27 +82,11 @@ function CourseView() {
       return data;
     },
   });
-  const favorite = useQuery({
-    queryKey: ["course-favorite", me?.user.id, courseId],
-    enabled: !!me?.isStudent && !!me.user.id,
-    queryFn: async () => {
-      if (!me?.user.id) return null;
-      const { data, error } = await supabase
-        .from("course_favorites")
-        .select("course_id")
-        .eq("student_id", me.user.id)
-        .eq("course_id", courseId)
-        .maybeSingle();
-      if (error) throw error;
-      return data;
-    },
-  });
-
   if (
     q.isLoading ||
     cat.isLoading ||
     (!!q.data && resources.isLoading) ||
-    (me?.isStudent && (progress.isLoading || favorite.isLoading))
+    (me?.isStudent && progress.isLoading)
   )
     return <Loading />;
   if (q.error) return <ErrorState error={q.error} onRetry={() => q.refetch()} />;
@@ -111,8 +95,6 @@ function CourseView() {
   if (cat.error || !cat.data) return <ErrorState error={cat.error} onRetry={() => cat.refetch()} />;
   if (progress.error)
     return <ErrorState error={progress.error} onRetry={() => void progress.refetch()} />;
-  if (favorite.error)
-    return <ErrorState error={favorite.error} onRetry={() => void favorite.refetch()} />;
   if (!q.data) return <Empty>{t("404.title")}</Empty>;
 
   const x = q.data;
@@ -185,26 +167,6 @@ function CourseView() {
     ]);
   }
 
-  async function toggleFavorite() {
-    if (!me?.isStudent) return;
-    const result = favorite.data
-      ? await supabase
-          .from("course_favorites")
-          .delete()
-          .eq("student_id", me.user.id)
-          .eq("course_id", x.id)
-      : await supabase.from("course_favorites").insert({ student_id: me.user.id, course_id: x.id });
-    if (result.error) {
-      toast.error(errMsg(result.error));
-      return;
-    }
-    await Promise.all([
-      queryClient.invalidateQueries({ queryKey: ["course-favorite", me.user.id, x.id] }),
-      queryClient.invalidateQueries({ queryKey: ["course-favorites", me.user.id] }),
-    ]);
-    toast.success(favorite.data ? t("course.favoriteRemoved") : t("course.favoriteAdded"));
-  }
-
   if (reading && x.resource_type === "text") {
     return (
       <CourseReader
@@ -259,20 +221,11 @@ function CourseView() {
                 {crumbs.join(" · ")}
               </nav>
               {me?.isStudent && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="shrink-0 rounded-full border-brand/30 bg-background px-4"
-                  onClick={() => void toggleFavorite()}
-                  disabled={favorite.isFetching}
-                >
-                  {favorite.data ? (
-                    <Heart className="mr-2 h-4 w-4 fill-current text-rose-500" />
-                  ) : (
-                    <Bookmark className="mr-2 h-4 w-4" />
-                  )}
-                  {favorite.data ? t("course.removeFavorite") : t("course.addFavorite")}
-                </Button>
+                <FavoriteButton
+                  kind="course"
+                  resourceId={x.id}
+                  className="rounded-full border-brand/30 bg-background px-4"
+                />
               )}
             </div>
 

@@ -41,6 +41,7 @@ import { ErrorState, Loading } from "./States";
 import { cn } from "@/lib/utils";
 import { NotificationCenter } from "@/components/NotificationCenter";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { FavoriteButton } from "@/components/FavoriteButton";
 
 type NavItem = {
   to:
@@ -180,39 +181,43 @@ function StudentSearch({ levelId, trackId }: { levelId: string | null; trackId: 
           ) : hasResults ? (
             <div className="space-y-1">
               {results.data?.courses.map((course) => (
-                <Link
-                  key={`course-${course.id}`}
-                  to="/courses/$courseId"
-                  params={{ courseId: course.id }}
-                  onClick={() => setFocused(false)}
-                  className="flex items-center gap-3 rounded-lg px-3 py-2.5 hover:bg-muted"
-                >
-                  <BookOpen className="h-4 w-4 shrink-0 text-deep" />
-                  <span className="min-w-0 flex-1 truncate text-sm font-medium text-heading">
-                    {course.title}
-                  </span>
-                  <span className="text-xs text-muted-foreground">{t("dash.courseResult")}</span>
-                </Link>
+                <div key={`course-${course.id}`} className="flex items-center gap-1">
+                  <Link
+                    to="/courses/$courseId"
+                    params={{ courseId: course.id }}
+                    onClick={() => setFocused(false)}
+                    className="flex min-w-0 flex-1 items-center gap-3 rounded-lg px-3 py-2.5 hover:bg-muted"
+                  >
+                    <BookOpen className="h-4 w-4 shrink-0 text-deep" />
+                    <span className="min-w-0 flex-1 truncate text-sm font-medium text-heading">
+                      {course.title}
+                    </span>
+                    <span className="text-xs text-muted-foreground">{t("dash.courseResult")}</span>
+                  </Link>
+                  <FavoriteButton kind="course" resourceId={course.id} iconOnly />
+                </div>
               ))}
               {results.data?.exams.map((exam) => (
-                <button
-                  key={`exam-${exam.id}`}
-                  type="button"
-                  onMouseDown={(event) => event.preventDefault()}
-                  onClick={() => void openExam(exam.file_path, exam.id, exam.demo_content)}
-                  disabled={busyExam === exam.id}
-                  className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left hover:bg-muted disabled:opacity-60"
-                >
-                  <FileText className="h-4 w-4 shrink-0 text-deep" />
-                  <span className="min-w-0 flex-1 truncate text-sm font-medium text-heading">
-                    {exam.title}
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    {busyExam === exam.id ? t("common.loading") : t("dash.examResult")}
-                    {" · "}
-                    {formatExamYear(exam.exam_year)}
-                  </span>
-                </button>
+                <div key={`exam-${exam.id}`} className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={() => void openExam(exam.file_path, exam.id, exam.demo_content)}
+                    disabled={busyExam === exam.id}
+                    className="flex min-w-0 flex-1 items-center gap-3 rounded-lg px-3 py-2.5 text-left hover:bg-muted disabled:opacity-60"
+                  >
+                    <FileText className="h-4 w-4 shrink-0 text-deep" />
+                    <span className="min-w-0 flex-1 truncate text-sm font-medium text-heading">
+                      {exam.title}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      {busyExam === exam.id ? t("common.loading") : t("dash.examResult")}
+                      {" · "}
+                      {formatExamYear(exam.exam_year)}
+                    </span>
+                  </button>
+                  <FavoriteButton kind="exam" resourceId={exam.id} iconOnly />
+                </div>
               ))}
             </div>
           ) : (

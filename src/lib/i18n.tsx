@@ -374,8 +374,7 @@ const fr = {
   "progress.noSubjects": "Aucune matière n’est associée à votre parcours.",
   "progress.noScoreYet": "—",
   "progress.encouragementTitle": "Continuez comme ça !",
-  "progress.encouragementBody":
-    "Chaque quiz vous rapproche de vos objectifs. Continuez à apprendre à votre rythme.",
+  "progress.encouragementBody": "Vous progressez bien. Gardez le cap pour atteindre vos objectifs.",
   "progress.viewQuizzes": "Voir les quiz",
   "progress.recentResults": "Derniers résultats",
   "progress.viewAll": "Voir tout",
@@ -1204,7 +1203,7 @@ const ht: Record<TKey, string> = {
   "progress.noScoreYet": "—",
   "progress.encouragementTitle": "Kontinye konsa!",
   "progress.encouragementBody":
-    "Chak egzamen pratik ap mennen w pi pre objektif ou yo. Kontinye aprann nan ritm pa w.",
+    "W ap pwogrese byen. Kontinye kenbe direksyon an pou w atenn objektif ou yo.",
   "progress.viewQuizzes": "Gade egzamen pratik yo",
   "progress.recentResults": "Dènye rezilta yo",
   "progress.viewAll": "Gade tout",

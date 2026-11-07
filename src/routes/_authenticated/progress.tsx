@@ -5,19 +5,27 @@ import {
   ArrowRight,
   BookOpen,
   CalendarDays,
-  ChartNoAxesColumn,
+  ChartNoAxesColumnIncreasing,
   CheckCircle2,
-  Clock3,
+  CircleCheck,
+  Lightbulb,
+  Play,
+  Star,
+  Target,
+  Trophy,
+  type LucideIcon,
 } from "lucide-react";
-import { DemoBadge } from "@/components/DemoBadge";
-import { Empty, ErrorState, Loading, PageHeader } from "@/components/States";
 import { Button } from "@/components/ui/button";
-import { demoRecordsQuery } from "@/lib/demo-data";
+import { Empty, ErrorState, Loading } from "@/components/States";
 import { supabase } from "@/integrations/supabase/client";
-import { catalogQuery } from "@/lib/catalog";
+import { catalogQuery, subjectsFor } from "@/lib/catalog";
 import { parseDemoQuizResult } from "@/lib/demo-quiz";
+import { subjectIcons } from "@/lib/subject-icons";
 import { useI18n } from "@/lib/i18n";
+import { useFavoriteIds } from "@/lib/favorites";
 import { useMe } from "@/lib/session";
+
+const PASSING_SCORE = 70;
 
 export const Route = createFileRoute("/_authenticated/progress")({
   head: () => ({ meta: [{ title: "Ma progression — EXAMPRO" }] }),
@@ -27,9 +35,7 @@ export const Route = createFileRoute("/_authenticated/progress")({
 function ProgressPage() {
   const { t, lang, name } = useI18n();
   const { data: me } = useMe();
-  const records = useQuery(
-    demoRecordsQuery(me?.profile?.level_id, me?.profile?.track_id, "progress"),
-  );
+  const [showAllResults, setShowAllResults] = useState(false);
   const catalog = useQuery(catalogQuery);
   const attempts = useQuery({
     queryKey: ["quiz-attempts", me?.user.id],
@@ -45,245 +51,386 @@ function ProgressPage() {
       return data;
     },
   });
-  const courseReading = useQuery({
-    queryKey: ["course-reading-history", me?.user.id],
+  const completedCourses = useQuery({
+    queryKey: ["completed-courses-count", me?.user.id],
     enabled: !!me?.user.id && !!me.isStudent,
     queryFn: async () => {
       if (!me?.user.id) return [];
-      const { data: progress, error: progressError } = await supabase
+      const { data, error } = await supabase
         .from("course_progress")
-        .select("course_id,progress_percent,completed_at,updated_at")
+        .select("course_id")
         .eq("student_id", me.user.id)
-        .order("updated_at", { ascending: false });
-      if (progressError) throw progressError;
-      if (!progress.length) return [];
-      const { data: courses, error: coursesError } = await supabase
-        .from("courses")
-        .select("id,title,summary")
-        .in(
-          "id",
-          progress.map((entry) => entry.course_id),
-        );
-      if (coursesError) throw coursesError;
-      return progress.flatMap((entry) => {
-        const course = courses.find((item) => item.id === entry.course_id);
-        return course ? [{ ...entry, course }] : [];
-      });
+        .not("completed_at", "is", null);
+      if (error) throw error;
+      return data;
     },
   });
-  if (records.isLoading || catalog.isLoading || attempts.isLoading || courseReading.isLoading)
+  const courseFavorites = useFavoriteIds("course", me?.isStudent ? me.user.id : undefined);
+  const examFavorites = useFavoriteIds("exam", me?.isStudent ? me.user.id : undefined);
+
+  if (
+    catalog.isLoading ||
+    attempts.isLoading ||
+    completedCourses.isLoading ||
+    courseFavorites.isLoading ||
+    examFavorites.isLoading
+  )
     return <Loading />;
   if (catalog.error || !catalog.data)
     return <ErrorState error={catalog.error} onRetry={() => void catalog.refetch()} />;
   if (attempts.error)
     return <ErrorState error={attempts.error} onRetry={() => void attempts.refetch()} />;
-  if (courseReading.error)
-    return <ErrorState error={courseReading.error} onRetry={() => void courseReading.refetch()} />;
-  const items = records.data ?? [];
-  const quizAttempts = attempts.data ?? [];
-  const groupedAttempts = new Map<string, typeof quizAttempts>();
-  for (const attempt of quizAttempts) {
-    const key = `${attempt.subject_id}:${attempt.chapter_id ?? ""}`;
-    groupedAttempts.set(key, [...(groupedAttempts.get(key) ?? []), attempt]);
-  }
+  if (completedCourses.error)
+    return (
+      <ErrorState error={completedCourses.error} onRetry={() => void completedCourses.refetch()} />
+    );
+  if (courseFavorites.error)
+    return (
+      <ErrorState error={courseFavorites.error} onRetry={() => void courseFavorites.refetch()} />
+    );
+  if (examFavorites.error)
+    return <ErrorState error={examFavorites.error} onRetry={() => void examFavorites.refetch()} />;
+
+  const allowedSubjects = subjectsFor(catalog.data, me?.profile?.level_id, me?.profile?.track_id);
+  const allowedSubjectIds = new Set(allowedSubjects.map((subject) => subject.id));
+  const quizAttempts = (attempts.data ?? []).filter((attempt) =>
+    allowedSubjectIds.has(attempt.subject_id),
+  );
   const averageScore = quizAttempts.length
     ? Math.round(
         quizAttempts.reduce((sum, attempt) => sum + attempt.score, 0) / quizAttempts.length,
       )
-    : 0;
-  const bestScore = quizAttempts.length
-    ? Math.max(...quizAttempts.map((attempt) => attempt.score))
-    : 0;
-  return (
-    <div>
-      <PageHeader title={t("dash.performance")} subtitle={t("demo.progressDescription")} />
-      <div className="space-y-8">
-        {me?.isStudent && (
-          <section aria-labelledby="course-reading-history-title" className="space-y-4">
-            <div>
-              <h2 id="course-reading-history-title" className="text-xl font-bold text-heading">
-                {t("course.readingHistory")}
-              </h2>
-            </div>
-            {!courseReading.data?.length ? (
-              <Empty>{t("course.noReadingHistory")}</Empty>
-            ) : (
-              <div className="card-surface divide-y">
-                {courseReading.data.map((entry) => (
-                  <Link
-                    key={entry.course_id}
-                    to="/courses/$courseId"
-                    params={{ courseId: entry.course_id }}
-                    className="flex flex-wrap items-center gap-3 p-4 hover:bg-muted/40"
-                  >
-                    {entry.completed_at ? (
-                      <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-                    ) : (
-                      <BookOpen className="h-5 w-5 text-deep" />
-                    )}
-                    <span className="min-w-0 flex-1">
-                      <span className="block font-medium text-heading">{entry.course.title}</span>
-                      <span className="mt-1 block text-xs text-muted-foreground">
-                        {entry.completed_at
-                          ? `${t("course.completed")} · ${new Date(entry.completed_at).toLocaleDateString(lang === "ht" ? "fr-HT" : "fr-FR")}`
-                          : `${t("course.readingProgress")} · ${entry.progress_percent}%`}
-                      </span>
-                    </span>
-                    <span className="h-2 w-24 overflow-hidden rounded-full bg-muted">
-                      <span
-                        className="block h-full rounded-full bg-brand"
-                        style={{ width: `${entry.progress_percent}%` }}
-                      />
-                    </span>
-                    <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                  </Link>
-                ))}
-              </div>
-            )}
-          </section>
-        )}
-        {me?.isStudent && (
-          <section aria-labelledby="quiz-performance-title" className="space-y-4">
-            <div>
-              <h2 id="quiz-performance-title" className="text-xl font-bold text-heading">
-                {t("quiz.performanceTitle")}
-              </h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {t("quiz.performanceDescription")}
-              </p>
-            </div>
-            {quizAttempts.length === 0 ? (
-              <Empty>{t("quiz.noAttempts")}</Empty>
-            ) : (
-              <>
-                <div className="grid gap-3 sm:grid-cols-3">
-                  <Metric label={t("quiz.attemptCount")} value={quizAttempts.length} />
-                  <Metric label={t("quiz.averageScore")} value={`${averageScore}%`} />
-                  <Metric label={t("quiz.bestScore")} value={`${bestScore}%`} />
-                </div>
-                <div className="space-y-4">
-                  {[...groupedAttempts.entries()].map(([key, group]) => {
-                    const latest = group[0]!;
-                    const subject = catalog.data.subjects.find(
-                      (item) => item.id === latest.subject_id,
-                    );
-                    const chapter = latest.chapter_id
-                      ? catalog.data.chapters.find((item) => item.id === latest.chapter_id)
-                      : undefined;
-                    const groupAverage = Math.round(
-                      group.reduce((sum, attempt) => sum + attempt.score, 0) / group.length,
-                    );
-                    return (
-                      <section key={key} className="card-surface overflow-hidden">
-                        <div className="flex flex-wrap items-center justify-between gap-3 border-b p-4">
-                          <div>
-                            <h3 className="font-semibold text-heading">
-                              {[
-                                subject ? name(subject) : t("quiz.unknownSubject"),
-                                chapter && name(chapter),
-                              ]
-                                .filter(Boolean)
-                                .join(" · ")}
-                            </h3>
-                            <p className="mt-1 text-xs text-muted-foreground">
-                              {group.length} · {t("quiz.averageScore")} {groupAverage}%
-                            </p>
-                          </div>
-                          {subject && (
-                            <Link
-                              to="/subjects/$subjectId"
-                              params={{ subjectId: subject.id }}
-                              search={{
-                                resource: "quiz",
-                                chapter: chapter?.id,
-                              }}
-                              className="text-sm font-semibold text-deep hover:underline"
-                            >
-                              {t("quiz.retake")}
-                            </Link>
-                          )}
-                        </div>
-                        <ul className="divide-y">
-                          {group.map((attempt) => (
-                            <li key={attempt.id} className="p-4">
-                              <QuizAttemptReview
-                                attemptId={attempt.id}
-                                createdAt={attempt.created_at}
-                                score={attempt.score}
-                                correctCount={attempt.correct_count}
-                                totalQuestions={attempt.total_questions}
-                                lang={lang}
-                                t={t}
-                              />
-                            </li>
-                          ))}
-                        </ul>
-                      </section>
-                    );
-                  })}
-                </div>
-              </>
-            )}
-          </section>
-        )}
+    : null;
+  const subjectStats = allowedSubjects.map((subject) => {
+    const subjectAttempts = quizAttempts.filter((attempt) => attempt.subject_id === subject.id);
+    return {
+      subject,
+      count: subjectAttempts.length,
+      average: subjectAttempts.length
+        ? Math.round(
+            subjectAttempts.reduce((sum, attempt) => sum + attempt.score, 0) /
+              subjectAttempts.length,
+          )
+        : null,
+    };
+  });
+  const scoredSubjects = subjectStats.filter(
+    (item): item is typeof item & { average: number } => item.average !== null,
+  );
+  const weakestSubject = scoredSubjects.reduce<(typeof scoredSubjects)[number] | null>(
+    (lowest, current) => (!lowest || current.average < lowest.average ? current : lowest),
+    null,
+  );
+  const favoriteCount = (courseFavorites.data?.length ?? 0) + (examFavorites.data?.length ?? 0);
+  const resultsToShow = showAllResults ? quizAttempts : quizAttempts.slice(0, 3);
+  const formatDate = (date: string) =>
+    new Date(date).toLocaleDateString(lang === "ht" ? "fr-HT" : "fr-FR", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
 
-        <section>
-          <h2 className="mb-3 text-lg font-semibold text-heading">{t("demo.recentActivity")}</h2>
-          {records.error ? (
-            <ErrorState error={records.error} onRetry={() => void records.refetch()} />
-          ) : !items.length ? (
-            <Empty>{t("demo.progressEmpty")}</Empty>
+  return (
+    <div className="space-y-6 sm:space-y-8">
+      <header className="flex items-center gap-4">
+        <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-accent text-accent-foreground">
+          <ChartNoAxesColumnIncreasing className="h-7 w-7" aria-hidden="true" />
+        </span>
+        <div>
+          <h1 className="text-2xl font-extrabold tracking-tight text-heading sm:text-3xl">
+            {t("dash.performance")}
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground sm:text-base">
+            {t("progress.subtitle")}
+          </p>
+        </div>
+      </header>
+
+      <section
+        aria-label={t("progress.statistics")}
+        className="grid gap-3 sm:grid-cols-2 2xl:grid-cols-4"
+      >
+        <StatCard
+          icon={Trophy}
+          label={t("progress.averageScore")}
+          value={averageScore === null ? "—" : `${averageScore}%`}
+          tone="blue"
+        />
+        <StatCard
+          icon={CircleCheck}
+          label={t("progress.completedQuizzes")}
+          value={quizAttempts.length}
+          tone="green"
+        />
+        <StatCard
+          icon={Play}
+          label={t("progress.completedCourses")}
+          value={completedCourses.data?.length ?? 0}
+          tone="sky"
+        />
+        <StatCard icon={Star} label={t("progress.favorites")} value={favoriteCount} tone="amber" />
+      </section>
+
+      <div className="grid items-stretch gap-4 xl:grid-cols-[minmax(0,1.55fr)_minmax(19rem,0.95fr)]">
+        <section className="card-surface p-5 sm:p-6" aria-labelledby="subject-performance-heading">
+          <div className="mb-5 flex items-center gap-3">
+            <ChartNoAxesColumnIncreasing className="h-5 w-5 text-brand" aria-hidden="true" />
+            <h2 id="subject-performance-heading" className="text-lg font-bold text-heading">
+              {t("progress.bySubject")}
+            </h2>
+          </div>
+          {subjectStats.length === 0 ? (
+            <Empty>{t("progress.noSubjects")}</Empty>
           ) : (
-            <div className="space-y-6">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <section className="card-surface p-5">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent text-deep">
-                    <BookOpen className="h-5 w-5" />
-                  </span>
-                  <p className="mt-4 text-3xl font-bold text-heading">{items.length}</p>
-                  <p className="text-sm text-muted-foreground">{t("demo.itemsViewed")}</p>
-                </section>
-                <section className="card-surface p-5">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent text-deep">
-                    <ChartNoAxesColumn className="h-5 w-5" />
-                  </span>
-                  <p className="mt-4 text-sm font-semibold text-heading">{t("demo.mockMetrics")}</p>
-                  <p className="text-sm text-muted-foreground">{t("demo.notRealPerformance")}</p>
-                </section>
-              </div>
-              <div className="card-surface divide-y">
-                {items.map((item) => (
-                  <Link
-                    key={item.id}
-                    to="/courses/$courseId"
-                    params={{ courseId: item.course_id! }}
-                    className="flex flex-wrap items-center gap-3 p-4 hover:bg-muted/40"
-                  >
-                    <Clock3 className="h-4 w-4 text-deep" />
-                    <span className="min-w-0 flex-1 font-medium text-heading">{item.title}</span>
-                    <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                      <CalendarDays className="h-3.5 w-3.5" />
-                      {new Date(item.occurred_at).toLocaleDateString()}
-                    </span>
-                    <DemoBadge />
-                    <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                  </Link>
-                ))}
-              </div>
-            </div>
+            <ul className="space-y-4">
+              {subjectStats.map(({ subject, average, count }) => {
+                const SubjectIcon = subjectIcons[subject.icon ?? ""] ?? BookOpen;
+                return (
+                  <li key={subject.id}>
+                    <a
+                      href={average === null ? undefined : `#subject-results-${subject.id}`}
+                      aria-disabled={average === null || undefined}
+                      className="group grid grid-cols-[2.5rem_minmax(0,1fr)_3.25rem] items-center gap-3 rounded-xl p-1 transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:grid-cols-[2.5rem_minmax(8rem,0.8fr)_minmax(4rem,1.6fr)_3.25rem]"
+                    >
+                      <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent text-accent-foreground">
+                        <SubjectIcon className="h-5 w-5" aria-hidden="true" />
+                      </span>
+                      <span className="truncate text-sm font-medium text-heading">
+                        {name(subject)}
+                      </span>
+                      <span className="col-start-2 h-2 overflow-hidden rounded-full bg-muted sm:col-start-auto">
+                        <span
+                          className="block h-full rounded-full bg-primary transition-[width]"
+                          style={{ width: `${average ?? 0}%` }}
+                        />
+                      </span>
+                      <span className="col-start-3 row-start-1 text-right text-sm font-bold text-heading">
+                        {average === null ? t("progress.noScoreYet") : `${average}%`}
+                      </span>
+                      {count > 0 && (
+                        <span className="sr-only">
+                          {count} {t("progress.completedQuizzes")}
+                        </span>
+                      )}
+                    </a>
+                  </li>
+                );
+              })}
+            </ul>
           )}
         </section>
+
+        <section className="card-surface flex flex-col items-center justify-center rounded-2xl bg-gradient-to-br from-sky-50 via-blue-50 to-indigo-100 p-6 text-center dark:from-sky-950/50 dark:via-blue-950/40 dark:to-indigo-950/50 sm:p-8">
+          <span className="flex h-20 w-20 items-center justify-center rounded-full bg-amber-100 text-amber-500 shadow-sm dark:bg-amber-400/10 dark:text-amber-300">
+            <Trophy className="h-11 w-11" aria-hidden="true" />
+          </span>
+          <h2 className="mt-4 text-xl font-extrabold text-heading">
+            {t("progress.encouragementTitle")}
+          </h2>
+          <p className="mt-2 max-w-sm text-sm text-muted-foreground">
+            {t("progress.encouragementBody")}
+          </p>
+          <Button asChild className="mt-5 rounded-full px-5">
+            <Link to="/evaluations">
+              <Play className="mr-2 h-4 w-4 fill-current" aria-hidden="true" />
+              {t("progress.viewQuizzes")}
+              <ArrowRight className="ml-2 h-4 w-4" aria-hidden="true" />
+            </Link>
+          </Button>
+        </section>
       </div>
+
+      <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(19rem,1fr)]">
+        <section className="card-surface overflow-hidden" aria-labelledby="recent-results-heading">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border p-4 sm:px-5">
+            <h2
+              id="recent-results-heading"
+              className="flex items-center gap-2 text-lg font-bold text-heading"
+            >
+              <Trophy className="h-5 w-5 text-brand" aria-hidden="true" />
+              {t("progress.recentResults")}
+            </h2>
+            {quizAttempts.length > 3 && (
+              <button
+                type="button"
+                className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline"
+                onClick={() => setShowAllResults((value) => !value)}
+              >
+                {t(showAllResults ? "progress.showRecent" : "progress.viewAll")}
+                <ArrowRight className="h-4 w-4" aria-hidden="true" />
+              </button>
+            )}
+          </div>
+          {quizAttempts.length === 0 ? (
+            <div className="p-5">
+              <Empty>{t("quiz.noAttempts")}</Empty>
+            </div>
+          ) : (
+            <ul className="divide-y divide-border">
+              {resultsToShow.map((attempt) => {
+                const subject = catalog.data.subjects.find(
+                  (item) => item.id === attempt.subject_id,
+                );
+                const chapter = catalog.data.chapters.find(
+                  (item) => item.id === attempt.chapter_id,
+                );
+                const passed = attempt.score >= PASSING_SCORE;
+                return (
+                  <li key={attempt.id} className="p-4 sm:px-5">
+                    <div className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+                      <span className="min-w-0 flex-1 text-sm font-semibold text-heading">
+                        {t("progress.quizType")}
+                        {subject ? ` · ${name(subject)}` : ""}
+                        {chapter ? ` · ${name(chapter)}` : ""}
+                      </span>
+                      <span className="font-bold text-heading">
+                        {attempt.correct_count}/{attempt.total_questions}
+                      </span>
+                      <span className="font-bold text-primary">{attempt.score}%</span>
+                      <span
+                        className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                          passed
+                            ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
+                            : "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200"
+                        }`}
+                      >
+                        {t(passed ? "progress.passed" : "progress.needsReview")}
+                      </span>
+                    </div>
+                    <QuizAttemptReview
+                      attemptId={attempt.id}
+                      createdAt={attempt.created_at}
+                      score={attempt.score}
+                      correctCount={attempt.correct_count}
+                      totalQuestions={attempt.total_questions}
+                      lang={lang}
+                      t={t}
+                      formatDate={formatDate}
+                    />
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
+
+        <section className="card-surface relative isolate overflow-hidden bg-gradient-to-br from-sky-50 to-blue-100 p-5 dark:from-sky-950/50 dark:to-blue-950/40 sm:p-6">
+          <div className="flex items-center gap-2">
+            <Lightbulb className="h-5 w-5 text-brand" aria-hidden="true" />
+            <h2 className="text-lg font-bold text-heading">{t("progress.personalizedAdvice")}</h2>
+          </div>
+          <div className="relative z-10 mt-5 flex items-start gap-3">
+            <Target className="mt-0.5 h-6 w-6 shrink-0 text-primary" aria-hidden="true" />
+            <p className="text-sm leading-relaxed text-foreground">
+              {!quizAttempts.length
+                ? t("progress.adviceNoAttempts")
+                : weakestSubject && weakestSubject.average < PASSING_SCORE
+                  ? t("progress.adviceLowScore").replace("{subject}", name(weakestSubject.subject))
+                  : t("progress.adviceKeepGoing")}
+            </p>
+          </div>
+          <Link
+            to="/evaluations"
+            className="relative z-10 mt-5 inline-flex min-h-10 items-center justify-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+          >
+            {t("progress.viewQuizzes")} <ArrowRight className="h-4 w-4" aria-hidden="true" />
+          </Link>
+          <BookOpen
+            className="absolute -bottom-3 -right-2 -z-10 h-24 w-24 rotate-[-12deg] text-primary/10"
+            aria-hidden="true"
+          />
+        </section>
+      </div>
+
+      {quizAttempts.length > 0 && (
+        <section className="space-y-4" aria-label={t("progress.detailedHistory")}>
+          <div>
+            <h2 className="text-xl font-bold text-heading">{t("progress.detailedHistory")}</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {t("progress.detailedHistoryHint")}
+            </p>
+          </div>
+          {subjectStats
+            .filter(({ count }) => count > 0)
+            .map(({ subject, count, average }) => {
+              const SubjectIcon = subjectIcons[subject.icon ?? ""] ?? BookOpen;
+              const subjectAttempts = quizAttempts.filter(
+                (attempt) => attempt.subject_id === subject.id,
+              );
+              return (
+                <section
+                  key={subject.id}
+                  id={`subject-results-${subject.id}`}
+                  className="card-surface scroll-mt-24 overflow-hidden"
+                >
+                  <div className="flex items-center gap-3 border-b border-border p-4">
+                    <SubjectIcon className="h-5 w-5 text-primary" aria-hidden="true" />
+                    <h3 className="flex-1 font-semibold text-heading">{name(subject)}</h3>
+                    <span className="text-sm text-muted-foreground">
+                      {count} · {average}%
+                    </span>
+                  </div>
+                  <ul className="divide-y divide-border">
+                    {subjectAttempts.map((attempt) => (
+                      <li key={attempt.id} className="flex flex-wrap items-center gap-2 p-4">
+                        <span className="min-w-0 flex-1 text-sm text-heading">
+                          {formatDate(attempt.created_at)}
+                        </span>
+                        <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                          <CalendarDays className="h-3.5 w-3.5" aria-hidden="true" />
+                          {attempt.correct_count}/{attempt.total_questions}
+                        </span>
+                        <span className="font-bold text-primary">{attempt.score}%</span>
+                        {attempt.score >= PASSING_SCORE ? (
+                          <CheckCircle2
+                            className="h-4 w-4 text-emerald-600 dark:text-emerald-400"
+                            aria-label={t("progress.passed")}
+                          />
+                        ) : (
+                          <Lightbulb
+                            className="h-4 w-4 text-amber-600 dark:text-amber-400"
+                            aria-label={t("progress.needsReview")}
+                          />
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              );
+            })}
+        </section>
+      )}
     </div>
   );
 }
 
-function Metric({ label, value }: { label: string; value: string | number }) {
+function StatCard({
+  icon: Icon,
+  label,
+  value,
+  tone,
+}: {
+  icon: LucideIcon;
+  label: string;
+  value: string | number;
+  tone: "blue" | "green" | "sky" | "amber";
+}) {
+  const colors = {
+    blue: "bg-blue-100 text-blue-600 dark:bg-blue-400/10 dark:text-blue-300",
+    green: "bg-emerald-100 text-emerald-600 dark:bg-emerald-400/10 dark:text-emerald-300",
+    sky: "bg-sky-100 text-sky-600 dark:bg-sky-400/10 dark:text-sky-300",
+    amber: "bg-amber-100 text-amber-600 dark:bg-amber-400/10 dark:text-amber-300",
+  }[tone];
   return (
-    <div className="card-surface p-4">
-      <p className="text-sm text-muted-foreground">{label}</p>
-      <p className="mt-2 text-2xl font-bold text-heading">{value}</p>
-    </div>
+    <section className="card-surface flex min-h-24 items-center gap-3 p-4 sm:gap-4 sm:p-5">
+      <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${colors}`}>
+        <Icon className="h-6 w-6" aria-hidden="true" />
+      </span>
+      <div className="min-w-0">
+        <p className="text-sm text-muted-foreground">{label}</p>
+        <p className="mt-1 text-2xl font-extrabold leading-none text-heading">{value}</p>
+      </div>
+    </section>
   );
 }
 
@@ -295,6 +442,7 @@ function QuizAttemptReview({
   totalQuestions,
   lang,
   t,
+  formatDate,
 }: {
   attemptId: string;
   createdAt: string;
@@ -303,6 +451,7 @@ function QuizAttemptReview({
   totalQuestions: number;
   lang: "fr" | "ht";
   t: ReturnType<typeof useI18n>["t"];
+  formatDate: (date: string) => string;
 }) {
   const [open, setOpen] = useState(false);
   const { data, error, isLoading, refetch } = useQuery({
@@ -329,16 +478,15 @@ function QuizAttemptReview({
   }
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap items-center gap-3">
-        <span className="min-w-0 flex-1 text-sm font-medium text-heading">
-          {new Date(createdAt).toLocaleString(lang === "ht" ? "fr-HT" : "fr-FR")}
-        </span>
-        <span className="rounded-full bg-brand px-3 py-1 text-sm font-bold text-brand-foreground">
-          {score}%
+      <div className="flex flex-wrap items-center gap-3 text-sm">
+        <span className="inline-flex flex-1 items-center gap-1.5 text-xs text-muted-foreground">
+          <CalendarDays className="h-3.5 w-3.5" aria-hidden="true" />
+          {formatDate(createdAt)}
         </span>
         <span className="text-xs text-muted-foreground">
           {correctCount}/{totalQuestions}
         </span>
+        <span className="text-xs font-semibold text-heading">{score}%</span>
         <Button
           type="button"
           size="sm"
@@ -346,7 +494,7 @@ function QuizAttemptReview({
           aria-expanded={open}
           onClick={() => setOpen((previous) => !previous)}
         >
-          {t("quiz.reviewAnswers")}
+          {t(open ? "progress.hideAnswers" : "progress.viewAnswers")}
         </Button>
       </div>
       {open &&
@@ -355,9 +503,9 @@ function QuizAttemptReview({
         ) : error ? (
           <ErrorState error={error} onRetry={() => void refetch()} />
         ) : !result ? (
-          <p className="mt-3 text-sm text-destructive">{t("quiz.historyUnavailable")}</p>
+          <p className="text-sm text-destructive">{t("quiz.historyUnavailable")}</p>
         ) : (
-          <ol className="mt-4 space-y-3 border-t pt-4">
+          <ol className="space-y-3 border-t border-border pt-4">
             {result.results.map((item, index) => {
               const options = lang === "ht" ? item.options_ht : item.options_fr;
               return (

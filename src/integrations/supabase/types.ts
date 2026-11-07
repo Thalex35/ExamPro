@@ -368,6 +368,39 @@ export type Database = {
           },
         ];
       };
+      exam_favorites: {
+        Row: {
+          created_at: string;
+          exam_id: string;
+          student_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          exam_id: string;
+          student_id: string;
+        };
+        Update: {
+          created_at?: string;
+          exam_id?: string;
+          student_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "exam_favorites_exam_id_fkey";
+            columns: ["exam_id"];
+            isOneToOne: false;
+            referencedRelation: "exams";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "exam_favorites_student_id_fkey";
+            columns: ["student_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       course_progress: {
         Row: {
           completed_at: string | null;

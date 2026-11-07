@@ -52,11 +52,19 @@ vi.mock("@tanstack/react-query", () => ({
     if (queryKey[0] === "catalog") {
       return {
         data: {
+          levels: [{ id: "term", requires_track: false }],
+          tracks: [],
           subjects: [
-            { id: "math", name_fr: "Mathématiques", name_ht: "Matematik" },
-            { id: "english", name_fr: "Anglais", name_ht: "Anglè" },
+            { id: "math", name_fr: "Mathématiques", name_ht: "Matematik", icon: null },
+            { id: "english", name_fr: "Anglais", name_ht: "Anglè", icon: null },
           ],
+          levelSubjects: [
+            { level_id: "term", subject_id: "math" },
+            { level_id: "term", subject_id: "english" },
+          ],
+          trackSubjects: [],
           chapters: [{ id: "geometry", name_fr: "Géométrie", name_ht: "Jewometri" }],
+          topics: [],
         },
         isLoading: false,
         error: null,
@@ -65,6 +73,22 @@ vi.mock("@tanstack/react-query", () => ({
     }
     if (queryKey[0] === "quiz-attempts") {
       return { data: mocks.attempts, isLoading: false, error: null, refetch: vi.fn() };
+    }
+    if (queryKey[0] === "completed-courses-count") {
+      return {
+        data: [{ course_id: "course-1" }, { course_id: "course-2" }],
+        isLoading: false,
+        error: null,
+        refetch: vi.fn(),
+      };
+    }
+    if (queryKey[0] === "favorites") {
+      return {
+        data: queryKey[1] === "course" ? ["course-1", "course-2"] : ["exam-1"],
+        isLoading: false,
+        error: null,
+        refetch: vi.fn(),
+      };
     }
     if (queryKey[0] === "quiz-attempt-review") {
       return {
@@ -111,20 +135,32 @@ vi.mock("@/lib/i18n", () => ({
     t: (key: string) =>
       ({
         "dash.performance": "Ma progression",
-        "demo.progressDescription": "Consultez vos résultats.",
-        "quiz.performanceTitle": "Mes résultats aux quiz",
-        "quiz.performanceDescription": "Vos résultats réels.",
-        "quiz.attemptCount": "Quiz terminés",
-        "quiz.averageScore": "Score moyen",
-        "quiz.bestScore": "Meilleur score",
-        "quiz.unknownSubject": "Matière indisponible",
-        "quiz.retake": "Refaire le quiz",
-        "quiz.reviewAnswers": "Voir les réponses",
+        "progress.subtitle": "Suivez vos performances.",
+        "progress.statistics": "Statistiques",
+        "progress.averageScore": "Score moyen",
+        "progress.completedQuizzes": "Quiz complétés",
+        "progress.completedCourses": "Cours terminés",
+        "progress.favorites": "Favoris",
+        "progress.bySubject": "Vos performances par matière",
+        "progress.encouragementTitle": "Continuez comme ça !",
+        "progress.encouragementBody": "Vous progressez bien.",
+        "progress.viewQuizzes": "Voir les quiz",
+        "progress.recentResults": "Derniers résultats",
+        "progress.quizType": "Quiz",
+        "progress.passed": "Réussi",
+        "progress.needsReview": "À renforcer",
+        "progress.personalizedAdvice": "Conseils personnalisés",
+        "progress.adviceNoAttempts": "Commencez un quiz.",
+        "progress.adviceLowScore": "Révisez {subject}.",
+        "progress.adviceKeepGoing": "Continuez.",
+        "progress.detailedHistory": "Historique détaillé",
+        "progress.detailedHistoryHint": "Réponses et explications.",
+        "progress.viewAnswers": "Voir les réponses",
+        "progress.hideAnswers": "Masquer les réponses",
+        "quiz.noAttempts": "Aucun quiz terminé.",
         "quiz.historyUnavailable": "Historique indisponible.",
         "quiz.yourAnswer": "Votre réponse",
         "quiz.correctAnswer": "Bonne réponse",
-        "demo.recentActivity": "Activité récente",
-        "demo.progressEmpty": "Aucune activité.",
       })[key] ?? key,
   }),
 }));
@@ -133,20 +169,24 @@ vi.mock("@/integrations/supabase/client", () => ({
   supabase: {},
 }));
 
-describe("student quiz performance", () => {
-  it("summarizes scores per subject and chapter and loads saved answer reviews on demand", () => {
+describe("student progress", () => {
+  it("calculates real overall and per-subject averages and loads saved answer reviews", () => {
     const ProgressPage = Route.options.component;
     if (!ProgressPage) throw new Error("Progress route component is not configured");
     render(<ProgressPage />);
 
-    expect(screen.getByText("Quiz terminés")).toBeInTheDocument();
-    expect(screen.getByText("3")).toBeInTheDocument();
+    expect(screen.getByText("Quiz complétés")).toBeInTheDocument();
+    expect(screen.getAllByText("3")).toHaveLength(2);
     expect(screen.getByText("77%")).toBeInTheDocument();
-    expect(screen.getAllByText("90%")).toHaveLength(2);
-    expect(screen.getByText("Mathématiques · Géométrie")).toBeInTheDocument();
-    expect(screen.getByText("Anglais")).toBeInTheDocument();
+    expect(screen.getByText("70%")).toBeInTheDocument();
+    expect(screen.getByText("Cours terminés").parentElement).toHaveTextContent("2");
+    expect(screen.getByText("Favoris").parentElement).toHaveTextContent("3");
+    expect(screen.getAllByText("Mathématiques").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Anglais").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Réussi").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("À renforcer").length).toBeGreaterThan(0);
 
-    fireEvent.click(screen.getAllByText("Voir les réponses")[0]!);
+    fireEvent.click(screen.getAllByRole("button", { name: "Voir les réponses" })[0]!);
     expect(screen.getByText("1. Question 1")).toBeInTheDocument();
     expect(screen.getByText("Explication 1")).toBeInTheDocument();
   });

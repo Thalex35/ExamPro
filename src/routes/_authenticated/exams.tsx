@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 import { DemoBadge } from "@/components/DemoBadge";
 import { ResourceNavigation } from "@/components/CourseList";
 import { ReportContentButton } from "@/components/ReportContentButton";
+import { FavoriteButton } from "@/components/FavoriteButton";
 
 export const Route = createFileRoute("/_authenticated/exams")({
   validateSearch: (
@@ -343,18 +344,21 @@ function Exams() {
                           {exam.description}
                         </p>
                       )}
-                      <Button
-                        variant="outline"
-                        className="mt-4 w-full justify-center gap-2"
-                        onClick={() =>
-                          openExamFile(exam.file_path, exam.demo_content).catch((error) =>
-                            toast.error(errMsg(error)),
-                          )
-                        }
-                      >
-                        {t("exams.view")}
-                        <ArrowRight className="h-4 w-4" />
-                      </Button>
+                      <div className="mt-4 flex gap-2">
+                        <Button
+                          variant="outline"
+                          className="min-w-0 flex-1 justify-center gap-2"
+                          onClick={() =>
+                            openExamFile(exam.file_path, exam.demo_content).catch((error) =>
+                              toast.error(errMsg(error)),
+                            )
+                          }
+                        >
+                          {t("exams.view")}
+                          <ArrowRight className="h-4 w-4" />
+                        </Button>
+                        <FavoriteButton kind="exam" resourceId={exam.id} iconOnly />
+                      </div>
                       {(me?.isStudent || me?.isTeacher) && me.user.id !== exam.author_id && (
                         <div className="mt-2 flex flex-wrap justify-center gap-1">
                           <ReportContentButton targetType="exam" targetId={exam.id} />

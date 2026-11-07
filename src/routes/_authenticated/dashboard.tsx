@@ -25,6 +25,7 @@ import { openExamFile } from "@/lib/files";
 import { formatExamYear } from "@/lib/exam-years";
 import { demoRecordsQuery } from "@/lib/demo-data";
 import { DemoBadge } from "@/components/DemoBadge";
+import { FavoriteButton } from "@/components/FavoriteButton";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({ meta: [{ title: "Tableau de bord — EXAMPRO" }] }),
@@ -304,28 +305,38 @@ function Dashboard() {
             ) : (
               <div className="grid gap-3 sm:grid-cols-2">
                 {recommendedCourses.slice(0, 2).map((course) => (
-                  <Link
+                  <article
                     key={`course-${course.id}`}
-                    to="/courses/$courseId"
-                    params={{ courseId: course.id }}
-                    className="card-surface group flex min-h-40 flex-col justify-between p-5 transition-shadow hover:shadow-brand"
+                    className="card-surface relative flex min-h-40 flex-col justify-between p-5 transition-shadow hover:shadow-brand"
                   >
-                    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent text-accent-foreground">
-                      <BookOpen className="h-5 w-5" />
-                    </span>
-                    {course.is_demo && <DemoBadge />}
-                    <span className="mt-4 block">
-                      <span className="block font-semibold text-heading group-hover:text-deep">
-                        {course.title}
+                    <FavoriteButton
+                      kind="course"
+                      resourceId={course.id}
+                      iconOnly
+                      className="absolute right-3 top-3"
+                    />
+                    <Link
+                      to="/courses/$courseId"
+                      params={{ courseId: course.id }}
+                      className="group flex h-full flex-col justify-between pr-9"
+                    >
+                      <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent text-accent-foreground">
+                        <BookOpen className="h-5 w-5" />
                       </span>
-                      <span className="mt-1 block text-sm text-muted-foreground">
-                        {subjectName(course.subject_id)}
-                        {course.track_id === trackId && track
-                          ? ` · ${t("dash.priorityForTrack")} ${track.code}`
-                          : ""}
+                      {course.is_demo && <DemoBadge />}
+                      <span className="mt-4 block">
+                        <span className="block font-semibold text-heading group-hover:text-deep">
+                          {course.title}
+                        </span>
+                        <span className="mt-1 block text-sm text-muted-foreground">
+                          {subjectName(course.subject_id)}
+                          {course.track_id === trackId && track
+                            ? ` · ${t("dash.priorityForTrack")} ${track.code}`
+                            : ""}
+                        </span>
                       </span>
-                    </span>
-                  </Link>
+                    </Link>
+                  </article>
                 ))}
                 {recommendedExams
                   .slice(0, Math.max(0, 4 - recommendedCourses.slice(0, 2).length))
@@ -334,9 +345,12 @@ function Dashboard() {
                       key={`exam-${exam.id}`}
                       className="card-surface flex min-h-40 flex-col justify-between p-5"
                     >
-                      <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand/10 text-deep">
-                        <FileText className="h-5 w-5" />
-                      </span>
+                      <div className="flex items-start justify-between gap-3">
+                        <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand/10 text-deep">
+                          <FileText className="h-5 w-5" />
+                        </span>
+                        <FavoriteButton kind="exam" resourceId={exam.id} iconOnly />
+                      </div>
                       <div className="mt-4 flex items-end justify-between gap-3">
                         <div className="min-w-0">
                           <div className="flex flex-wrap items-center gap-2">

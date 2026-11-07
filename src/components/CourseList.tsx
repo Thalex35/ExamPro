@@ -3,6 +3,7 @@ import { ArrowRight, BookOpen, Brain, FileText } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { NativeSelect } from "@/components/Field";
 import { DemoBadge } from "@/components/DemoBadge";
+import { FavoriteButton } from "@/components/FavoriteButton";
 import { useI18n, type Lang } from "@/lib/i18n";
 
 type CourseResourceType = "text" | "document" | "external_link" | "video";
@@ -111,31 +112,34 @@ export function CourseListItem({ course }: { course: CourseListEntry }) {
   const { t } = useI18n();
 
   return (
-    <Link
-      to="/courses/$courseId"
-      params={{ courseId: course.id }}
-      className="group grid min-w-0 grid-cols-[2.75rem_minmax(0,1fr)] items-center gap-x-3 gap-y-3 rounded-2xl border border-border bg-card p-4 shadow-card transition-colors duration-200 hover:border-brand/60 hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:grid-cols-[3rem_minmax(0,1fr)_auto] sm:gap-x-4 sm:p-5"
-    >
-      <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-accent text-accent-foreground sm:h-12 sm:w-12">
-        <FileText className="h-6 w-6" aria-hidden="true" />
-      </span>
-      <span className="min-w-0">
-        <span className="flex flex-wrap items-center gap-2 text-base font-semibold text-heading">
-          <span className="break-words">{course.title}</span>
-          {course.is_demo && <DemoBadge />}
+    <div className="group flex min-w-0 items-center gap-2 rounded-2xl border border-border bg-card p-3 shadow-card transition-colors duration-200 hover:border-brand/60 hover:bg-muted/60 sm:gap-3 sm:p-4">
+      <Link
+        to="/courses/$courseId"
+        params={{ courseId: course.id }}
+        className="grid min-w-0 flex-1 grid-cols-[2.75rem_minmax(0,1fr)] items-center gap-x-3 gap-y-3 rounded-xl p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:grid-cols-[3rem_minmax(0,1fr)_auto] sm:gap-x-4"
+      >
+        <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-accent text-accent-foreground sm:h-12 sm:w-12">
+          <FileText className="h-6 w-6" aria-hidden="true" />
         </span>
-        <span className="mt-1 block text-sm leading-5 text-muted-foreground">
-          {course.summary?.trim() || t("course.summaryFallback")}
+        <span className="min-w-0">
+          <span className="flex flex-wrap items-center gap-2 text-base font-semibold text-heading">
+            <span className="break-words">{course.title}</span>
+            {course.is_demo && <DemoBadge />}
+          </span>
+          <span className="mt-1 block text-sm leading-5 text-muted-foreground">
+            {course.summary?.trim() || t("course.summaryFallback")}
+          </span>
         </span>
-      </span>
-      <span className="col-start-2 inline-flex min-h-9 items-center justify-center gap-2 justify-self-start rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground transition-colors group-hover:bg-deep sm:col-start-auto sm:justify-self-auto">
-        {t("course.view")}
-        <ArrowRight
-          className="h-4 w-4 transition-transform group-hover:translate-x-0.5"
-          aria-hidden="true"
-        />
-      </span>
-    </Link>
+        <span className="col-start-2 inline-flex min-h-9 items-center justify-center gap-2 justify-self-start rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground transition-colors group-hover:bg-deep sm:col-start-auto sm:justify-self-auto">
+          {t("course.view")}
+          <ArrowRight
+            className="h-4 w-4 transition-transform group-hover:translate-x-0.5"
+            aria-hidden="true"
+          />
+        </span>
+      </Link>
+      <FavoriteButton kind="course" resourceId={course.id} iconOnly />
+    </div>
   );
 }
 

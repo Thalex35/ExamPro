@@ -213,6 +213,7 @@ export type Database = {
           difficulty: string | null;
           duration_minutes: number | null;
           external_url: string | null;
+          file_size: number | null;
           file_name: string | null;
           file_path: string | null;
           id: string;
@@ -224,6 +225,7 @@ export type Database = {
           published_at: string | null;
           preview: string | null;
           resource_type: string;
+          resource_formats: string[];
           review_status: string;
           review_note: string | null;
           skills: string[];
@@ -244,6 +246,7 @@ export type Database = {
           difficulty?: string | null;
           duration_minutes?: number | null;
           external_url?: string | null;
+          file_size?: number | null;
           file_name?: string | null;
           file_path?: string | null;
           id?: string;
@@ -255,6 +258,7 @@ export type Database = {
           published_at?: string | null;
           preview?: string | null;
           resource_type?: string;
+          resource_formats?: string[];
           review_status?: string;
           review_note?: string | null;
           skills?: string[];
@@ -275,6 +279,7 @@ export type Database = {
           difficulty?: string | null;
           duration_minutes?: number | null;
           external_url?: string | null;
+          file_size?: number | null;
           file_name?: string | null;
           file_path?: string | null;
           id?: string;
@@ -286,6 +291,7 @@ export type Database = {
           published_at?: string | null;
           preview?: string | null;
           resource_type?: string;
+          resource_formats?: string[];
           review_status?: string;
           review_note?: string | null;
           skills?: string[];
@@ -445,7 +451,10 @@ export type Database = {
           author_id: string;
           course_id: string;
           created_at: string;
+          description: string | null;
+          duration_minutes: number | null;
           external_url: string | null;
+          file_size: number | null;
           file_name: string | null;
           file_path: string | null;
           id: string;
@@ -457,7 +466,10 @@ export type Database = {
           author_id: string;
           course_id: string;
           created_at?: string;
+          description?: string | null;
+          duration_minutes?: number | null;
           external_url?: string | null;
+          file_size?: number | null;
           file_name?: string | null;
           file_path?: string | null;
           id?: string;
@@ -469,7 +481,10 @@ export type Database = {
           author_id?: string;
           course_id?: string;
           created_at?: string;
+          description?: string | null;
+          duration_minutes?: number | null;
           external_url?: string | null;
+          file_size?: number | null;
           file_name?: string | null;
           file_path?: string | null;
           id?: string;

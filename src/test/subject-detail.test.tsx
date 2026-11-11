@@ -12,6 +12,7 @@ const mocks = vi.hoisted(() => ({
       title: string;
       summary: string | null;
       resource_type: string;
+      resource_formats?: string[] | null;
       is_demo: boolean;
       chapter_id: string | null;
     }[];
@@ -66,6 +67,10 @@ vi.mock("@tanstack/react-query", () => ({
     queryKey[0] === "catalog"
       ? { data: mocks.catalog, isLoading: false, error: null, refetch: vi.fn() }
       : { data: mocks.resources, isLoading: false, error: null, refetch: vi.fn() },
+}));
+
+vi.mock("@/components/FavoriteButton", () => ({
+  FavoriteButton: () => null,
 }));
 
 vi.mock("@/lib/session", () => ({
@@ -152,6 +157,7 @@ describe("subject detail pages", () => {
           title: "Géométrie plane",
           summary: "Les propriétés des figures planes.",
           resource_type: "text",
+          resource_formats: ["text", "document"],
           is_demo: false,
           chapter_id: "geometry",
         },
@@ -160,6 +166,7 @@ describe("subject detail pages", () => {
           title: "Triangles",
           summary: null,
           resource_type: "document",
+          resource_formats: ["document"],
           is_demo: false,
           chapter_id: "geometry",
         },
@@ -168,6 +175,7 @@ describe("subject detail pages", () => {
           title: "Conversation",
           summary: "Pratique de la conversation.",
           resource_type: "external_link",
+          resource_formats: ["external_link"],
           is_demo: false,
           chapter_id: null,
         },
@@ -273,8 +281,8 @@ describe("subject detail pages", () => {
     });
 
     expect(screen.getByText("Triangles")).toBeInTheDocument();
-    expect(screen.getByText("Consultez le contenu de ce cours.")).toBeInTheDocument();
-    expect(screen.queryByText("Géométrie plane")).not.toBeInTheDocument();
+    expect(screen.getByText("Géométrie plane")).toBeInTheDocument();
+    expect(screen.queryByText("Conversation")).not.toBeInTheDocument();
   });
 
   it("keeps the demonstration quiz restricted to student accounts", () => {

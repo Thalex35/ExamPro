@@ -39,7 +39,7 @@ function CoursesPage() {
       const { data, error } = await supabase
         .from("courses")
         .select(
-          "id,title,summary,subject_id,chapter_id,topic_id,published_at,is_demo,resource_type",
+          "id,title,summary,subject_id,chapter_id,topic_id,published_at,is_demo,resource_type,resource_formats",
         )
         .eq("status", "published")
         .eq("level_id", levelId!)

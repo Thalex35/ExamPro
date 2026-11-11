@@ -648,6 +648,19 @@ const fr = {
   "content.removeResource": "Supprimer cette ressource",
   "content.resourceTitle": "Titre de la ressource",
   "content.resourceTitleRequired": "Saisissez un titre pour chaque ressource complémentaire.",
+  "content.resourceDescription": "Description de la ressource (facultative)",
+  "content.videoDuration": "Durée de la vidéo en minutes (facultative)",
+  "content.videoDurationInvalid":
+    "La durée de la vidéo doit être comprise entre 1 et 1 440 minutes.",
+  "content.courseFormatRequired": "Sélectionnez au moins un format de cours.",
+  "content.courseFormats": "Formats du cours",
+  "content.courseFormatsHint":
+    "Sélectionnez tous les formats proposés dans ce cours. Chaque format peut contenir plusieurs ressources.",
+  "content.courseResources": "Ressources du cours",
+  "content.courseResourcesHint":
+    "Ajoutez une ou plusieurs ressources PDF, vidéo ou externes selon les formats sélectionnés.",
+  "content.formatResourceRequired":
+    "Ajoutez au moins une ressource pour chaque format sélectionné.",
   "content.editorTools": "Mise en forme du cours",
   "content.insert": "Insérer",
   "content.markdownHint":
@@ -1467,6 +1480,16 @@ const ht: Record<TKey, string> = {
   "content.removeResource": "Retire resous sa a",
   "content.resourceTitle": "Tit resous la",
   "content.resourceTitleRequired": "Ekri yon tit pou chak lòt resous.",
+  "content.resourceDescription": "Deskripsyon resous la (si ou vle)",
+  "content.videoDuration": "Dire videyo a an minit (si ou vle)",
+  "content.videoDurationInvalid": "Dire videyo a dwe ant 1 ak 1 440 minit.",
+  "content.courseFormatRequired": "Chwazi omwen yon fòma kou.",
+  "content.courseFormats": "Fòma kou a",
+  "content.courseFormatsHint": "Chwazi tout fòma kou sa a genyen. Chak fòma ka gen plizyè resous.",
+  "content.courseResources": "Resous kou a",
+  "content.courseResourcesHint":
+    "Ajoute youn oswa plizyè PDF, videyo oswa lyen selon fòma ou chwazi yo.",
+  "content.formatResourceRequired": "Ajoute omwen yon resous pou chak fòma ou chwazi.",
   "content.editorTools": "Fòma kou a",
   "content.insert": "Mete",
   "content.markdownHint": "Ekri kou a la a. Ou ka kole tèks ki fòmate ak Markdown tou.",

@@ -13,6 +13,19 @@ export const Route = createFileRoute("/_authenticated/courses/resource/$courseId
   component: CourseResourcePage,
 });
 
+type CourseResourceType = "document" | "video" | "external_link";
+
+function isCourseResourceType<T extends { resource_type: string }>(
+  resource: T | null | undefined,
+): resource is T & { resource_type: CourseResourceType } {
+  return (
+    !!resource &&
+    (resource.resource_type === "document" ||
+      resource.resource_type === "video" ||
+      resource.resource_type === "external_link")
+  );
+}
+
 function CourseResourcePage() {
   const { courseId, resourceId } = Route.useParams();
   const { t, errMsg } = useI18n();
@@ -69,6 +82,8 @@ function CourseResourcePage() {
           resource_type: course.resource_type,
           file_path: course.file_path,
           external_url: course.external_url,
+          description: null,
+          duration_minutes: null,
         }
       : supplementalQuery.data;
   const filePath = resource?.resource_type === "document" ? resource.file_path : null;
@@ -107,8 +122,7 @@ function CourseResourcePage() {
       (!!profile?.track_id && !!course.track_id && profile.track_id !== course.track_id) ||
       (!!course.track_id && !profile?.track_id));
   if (outOfScope) return <Empty>{t("course.notAvailableForProfile")}</Empty>;
-  if (!resource || !["document", "video", "external_link"].includes(resource.resource_type))
-    return <Empty>{t("404.title")}</Empty>;
+  if (!isCourseResourceType(resource)) return <Empty>{t("404.title")}</Empty>;
   if (resource.resource_type === "document" && !resource.file_path)
     return <Empty>{t("course.emptyContent")}</Empty>;
   if (resource.resource_type !== "document" && !resource.external_url)
@@ -117,10 +131,14 @@ function CourseResourcePage() {
   if (fileUrlQuery.error)
     return <ErrorState error={fileUrlQuery.error} onRetry={() => void fileUrlQuery.refetch()} />;
 
+  const currentCourse = course;
+  const currentResource = resource;
   const currentProgress = progressQuery.data?.progress_percent ?? 0;
   const completed = currentProgress === 100;
   const videoEmbedUrl =
-    resource.resource_type === "video" ? getVideoEmbedUrl(resource.external_url) : null;
+    currentResource.resource_type === "video"
+      ? getVideoEmbedUrl(currentResource.external_url)
+      : null;
 
   async function saveProgress(value: number, complete = false) {
     if (!me?.isStudent) return;
@@ -128,7 +146,7 @@ function CourseResourcePage() {
     const { error } = await supabase.from("course_progress").upsert(
       {
         student_id: me.user.id,
-        course_id: course.id,
+        course_id: currentCourse.id,
         progress_percent: complete ? 100 : Math.min(99, value),
         completed_at: complete ? now : null,
         updated_at: now,
@@ -137,33 +155,38 @@ function CourseResourcePage() {
     );
     if (error) throw error;
     await Promise.all([
-      queryClient.invalidateQueries({ queryKey: ["course-progress", me.user.id, course.id] }),
+      queryClient.invalidateQueries({
+        queryKey: ["course-progress", me.user.id, currentCourse.id],
+      }),
       queryClient.invalidateQueries({ queryKey: ["course-reading-history", me.user.id] }),
     ]);
   }
 
   async function downloadResource() {
-    if (resource.resource_type !== "document" || !resource.file_path) {
+    if (currentResource.resource_type !== "document" || !currentResource.file_path) {
       throw new Error("COURSE_RESOURCE_FILE_UNAVAILABLE");
     }
     const { data, error } = await supabase.storage
       .from("course-files")
-      .createSignedUrl(resource.file_path, 300, { download: true });
+      .createSignedUrl(currentResource.file_path, 300, { download: true });
     if (error || !data) throw error ?? new Error("COURSE_RESOURCE_FILE_UNAVAILABLE");
     window.location.assign(data.signedUrl);
   }
 
   return (
     <CourseResourceReader
-      courseId={course.id}
-      courseTitle={course.title}
-      resourceTitle={resource.title}
-      resourceType={resource.resource_type}
+      courseId={currentCourse.id}
+      courseTitle={currentCourse.title}
+      resourceTitle={currentResource.title}
+      resourceDescription={currentResource.description}
+      resourceType={currentResource.resource_type}
       resourceUrl={
-        resource.resource_type === "document" ? (fileUrlQuery.data ?? null) : resource.external_url
+        currentResource.resource_type === "document"
+          ? (fileUrlQuery.data ?? null)
+          : currentResource.external_url
       }
       download={downloadResource}
-      durationMinutes={course.duration_minutes}
+      durationMinutes={currentResource.duration_minutes ?? currentCourse.duration_minutes}
       progress={currentProgress}
       completed={completed}
       canTrackProgress={!!me?.isStudent}

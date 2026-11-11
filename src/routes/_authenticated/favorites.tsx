@@ -37,7 +37,7 @@ function FavoritesPage() {
         courseIds.length
           ? supabase
               .from("courses")
-              .select("id,title,subject_id,chapter_id,resource_type")
+              .select("id,title,subject_id,chapter_id,resource_type,resource_formats")
               .in("id", courseIds)
           : Promise.resolve({ data: [], error: null }),
         examIds.length
@@ -117,14 +117,15 @@ function FavoritesPage() {
             {courses.map((course) => {
               const subject = catalog.data.subjects.find((item) => item.id === course.subject_id);
               const chapter = catalog.data.chapters.find((item) => item.id === course.chapter_id);
-              const typeLabel =
-                course.resource_type === "text"
-                  ? t("content.textLesson")
-                  : course.resource_type === "document"
-                    ? t("content.document")
-                    : course.resource_type === "video"
-                      ? t("content.video")
-                      : t("content.externalLink");
+              const formatLabels: Record<string, string> = {
+                text: t("content.textLesson"),
+                document: t("content.document"),
+                video: t("content.video"),
+                external_link: t("content.externalLink"),
+              };
+              const formats = course.resource_formats?.length
+                ? course.resource_formats
+                : [course.resource_type];
               return (
                 <li
                   key={course.id}
@@ -140,7 +141,11 @@ function FavoritesPage() {
                   >
                     <span className="block font-semibold text-heading">{course.title}</span>
                     <span className="mt-1 block text-sm text-muted-foreground">
-                      {[subject && name(subject), chapter && name(chapter), typeLabel]
+                      {[
+                        subject && name(subject),
+                        chapter && name(chapter),
+                        ...formats.map((format) => formatLabels[format] ?? format),
+                      ]
                         .filter(Boolean)
                         .join(" · ")}
                     </span>

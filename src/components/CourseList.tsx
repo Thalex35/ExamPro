@@ -13,6 +13,7 @@ export type CourseListEntry = {
   title: string;
   summary: string | null;
   resource_type: string;
+  resource_formats?: string[] | null;
   is_demo: boolean;
 };
 
@@ -20,6 +21,25 @@ const resourceTypes: CourseResourceType[] = ["text", "document", "external_link"
 
 function isCourseResourceType(value: string): value is CourseResourceType {
   return resourceTypes.some((type) => type === value);
+}
+
+function getCourseResourceTypes(course: CourseListEntry): CourseResourceType[] {
+  const formats = course.resource_formats?.filter(isCourseResourceType) ?? [];
+  return formats.length
+    ? formats
+    : isCourseResourceType(course.resource_type)
+      ? [course.resource_type]
+      : ["text"];
+}
+
+function resourceTypeLabelKey(type: CourseResourceType) {
+  return type === "text"
+    ? "content.textLesson"
+    : type === "document"
+      ? "content.document"
+      : type === "video"
+        ? "content.video"
+        : "content.externalLink";
 }
 
 function courseListTitle(subjectName: string, lang: Lang) {
@@ -45,12 +65,12 @@ export function CourseListSection({
   const { t, lang } = useI18n();
   const [resourceType, setResourceType] = useState<CourseResourceType | "all">("all");
   const availableTypes = resourceTypes.filter((type) =>
-    courses.some((course) => course.resource_type === type),
+    courses.some((course) => getCourseResourceTypes(course).includes(type)),
   );
   const filteredCourses =
     resourceType === "all"
       ? courses
-      : courses.filter((course) => course.resource_type === resourceType);
+      : courses.filter((course) => getCourseResourceTypes(course).includes(resourceType));
 
   return (
     <section aria-labelledby="course-list-heading" className="space-y-4">
@@ -78,15 +98,7 @@ export function CourseListSection({
           <option value="all">{t("course.filterAll")}</option>
           {availableTypes.map((type) => (
             <option key={type} value={type}>
-              {t(
-                type === "text"
-                  ? "content.textLesson"
-                  : type === "document"
-                    ? "content.document"
-                    : type === "video"
-                      ? "content.video"
-                      : "content.externalLink",
-              )}
+              {t(resourceTypeLabelKey(type))}
             </option>
           ))}
         </NativeSelect>
@@ -128,6 +140,16 @@ export function CourseListItem({ course }: { course: CourseListEntry }) {
           </span>
           <span className="mt-1 block text-sm leading-5 text-muted-foreground">
             {course.summary?.trim() || t("course.summaryFallback")}
+          </span>
+          <span className="mt-2 flex flex-wrap gap-1.5">
+            {getCourseResourceTypes(course).map((type) => (
+              <span
+                key={type}
+                className="rounded-full border border-border bg-background px-2 py-0.5 text-xs text-muted-foreground"
+              >
+                {t(resourceTypeLabelKey(type))}
+              </span>
+            ))}
           </span>
         </span>
         <span className="col-start-2 inline-flex min-h-9 items-center justify-center gap-2 justify-self-start rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground transition-colors group-hover:bg-deep sm:col-start-auto sm:justify-self-auto">

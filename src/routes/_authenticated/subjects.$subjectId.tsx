@@ -52,7 +52,7 @@ function SubjectDetail() {
       const [courses, exams] = await Promise.all([
         supabase
           .from("courses")
-          .select("id,title,summary,resource_type,is_demo,chapter_id")
+          .select("id,title,summary,resource_type,resource_formats,is_demo,chapter_id")
           .eq("status", "published")
           .eq("subject_id", subjectId)
           .eq("level_id", levelId!)
@@ -247,7 +247,7 @@ function SubjectDetail() {
             me?.isStudent ? (
               <DemoQuiz
                 subjectId={subjectId}
-                chapterId={chapter?.id}
+                {...(chapter?.id ? { chapterId: chapter.id } : {})}
                 title={name(chapter ?? subject)}
               />
             ) : (

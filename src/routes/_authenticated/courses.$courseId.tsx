@@ -28,6 +28,18 @@ import { useMe } from "@/lib/session";
 import { subjectIcons } from "@/lib/subject-icons";
 import { FavoriteButton } from "@/components/FavoriteButton";
 
+type DisplayCourseResource = {
+  id: string;
+  title: string;
+  resource_type: string;
+  file_path: string | null;
+  file_name: string | null;
+  file_size: number | null;
+  external_url: string | null;
+  description: string | null;
+  duration_minutes: number | null;
+};
+
 export const Route = createFileRoute("/_authenticated/courses/$courseId")({
   head: () => ({ meta: [{ title: "Cours — EXAMPRO" }] }),
   component: CourseView,
@@ -118,15 +130,15 @@ function CourseView() {
   const crumbs = [subject, chapter, topic].filter(Boolean).map((entry) => name(entry!));
   const currentProgress = progress.data?.progress_percent ?? 0;
   const isComplete = currentProgress === 100;
-  const resourceTypeLabel =
-    x.resource_type === "document"
-      ? t("content.document")
-      : x.resource_type === "video"
-        ? t("content.video")
-        : x.resource_type === "external_link"
-          ? t("content.externalLink")
-          : t("content.textLesson");
-  const courseResources = [
+  const resourceFormats = x.resource_formats?.length ? x.resource_formats : [x.resource_type];
+  const hasTextFormat = resourceFormats.includes("text");
+  const formatLabels: Record<string, string> = {
+    text: t("content.textLesson"),
+    document: t("content.document"),
+    video: t("content.video"),
+    external_link: t("content.externalLink"),
+  };
+  const courseResources: DisplayCourseResource[] = [
     ...(x.resource_type !== "text"
       ? [
           {
@@ -134,7 +146,11 @@ function CourseView() {
             title: x.file_name || x.title,
             resource_type: x.resource_type,
             file_path: x.file_path,
+            file_name: x.file_name,
+            file_size: x.file_size,
             external_url: x.external_url,
+            description: null,
+            duration_minutes: null,
           },
         ]
       : []),
@@ -167,7 +183,7 @@ function CourseView() {
     ]);
   }
 
-  if (reading && x.resource_type === "text") {
+  if (reading && hasTextFormat) {
     return (
       <CourseReader
         title={x.title}
@@ -230,9 +246,14 @@ function CourseView() {
             </div>
 
             <div className="mt-4 flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-accent px-3 py-1.5 text-xs font-semibold text-deep">
+              <span className="inline-flex flex-wrap items-center gap-1.5 rounded-full bg-accent px-3 py-1.5 text-xs font-semibold text-deep">
                 <BookOpenText className="h-3.5 w-3.5" />
-                {resourceTypeLabel}
+                {resourceFormats.map((format, index) => (
+                  <span key={format}>
+                    {index > 0 ? " · " : ""}
+                    {formatLabels[format] ?? format}
+                  </span>
+                ))}
               </span>
               {subject && (
                 <span className="inline-flex items-center gap-1.5 rounded-full border border-brand/30 bg-background px-3 py-1.5 text-xs font-semibold text-primary">
@@ -299,27 +320,29 @@ function CourseView() {
                 </span>
               )}
             </div>
-            {me?.isStudent && currentProgress > 0 && x.resource_type === "text" && (
-              <div className="mt-5 max-w-lg">
-                <div className="mb-1 flex justify-between text-xs text-muted-foreground">
-                  <span>{isComplete ? t("course.completed") : t("course.readingProgress")}</span>
-                  <span>{currentProgress}%</span>
-                </div>
-                <div
-                  className="h-2 overflow-hidden rounded-full bg-muted"
-                  role="progressbar"
-                  aria-valuenow={currentProgress}
-                  aria-valuemin={0}
-                  aria-valuemax={100}
-                  aria-label={t("course.readingProgress")}
-                >
+            {me?.isStudent &&
+              currentProgress > 0 &&
+              (hasTextFormat || courseResources.length > 0) && (
+                <div className="mt-5 max-w-lg">
+                  <div className="mb-1 flex justify-between text-xs text-muted-foreground">
+                    <span>{isComplete ? t("course.completed") : t("course.readingProgress")}</span>
+                    <span>{currentProgress}%</span>
+                  </div>
                   <div
-                    className="h-full rounded-full bg-brand"
-                    style={{ width: `${currentProgress}%` }}
-                  />
+                    className="h-2 overflow-hidden rounded-full bg-muted"
+                    role="progressbar"
+                    aria-valuenow={currentProgress}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-label={t("course.readingProgress")}
+                  >
+                    <div
+                      className="h-full rounded-full bg-brand"
+                      style={{ width: `${currentProgress}%` }}
+                    />
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
           </div>
         </div>
       </header>
@@ -388,13 +411,13 @@ function CourseView() {
         </div>
 
         <aside className="space-y-5">
-          {(courseResources.length > 0 || x.resource_type === "text") && (
+          {(courseResources.length > 0 || hasTextFormat) && (
             <section className="card-surface p-5">
               <h2 className="flex items-center gap-2 text-lg font-bold text-heading">
                 <FileText className="h-5 w-5 text-deep" />
                 {t("course.resourcesTitle")}
               </h2>
-              {!courseResources.length && (
+              {!courseResources.length && hasTextFormat && (
                 <p className="mt-3 text-sm text-muted-foreground">
                   {t("content.optionalResourceHint")}
                 </p>
@@ -430,6 +453,22 @@ function CourseView() {
                             {resource.title}
                           </h3>
                           <p className="mt-1 text-xs text-muted-foreground">{resourceType}</p>
+                          {resource.description && (
+                            <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
+                              {resource.description}
+                            </p>
+                          )}
+                          {(resource.duration_minutes || resource.file_size) && (
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              {resource.duration_minutes
+                                ? `${resource.duration_minutes} ${t("content.minutes")}`
+                                : ""}
+                              {resource.duration_minutes && resource.file_size ? " · " : ""}
+                              {resource.file_size
+                                ? `${(resource.file_size / (1024 * 1024)).toFixed(2)} MB`
+                                : ""}
+                            </p>
+                          )}
                         </div>
                         <Link
                           to="/courses/resource/$courseId/$resourceId"
@@ -470,7 +509,7 @@ function CourseView() {
                   );
                 })}
               </div>
-              {x.resource_type === "text" && (
+              {hasTextFormat && (
                 <Button
                   variant="default"
                   className="mt-4 h-12 w-full bg-primary text-base font-semibold text-primary-foreground hover:bg-primary/90"

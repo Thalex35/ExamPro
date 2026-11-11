@@ -11,6 +11,7 @@ export function CourseResourceReader({
   courseId,
   courseTitle,
   resourceTitle,
+  resourceDescription,
   resourceType,
   resourceUrl,
   download,
@@ -25,6 +26,7 @@ export function CourseResourceReader({
   courseId: string;
   courseTitle: string;
   resourceTitle: string;
+  resourceDescription?: string | null;
   resourceType: ResourceType;
   resourceUrl: string | null;
   download: () => Promise<void>;
@@ -158,6 +160,11 @@ export function CourseResourceReader({
         <h1 className="mt-2 text-3xl font-bold leading-tight text-heading sm:text-4xl">
           {resourceTitle}
         </h1>
+        {resourceDescription && (
+          <p className="mt-3 max-w-3xl leading-relaxed text-muted-foreground">
+            {resourceDescription}
+          </p>
+        )}
       </header>
 
       {resourceType === "document" && resourceUrl ? (

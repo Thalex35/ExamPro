@@ -350,6 +350,18 @@ export function ContentManagementPage({ role, kind }: { role: RoleArea; kind: Ki
             const mine = row.author_id === me?.user.id;
             const canManage = isAdmin || mine;
             const canDelete = isAdmin || (mine && row.status !== "published");
+            const courseFormats =
+              row.kind === "course"
+                ? row.resource_formats?.length
+                  ? row.resource_formats
+                  : [row.resource_type]
+                : [];
+            const formatLabels: Record<string, string> = {
+              text: t("content.textLesson"),
+              document: t("content.document"),
+              video: t("content.video"),
+              external_link: t("content.externalLink"),
+            };
             return (
               <li key={`${row.kind}-${row.id}`} className="flex flex-wrap items-center gap-3 p-4">
                 <div className="min-w-0 flex-1">
@@ -365,19 +377,12 @@ export function ContentManagementPage({ role, kind }: { role: RoleArea; kind: Ki
                       .join(" · ")}
                   </p>
                 </div>
-                {row.kind === "course" && (
-                  <span className="rounded-full bg-muted px-2.5 py-1 text-xs">
-                    {t(
-                      row.resource_type === "external_link"
-                        ? "content.externalLink"
-                        : row.resource_type === "document"
-                          ? "content.document"
-                          : row.resource_type === "video"
-                            ? "content.video"
-                            : "content.textLesson",
-                    )}
-                  </span>
-                )}
+                {row.kind === "course" &&
+                  courseFormats.map((format) => (
+                    <span key={format} className="rounded-full bg-muted px-2.5 py-1 text-xs">
+                      {formatLabels[format] ?? format}
+                    </span>
+                  ))}
                 {row.is_demo && <DemoBadge />}
                 {row.review_status === "rejected" && (
                   <span className="rounded-full bg-destructive/10 px-2.5 py-1 text-xs font-medium text-destructive">

@@ -22,6 +22,9 @@ type SupplementType = "external_link" | "video" | "document";
 type CourseResource = Database["public"]["Tables"]["course_resources"]["Row"];
 type ResourceDraft = {
   author_id?: string;
+  description: string;
+  duration_minutes: string;
+  file_size: number | null;
   id?: string;
   title: string;
   resource_type: SupplementType;
@@ -31,9 +34,28 @@ type ResourceDraft = {
   file: File | null;
 };
 
+function getResourceType(value: string): ResourceType {
+  if (value === "video" || value === "document" || value === "external_link") return value;
+  return "text";
+}
+
 function getSupplementType(value: string): SupplementType {
   if (value === "video" || value === "document") return value;
   return "external_link";
+}
+
+function emptyResourceDraft(resource_type: SupplementType): ResourceDraft {
+  return {
+    title: "",
+    resource_type,
+    external_url: "",
+    file_path: null,
+    file_name: null,
+    file_size: null,
+    description: "",
+    duration_minutes: "",
+    file: null,
+  };
 }
 
 export function CourseForm({
@@ -79,15 +101,11 @@ export function CourseForm({
   const [difficulty, setDifficulty] = useState(course?.difficulty ?? "");
   const [preview, setPreview] = useState(course?.preview ?? "");
   const [body, setBody] = useState(course?.body ?? "");
-  const [resourceType, setResourceType] = useState<ResourceType>(
-    course?.resource_type === "external_link" ||
-      course?.resource_type === "document" ||
-      course?.resource_type === "video"
-      ? course.resource_type
-      : "text",
+  const [selectedFormats, setSelectedFormats] = useState<ResourceType[]>(
+    course?.resource_formats?.length
+      ? course.resource_formats.map(getResourceType)
+      : [getResourceType(course?.resource_type ?? "text")],
   );
-  const [externalUrl, setExternalUrl] = useState(course?.external_url ?? "");
-  const [file, setFile] = useState<File | null>(null);
   const [resources, setResources] = useState<ResourceDraft[]>([]);
   const [cls, setCls] = useState<Classification>({
     level_id: course?.level_id ?? "",
@@ -101,19 +119,40 @@ export function CourseForm({
   useEffect(() => {
     if (resourcesQuery.data) {
       setResources(
-        resourcesQuery.data.map((resource: CourseResource) => ({
-          author_id: resource.author_id,
-          id: resource.id,
-          title: resource.title,
-          resource_type: getSupplementType(resource.resource_type),
-          external_url: resource.external_url ?? "",
-          file_path: resource.file_path,
-          file_name: resource.file_name,
-          file: null,
-        })),
+        [
+          ...(course && course.resource_type !== "text" && (course.file_path || course.external_url)
+            ? [
+                {
+                  author_id: course.author_id,
+                  title: course.file_name || course.title,
+                  resource_type: getSupplementType(course.resource_type),
+                  external_url: course.external_url ?? "",
+                  file_path: course.file_path,
+                  file_name: course.file_name,
+                  file_size: course.file_size,
+                  description: "",
+                  duration_minutes: "",
+                  file: null,
+                },
+              ]
+            : []),
+          ...resourcesQuery.data.map((resource: CourseResource) => ({
+            author_id: resource.author_id,
+            id: resource.id,
+            title: resource.title,
+            resource_type: getSupplementType(resource.resource_type),
+            external_url: resource.external_url ?? "",
+            file_path: resource.file_path,
+            file_name: resource.file_name,
+            file_size: resource.file_size,
+            description: resource.description ?? "",
+            duration_minutes: resource.duration_minutes?.toString() ?? "",
+            file: null,
+          })),
+        ].map((resource) => ({ ...resource, file: null })),
       );
     }
-  }, [resourcesQuery.data]);
+  }, [resourcesQuery.data, course]);
   const isVerified = me?.profile?.teacher_verification_status === "approved" || me?.isAdmin;
 
   if (cat.isLoading || resourcesQuery.isLoading || (!me?.isAdmin && (!me || permissions.isLoading)))
@@ -147,6 +186,10 @@ export function CourseForm({
       toast.error(t("content.descriptionWordCount"));
       return;
     }
+    if (selectedFormats.length === 0) {
+      toast.error(t("content.courseFormatRequired"));
+      return;
+    }
     if (
       !learningObjectives.length ||
       !learningSkills.length ||
@@ -159,30 +202,20 @@ export function CourseForm({
       toast.error(t("content.pedagogyRequired"));
       return;
     }
-    if (resourceType === "external_link" && !isSecureExternalUrl(externalUrl.trim())) {
-      toast.error(errMsg("URL_HTTPS_REQUIRED"));
-      return;
-    }
-    if (resourceType === "video" && !isSecureExternalUrl(externalUrl.trim())) {
-      toast.error(errMsg("URL_HTTPS_REQUIRED"));
-      return;
-    }
-    if (resourceType === "text" && !body.trim()) {
+    if (selectedFormats.includes("text") && !body.trim()) {
       toast.error(t("content.bodyRequired"));
       return;
     }
-    if (resourceType === "document") {
-      const fileError = file
-        ? validateCourseFile(file)
-        : course?.file_path
-          ? null
-          : "FILE_REQUIRED";
-      if (fileError) {
-        toast.error(errMsg(fileError));
+    for (const format of selectedFormats) {
+      if (format === "text") continue;
+      if (!resources.some((resource) => resource.resource_type === format)) {
+        toast.error(t("content.formatResourceRequired"));
         return;
       }
     }
-    for (const resource of resources) {
+    for (const resource of resources.filter((entry) =>
+      selectedFormats.includes(entry.resource_type),
+    )) {
       if (!resource.title.trim() || resource.title.trim().length > 160) {
         toast.error(t("content.resourceTitleRequired"));
         return;
@@ -190,6 +223,16 @@ export function CourseForm({
       if (resource.resource_type === "external_link" || resource.resource_type === "video") {
         if (!isSecureExternalUrl(resource.external_url.trim())) {
           toast.error(errMsg("URL_HTTPS_REQUIRED"));
+          return;
+        }
+        if (
+          resource.resource_type === "video" &&
+          resource.duration_minutes &&
+          (!Number.isInteger(Number(resource.duration_minutes)) ||
+            Number(resource.duration_minutes) < 1 ||
+            Number(resource.duration_minutes) > 1440)
+        ) {
+          toast.error(t("content.videoDurationInvalid"));
           return;
         }
       } else {
@@ -206,20 +249,6 @@ export function CourseForm({
     }
     setBusy(true);
     const oldPath = course?.file_path ?? null;
-    let filePath = resourceType === "document" ? oldPath : null;
-    let fileName = resourceType === "document" ? (course?.file_name ?? null) : null;
-    if (resourceType === "document" && file) {
-      filePath = `${me.user.id}/courses/${crypto.randomUUID()}.pdf`;
-      fileName = file.name;
-      const upload = await supabase.storage
-        .from("course-files")
-        .upload(filePath, file, { contentType: "application/pdf" });
-      if (upload.error) {
-        setBusy(false);
-        toast.error(errMsg(upload.error));
-        return;
-      }
-    }
     const row = {
       title: title.trim(),
       summary: summary.trim() || null,
@@ -230,17 +259,18 @@ export function CourseForm({
       duration_minutes: duration,
       difficulty,
       preview: preview.trim(),
-      body,
+      body: selectedFormats.includes("text") ? body : "",
       level_id: cls.level_id,
       track_id: cls.track_id || null,
       subject_id: cls.subject_id,
       chapter_id: cls.chapter_id || null,
       topic_id: cls.topic_id || null,
-      resource_type: resourceType,
-      external_url:
-        resourceType === "external_link" || resourceType === "video" ? externalUrl.trim() : null,
-      file_path: filePath,
-      file_name: fileName,
+      resource_type: "text",
+      resource_formats: selectedFormats,
+      external_url: null,
+      file_path: null,
+      file_name: null,
+      file_size: null,
       status,
       ...(me.isAdmin ? { review_status: "none" as const } : {}),
     };
@@ -249,10 +279,6 @@ export function CourseForm({
       const res = await supabase.from("courses").update(row).eq("id", course.id);
       if (res.error) {
         setBusy(false);
-        if (file && filePath && filePath !== oldPath) {
-          const cleanup = await supabase.storage.from("course-files").remove([filePath]);
-          if (cleanup.error) toast.error(errMsg(cleanup.error));
-        }
         toast.error(errMsg(res.error));
         return;
       }
@@ -264,10 +290,6 @@ export function CourseForm({
         .single();
       if (res.error) {
         setBusy(false);
-        if (file && filePath) {
-          const cleanup = await supabase.storage.from("course-files").remove([filePath]);
-          if (cleanup.error) toast.error(errMsg(cleanup.error));
-        }
         toast.error(errMsg(res.error));
         return;
       }
@@ -281,13 +303,17 @@ export function CourseForm({
 
     const newResourcePaths: string[] = [];
     const resourceRows = [];
-    for (const [index, resource] of resources.entries()) {
+    for (const [index, resource] of resources
+      .filter((entry) => selectedFormats.includes(entry.resource_type))
+      .entries()) {
       let resourcePath = resource.file_path;
       let resourceFileName = resource.file_name;
+      let resourceFileSize = resource.file_size;
       if (resource.resource_type === "document" && resource.file) {
         const resourceOwnerId = resource.author_id ?? course?.author_id ?? me.user.id;
         resourcePath = `${resourceOwnerId}/courses/${crypto.randomUUID()}.pdf`;
         resourceFileName = resource.file.name;
+        resourceFileSize = resource.file.size;
         const upload = await supabase.storage
           .from("course-files")
           .upload(resourcePath, resource.file, {
@@ -309,13 +335,19 @@ export function CourseForm({
         course_id: savedCourseId,
         author_id: resource.author_id ?? course?.author_id ?? me.user.id,
         title: resource.title.trim(),
+        description: resource.description.trim() || null,
         resource_type: resource.resource_type,
+        duration_minutes:
+          resource.resource_type === "video" && resource.duration_minutes
+            ? Number(resource.duration_minutes)
+            : null,
         external_url:
           resource.resource_type === "external_link" || resource.resource_type === "video"
             ? resource.external_url.trim()
             : null,
         file_path: resource.resource_type === "document" ? resourcePath : null,
         file_name: resource.resource_type === "document" ? resourceFileName : null,
+        file_size: resource.resource_type === "document" ? resourceFileSize : null,
         sort_order: index,
       });
     }
@@ -340,7 +372,7 @@ export function CourseForm({
       }
     }
     const retainedIds = new Set(
-      resources.flatMap((resource) => (resource.id ? [resource.id] : [])),
+      resourceRows.flatMap((resource) => (resource.id ? [resource.id] : [])),
     );
     const removedResources = previousResources.filter((resource) => !retainedIds.has(resource.id));
     for (const resource of removedResources) {
@@ -356,7 +388,10 @@ export function CourseForm({
       }
     }
     setBusy(false);
-    if (oldPath && oldPath !== filePath) {
+    const retainedFilePaths = new Set(
+      resourceRows.flatMap((resource) => (resource.file_path ? [resource.file_path] : [])),
+    );
+    if (oldPath && !retainedFilePaths.has(oldPath)) {
       const cleanup = await supabase.storage.from("course-files").remove([oldPath]);
       if (cleanup.error) toast.error(errMsg(cleanup.error));
     }
@@ -393,19 +428,50 @@ export function CourseForm({
         />
       </Field>
       <ClassificationFields c={formCatalog} value={cls} onChange={setCls} />
-      <Field label={t("content.resourceType")} htmlFor="c-resource-type">
-        <select
-          id="c-resource-type"
-          className="h-10 rounded-md border border-input bg-background px-3 text-sm"
-          value={resourceType}
-          onChange={(event) => setResourceType(event.target.value as ResourceType)}
-        >
-          <option value="text">{t("content.textLesson")}</option>
-          <option value="external_link">{t("content.externalLink")}</option>
-          <option value="video">{t("content.video")}</option>
-          <option value="document">{t("content.document")}</option>
-        </select>
-      </Field>
+      <section className="space-y-3 rounded-xl border border-border p-4">
+        <div>
+          <h2 className="font-semibold text-heading">{t("content.courseFormats")}</h2>
+          <p className="mt-1 text-sm text-muted-foreground">{t("content.courseFormatsHint")}</p>
+        </div>
+        <div className="grid gap-2 sm:grid-cols-2">
+          {(
+            [
+              ["text", "content.textLesson"],
+              ["document", "content.document"],
+              ["video", "content.video"],
+              ["external_link", "content.externalLink"],
+            ] as const
+          ).map(([format, label]) => (
+            <label
+              key={format}
+              className="flex min-h-11 cursor-pointer items-center gap-3 rounded-lg border border-border bg-background px-3 py-2 text-sm font-medium text-heading transition-colors hover:border-brand/50"
+            >
+              <input
+                type="checkbox"
+                checked={selectedFormats.includes(format)}
+                onChange={(event) => {
+                  if (event.target.checked && format !== "text") {
+                    setResources((current) =>
+                      current.some((resource) => resource.resource_type === format)
+                        ? current
+                        : [...current, emptyResourceDraft(format)],
+                    );
+                  }
+                  setSelectedFormats((current) =>
+                    event.target.checked && !current.includes(format)
+                      ? [...current, format]
+                      : event.target.checked
+                        ? current
+                        : current.filter((entry) => entry !== format),
+                  );
+                }}
+                className="h-4 w-4 accent-primary"
+              />
+              {t(label)}
+            </label>
+          ))}
+        </div>
+      </section>
       <Field label={t("form.summary")} htmlFor="c-summary">
         <Textarea
           id="c-summary"
@@ -498,22 +564,24 @@ export function CourseForm({
           onChange={(event) => setPreview(event.target.value)}
         />
       </Field>
-      {resourceType === "text" && (
+      {selectedFormats.includes("text") && (
         <Field label={t("form.body")} htmlFor="c-body">
           <div
             className="flex flex-wrap gap-2"
             role="toolbar"
             aria-label={t("content.editorTools")}
           >
-            {[
-              ["H2", "## ", ""],
-              ["B", "**", "**"],
-              ["I", "*", "*"],
-              ["•", "- ", ""],
-              ["1.", "1. ", ""],
-              ["Lien", "[", "](https://)"],
-              ["ƒx", "$$", "$$"],
-            ].map(([label, before, after]) => (
+            {(
+              [
+                ["H2", "## ", ""],
+                ["B", "**", "**"],
+                ["I", "*", "*"],
+                ["•", "- ", ""],
+                ["1.", "1. ", ""],
+                ["Lien", "[", "](https://)"],
+                ["ƒx", "$$", "$$"],
+              ] as const
+            ).map(([label, before, after]) => (
               <Button
                 key={label}
                 type="button"
@@ -553,171 +621,196 @@ export function CourseForm({
           </p>
         </Field>
       )}
-      {(resourceType === "external_link" || resourceType === "video") && (
-        <Field label={t("content.externalUrl")} htmlFor="c-external-url">
-          <Input
-            id="c-external-url"
-            type="url"
-            required
-            pattern="https://.*"
-            placeholder="https://..."
-            value={externalUrl}
-            onChange={(event) => setExternalUrl(event.target.value)}
-          />
-        </Field>
-      )}
-      {resourceType === "document" && (
-        <Field label={t("form.file")} htmlFor="c-file" hint={t("form.fileHint")}>
-          <Input
-            id="c-file"
-            type="file"
-            accept="application/pdf,.pdf"
-            required={!course?.file_path}
-            onChange={(event) => setFile(event.target.files?.[0] ?? null)}
-          />
-          {course?.file_name && (
-            <p className="mt-1 text-xs text-muted-foreground">{course.file_name}</p>
-          )}
-        </Field>
-      )}
-      <section className="space-y-4 rounded-xl border border-border p-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h2 className="font-semibold text-heading">{t("content.supplementaryResources")}</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {t("content.supplementaryResourcesHint")}
-            </p>
+      {selectedFormats.some((format) => format !== "text") && (
+        <section className="space-y-4 rounded-xl border border-border p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="font-semibold text-heading">{t("content.courseResources")}</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {t("content.courseResourcesHint")}
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {selectedFormats
+                .filter((format): format is SupplementType => format !== "text")
+                .map((format) => (
+                  <Button
+                    key={format}
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      setResources((current) => [...current, emptyResourceDraft(format)])
+                    }
+                  >
+                    {t("content.addResource")} ·{" "}
+                    {t(
+                      format === "document"
+                        ? "content.document"
+                        : format === "video"
+                          ? "content.video"
+                          : "content.externalLink",
+                    )}
+                  </Button>
+                ))}
+            </div>
           </div>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() =>
-              setResources((current) => [
-                ...current,
-                {
-                  title: "",
-                  resource_type: "external_link",
-                  external_url: "",
-                  file_path: null,
-                  file_name: null,
-                  file: null,
-                },
-              ])
-            }
-          >
-            {t("content.addResource")}
-          </Button>
-        </div>
-        {resources.map((resource, index) => (
-          <div
-            key={resource.id ?? `new-${index}`}
-            className="grid gap-4 rounded-lg bg-muted/40 p-4"
-          >
-            <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_200px]">
-              <Field label={t("content.resourceTitle")} htmlFor={`c-resource-title-${index}`}>
-                <Input
-                  id={`c-resource-title-${index}`}
-                  required
-                  maxLength={160}
-                  value={resource.title}
-                  onChange={(event) =>
-                    setResources((current) =>
-                      current.map((entry, entryIndex) =>
-                        entryIndex === index ? { ...entry, title: event.target.value } : entry,
-                      ),
-                    )
-                  }
-                />
-              </Field>
-              <Field label={t("content.resourceType")} htmlFor={`c-resource-type-${index}`}>
-                <select
-                  id={`c-resource-type-${index}`}
-                  className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-                  value={resource.resource_type}
-                  onChange={(event) =>
-                    setResources((current) =>
-                      current.map((entry, entryIndex) =>
-                        entryIndex === index
-                          ? {
-                              ...entry,
-                              resource_type: getSupplementType(event.target.value),
-                              file_path: null,
-                              file_name: null,
-                              file: null,
-                              external_url: "",
-                            }
-                          : entry,
-                      ),
-                    )
-                  }
+          {resources
+            .filter((entry) => selectedFormats.includes(entry.resource_type))
+            .map((resource) => {
+              const index = resources.indexOf(resource);
+              return (
+                <div
+                  key={resource.id ?? `new-${index}`}
+                  className="grid gap-4 rounded-lg bg-muted/40 p-4"
                 >
-                  <option value="external_link">{t("content.externalLink")}</option>
-                  <option value="video">{t("content.video")}</option>
-                  <option value="document">{t("content.document")}</option>
-                </select>
-              </Field>
-            </div>
-            {resource.resource_type === "document" ? (
-              <Field
-                label={t("form.file")}
-                htmlFor={`c-resource-file-${index}`}
-                hint={t("form.fileHint")}
-              >
-                <Input
-                  id={`c-resource-file-${index}`}
-                  type="file"
-                  accept="application/pdf,.pdf"
-                  required={!resource.file_path}
-                  onChange={(event) =>
-                    setResources((current) =>
-                      current.map((entry, entryIndex) =>
-                        entryIndex === index
-                          ? { ...entry, file: event.target.files?.[0] ?? null }
-                          : entry,
-                      ),
-                    )
-                  }
-                />
-                {resource.file_name && (
-                  <p className="mt-1 text-xs text-muted-foreground">{resource.file_name}</p>
-                )}
-              </Field>
-            ) : (
-              <Field label={t("content.externalUrl")} htmlFor={`c-resource-url-${index}`}>
-                <Input
-                  id={`c-resource-url-${index}`}
-                  type="url"
-                  required
-                  pattern="https://.*"
-                  placeholder="https://..."
-                  value={resource.external_url}
-                  onChange={(event) =>
-                    setResources((current) =>
-                      current.map((entry, entryIndex) =>
-                        entryIndex === index
-                          ? { ...entry, external_url: event.target.value }
-                          : entry,
-                      ),
-                    )
-                  }
-                />
-              </Field>
-            )}
-            <div className="flex justify-end">
-              <Button
-                type="button"
-                variant="ghost"
-                className="text-destructive hover:text-destructive"
-                onClick={() =>
-                  setResources((current) => current.filter((_, entryIndex) => entryIndex !== index))
-                }
-              >
-                {t("content.removeResource")}
-              </Button>
-            </div>
-          </div>
-        ))}
-      </section>
+                  <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_200px]">
+                    <Field label={t("content.resourceTitle")} htmlFor={`c-resource-title-${index}`}>
+                      <Input
+                        id={`c-resource-title-${index}`}
+                        required
+                        maxLength={160}
+                        value={resource.title}
+                        onChange={(event) =>
+                          setResources((current) =>
+                            current.map((entry, entryIndex) =>
+                              entryIndex === index
+                                ? { ...entry, title: event.target.value }
+                                : entry,
+                            ),
+                          )
+                        }
+                      />
+                    </Field>
+                    <p className="self-end pb-3 text-sm font-semibold text-deep">
+                      {t(
+                        resource.resource_type === "document"
+                          ? "content.document"
+                          : resource.resource_type === "video"
+                            ? "content.video"
+                            : "content.externalLink",
+                      )}
+                    </p>
+                  </div>
+                  {resource.resource_type === "document" ? (
+                    <Field
+                      label={t("form.file")}
+                      htmlFor={`c-resource-file-${index}`}
+                      hint={t("form.fileHint")}
+                    >
+                      <Input
+                        id={`c-resource-file-${index}`}
+                        type="file"
+                        accept="application/pdf,.pdf"
+                        required={!resource.file_path}
+                        onChange={(event) =>
+                          setResources((current) =>
+                            current.map((entry, entryIndex) =>
+                              entryIndex === index
+                                ? {
+                                    ...entry,
+                                    file: event.target.files?.[0] ?? null,
+                                    file_name: event.target.files?.[0]?.name ?? entry.file_name,
+                                    file_size: event.target.files?.[0]?.size ?? entry.file_size,
+                                  }
+                                : entry,
+                            ),
+                          )
+                        }
+                      />
+                      {resource.file_name && (
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {resource.file_name}
+                          {resource.file_size
+                            ? ` · ${(resource.file_size / (1024 * 1024)).toFixed(2)} MB`
+                            : ""}
+                        </p>
+                      )}
+                    </Field>
+                  ) : (
+                    <Field label={t("content.externalUrl")} htmlFor={`c-resource-url-${index}`}>
+                      <Input
+                        id={`c-resource-url-${index}`}
+                        type="url"
+                        required
+                        pattern="https://.*"
+                        placeholder="https://..."
+                        value={resource.external_url}
+                        onChange={(event) =>
+                          setResources((current) =>
+                            current.map((entry, entryIndex) =>
+                              entryIndex === index
+                                ? { ...entry, external_url: event.target.value }
+                                : entry,
+                            ),
+                          )
+                        }
+                      />
+                    </Field>
+                  )}
+                  {resource.resource_type === "video" && (
+                    <Field
+                      label={t("content.videoDuration")}
+                      htmlFor={`c-resource-duration-${index}`}
+                    >
+                      <Input
+                        id={`c-resource-duration-${index}`}
+                        type="number"
+                        min={1}
+                        max={1440}
+                        step={1}
+                        value={resource.duration_minutes}
+                        onChange={(event) =>
+                          setResources((current) =>
+                            current.map((entry, entryIndex) =>
+                              entryIndex === index
+                                ? { ...entry, duration_minutes: event.target.value }
+                                : entry,
+                            ),
+                          )
+                        }
+                      />
+                    </Field>
+                  )}
+                  <Field
+                    label={t("content.resourceDescription")}
+                    htmlFor={`c-resource-description-${index}`}
+                  >
+                    <Textarea
+                      id={`c-resource-description-${index}`}
+                      rows={2}
+                      maxLength={500}
+                      value={resource.description}
+                      onChange={(event) =>
+                        setResources((current) =>
+                          current.map((entry, entryIndex) =>
+                            entryIndex === index
+                              ? { ...entry, description: event.target.value }
+                              : entry,
+                          ),
+                        )
+                      }
+                    />
+                  </Field>
+                  <div className="flex justify-end">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="text-destructive hover:text-destructive"
+                      onClick={() =>
+                        setResources((current) =>
+                          current.filter((_, entryIndex) => entryIndex !== index),
+                        )
+                      }
+                    >
+                      {t("content.removeResource")}
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
+        </section>
+      )}
       <div className="flex flex-wrap justify-end gap-3">
         <Button
           type="button"

@@ -57,10 +57,12 @@ vi.mock("@tanstack/react-query", () => ({
           subjects: [
             { id: "math", name_fr: "Mathématiques", name_ht: "Matematik", icon: null },
             { id: "english", name_fr: "Anglais", name_ht: "Anglè", icon: null },
+            { id: "arts", name_fr: "Arts", name_ht: "Atizay", icon: "palette" },
           ],
           levelSubjects: [
             { level_id: "term", subject_id: "math" },
             { level_id: "term", subject_id: "english" },
+            { level_id: "term", subject_id: "arts" },
           ],
           trackSubjects: [],
           chapters: [{ id: "geometry", name_fr: "Géométrie", name_ht: "Jewometri" }],
@@ -183,6 +185,7 @@ describe("student progress", () => {
     expect(screen.getByText("Favoris").parentElement).toHaveTextContent("3");
     expect(screen.getAllByText("Mathématiques").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Anglais").length).toBeGreaterThan(0);
+    expect(screen.getByRole("progressbar", { name: "Arts" })).toHaveAttribute("aria-valuenow", "0");
     expect(screen.getAllByText("Réussi").length).toBeGreaterThan(0);
     expect(screen.getAllByText("À renforcer").length).toBeGreaterThan(0);
 

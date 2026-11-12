@@ -144,13 +144,15 @@ vi.mock("@/lib/i18n", () => ({
         "progress.completedCourses": "Cours terminés",
         "progress.favorites": "Favoris",
         "progress.bySubject": "Vos performances par matière",
+        "progress.viewSubjectDetails": "Voir le détail",
+        "progress.noScoreYet": "—",
         "progress.encouragementTitle": "Continuez comme ça !",
         "progress.encouragementBody": "Vous progressez bien.",
         "progress.viewQuizzes": "Voir les quiz",
         "progress.recentResults": "Derniers résultats",
         "progress.quizType": "Quiz",
         "progress.passed": "Réussi",
-        "progress.needsReview": "À renforcer",
+        "progress.needsReview": "À améliorer",
         "progress.personalizedAdvice": "Conseils personnalisés",
         "progress.adviceNoAttempts": "Commencez un quiz.",
         "progress.adviceLowScore": "Révisez {subject}.",
@@ -158,6 +160,7 @@ vi.mock("@/lib/i18n", () => ({
         "progress.detailedHistory": "Historique détaillé",
         "progress.detailedHistoryHint": "Réponses et explications.",
         "progress.viewAnswers": "Voir les réponses",
+        "progress.viewAllAnswers": "Voir toutes vos réponses",
         "progress.hideAnswers": "Masquer les réponses",
         "quiz.noAttempts": "Aucun quiz terminé.",
         "quiz.historyUnavailable": "Historique indisponible.",
@@ -185,11 +188,15 @@ describe("student progress", () => {
     expect(screen.getByText("Favoris").parentElement).toHaveTextContent("3");
     expect(screen.getAllByText("Mathématiques").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Anglais").length).toBeGreaterThan(0);
-    expect(screen.getByRole("progressbar", { name: "Arts" })).toHaveAttribute("aria-valuenow", "0");
+    const artsProgress = screen.getByRole("progressbar", { name: "Arts" });
+    expect(artsProgress).toHaveAttribute("aria-valuenow", "0");
+    const artsRow = artsProgress.parentElement;
+    expect(artsRow).toHaveTextContent("—");
+    expect(artsRow).not.toHaveTextContent("0%");
     expect(screen.getAllByText("Réussi").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("À renforcer").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("À améliorer").length).toBeGreaterThan(0);
 
-    fireEvent.click(screen.getAllByRole("button", { name: "Voir les réponses" })[0]!);
+    fireEvent.click(screen.getAllByRole("button", { name: "Voir toutes vos réponses" })[0]!);
     expect(screen.getByText("1. Question 1")).toBeInTheDocument();
     expect(screen.getByText("Explication 1")).toBeInTheDocument();
   });

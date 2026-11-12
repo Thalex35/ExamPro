@@ -7,6 +7,7 @@ import {
   CalendarDays,
   ChartNoAxesColumnIncreasing,
   CheckCircle2,
+  ClipboardCheck,
   CircleCheck,
   Lightbulb,
   Play,
@@ -131,16 +132,24 @@ function ProgressPage() {
     });
 
   return (
-    <div className="space-y-6 sm:space-y-8">
-      <header className="flex items-center gap-4">
-        <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-accent text-accent-foreground">
-          <ChartNoAxesColumnIncreasing className="h-7 w-7" aria-hidden="true" />
+    <div className="relative isolate space-y-4 overflow-hidden sm:space-y-5">
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute -right-24 -top-32 -z-10 h-80 w-80 rounded-full border-[2.5rem] border-sky-100/60 dark:border-sky-900/20"
+      />
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute -bottom-36 -left-28 -z-10 h-72 w-72 rounded-full border-[2rem] border-blue-100/50 dark:border-blue-900/20"
+      />
+      <header className="relative z-10 flex items-center gap-3">
+        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-sky-100 text-sky-600 dark:bg-sky-400/10 dark:text-sky-300">
+          <ChartNoAxesColumnIncreasing className="h-6 w-6" aria-hidden="true" />
         </span>
         <div>
-          <h1 className="text-2xl font-extrabold tracking-tight text-heading sm:text-3xl">
+          <h1 className="text-[1.35rem] font-extrabold leading-tight tracking-tight text-heading sm:text-2xl">
             {t("dash.performance")}
           </h1>
-          <p className="mt-1 text-sm text-muted-foreground sm:text-base">
+          <p className="mt-0.5 text-xs text-muted-foreground sm:text-sm">
             {t("progress.subtitle")}
           </p>
         </div>
@@ -148,7 +157,7 @@ function ProgressPage() {
 
       <section
         aria-label={t("progress.statistics")}
-        className="grid gap-3 sm:grid-cols-2 2xl:grid-cols-4"
+        className="relative z-10 grid grid-cols-1 gap-3 min-[480px]:grid-cols-2 lg:grid-cols-4"
       >
         <StatCard
           icon={Trophy}
@@ -171,167 +180,121 @@ function ProgressPage() {
         <StatCard icon={Star} label={t("progress.favorites")} value={favoriteCount} tone="amber" />
       </section>
 
-      <div className="grid items-stretch gap-4 xl:grid-cols-[minmax(0,1.55fr)_minmax(19rem,0.95fr)]">
-        <section className="card-surface p-5 sm:p-6" aria-labelledby="subject-performance-heading">
-          <div className="mb-5 flex items-center gap-3">
-            <ChartNoAxesColumnIncreasing className="h-5 w-5 text-brand" aria-hidden="true" />
-            <h2 id="subject-performance-heading" className="text-lg font-bold text-heading">
+      <section
+        className="card-surface relative z-10 overflow-hidden"
+        aria-labelledby="subject-performance-heading"
+      >
+        <div className="flex min-h-11 items-center justify-between gap-3 border-b border-border px-4 sm:px-5">
+          <div className="flex min-w-0 items-center gap-3">
+            <ChartNoAxesColumnIncreasing
+              className="h-5 w-5 shrink-0 text-brand"
+              aria-hidden="true"
+            />
+            <h2
+              id="subject-performance-heading"
+              className="truncate text-base font-bold text-heading sm:text-lg"
+            >
               {t("progress.bySubject")}
             </h2>
           </div>
-          {subjectStats.length === 0 ? (
-            <Empty>{t("progress.noSubjects")}</Empty>
-          ) : (
-            <ul className="space-y-1">
-              {subjectStats.map(({ subject, average, count }) => {
-                const SubjectIcon = subjectIcons[subject.icon ?? ""] ?? BookOpen;
-                return (
-                  <li key={subject.id}>
-                    <a
-                      href={average === null ? undefined : `#subject-results-${subject.id}`}
-                      aria-disabled={average === null || undefined}
-                      className="group grid min-h-14 grid-cols-[2.5rem_minmax(0,1fr)_auto] items-center gap-3 rounded-xl px-1 transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    >
-                      <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent text-accent-foreground">
-                        <SubjectIcon className="h-5 w-5" aria-hidden="true" />
-                      </span>
-                      <span className="truncate text-sm font-medium text-heading">
-                        {name(subject)}
-                      </span>
-                      <span className="inline-flex items-center gap-3">
-                        <span className="w-8 text-right text-sm font-medium text-heading">
-                          {average === null ? t("progress.noScoreYet") : `${average}%`}
-                        </span>
-                        <span
-                          role="progressbar"
-                          aria-label={name(subject)}
-                          aria-valuemin={0}
-                          aria-valuemax={100}
-                          aria-valuenow={average ?? 0}
-                          className="h-1.5 w-12 overflow-hidden rounded-full bg-muted"
-                        >
-                          <span
-                            className="block h-full rounded-full bg-primary transition-[width]"
-                            style={{ width: `${average ?? 0}%` }}
-                          />
-                        </span>
-                      </span>
-                      {count > 0 && (
-                        <span className="sr-only">
-                          {count} {t("progress.completedQuizzes")}
-                        </span>
-                      )}
-                    </a>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </section>
-
-        <section className="card-surface flex min-h-60 flex-col items-center justify-center rounded-2xl border-sky-100 bg-gradient-to-br from-sky-100 via-blue-50 to-blue-100 p-4 text-center dark:border-sky-900 dark:from-sky-950/70 dark:via-blue-950/55 dark:to-indigo-950/70 sm:p-5">
-          <EncouragementIllustration />
-          <h2 className="mt-1 text-lg font-extrabold text-heading">
-            {t("progress.encouragementTitle")}
-          </h2>
-          <p className="mt-1 max-w-xs text-sm leading-5 text-muted-foreground">
-            {t("progress.encouragementBody")}
-          </p>
-          <Button
-            asChild
-            className="mt-3 h-9 rounded-full bg-slate-950 px-5 text-white hover:bg-slate-800 dark:bg-sky-100 dark:text-slate-950 dark:hover:bg-white"
+          <Link
+            to="/subjects"
+            className="inline-flex h-7 shrink-0 items-center gap-1 rounded-full border border-blue-100 bg-blue-50 px-3 text-[11px] font-semibold text-blue-700 transition-colors hover:bg-blue-100 dark:border-blue-900 dark:bg-blue-950/50 dark:text-sky-300 dark:hover:bg-blue-950"
           >
-            <Link to="/evaluations">
-              <Play className="mr-2 h-4 w-4 fill-current" aria-hidden="true" />
-              {t("progress.viewQuizzes")}
-              <ArrowRight className="ml-2 h-4 w-4" aria-hidden="true" />
-            </Link>
-          </Button>
-        </section>
-      </div>
-
-      <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(19rem,1fr)]">
-        <section className="card-surface overflow-hidden" aria-labelledby="recent-results-heading">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border p-4 sm:px-5">
-            <h2
-              id="recent-results-heading"
-              className="flex items-center gap-2 text-lg font-bold text-heading"
-            >
-              <Trophy className="h-5 w-5 text-brand" aria-hidden="true" />
-              {t("progress.recentResults")}
-            </h2>
-            {quizAttempts.length > 3 && (
-              <button
-                type="button"
-                className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline"
-                onClick={() => setShowAllResults((value) => !value)}
-              >
-                {t(showAllResults ? "progress.showRecent" : "progress.viewAll")}
-                <ArrowRight className="h-4 w-4" aria-hidden="true" />
-              </button>
-            )}
+            {t("progress.viewSubjectDetails")}
+            <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+          </Link>
+        </div>
+        {subjectStats.length === 0 ? (
+          <div className="p-4">
+            <Empty>{t("progress.noSubjects")}</Empty>
           </div>
-          {quizAttempts.length === 0 ? (
-            <div className="p-5">
-              <Empty>{t("quiz.noAttempts")}</Empty>
-            </div>
-          ) : (
-            <ul className="divide-y divide-border">
-              {resultsToShow.map((attempt) => {
-                const subject = catalog.data.subjects.find(
-                  (item) => item.id === attempt.subject_id,
-                );
-                const chapter = catalog.data.chapters.find(
-                  (item) => item.id === attempt.chapter_id,
-                );
-                const passed = attempt.score >= PASSING_SCORE;
-                return (
-                  <li key={attempt.id} className="p-4 sm:px-5">
-                    <div className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1">
-                      <span className="min-w-0 flex-1 text-sm font-semibold text-heading">
-                        {t("progress.quizType")}
-                        {subject ? ` · ${name(subject)}` : ""}
-                        {chapter ? ` · ${name(chapter)}` : ""}
-                      </span>
-                      <span className="font-bold text-heading">
-                        {attempt.correct_count}/{attempt.total_questions}
-                      </span>
-                      <span className="font-bold text-primary">{attempt.score}%</span>
+        ) : (
+          <ul className="divide-y divide-blue-50 dark:divide-slate-800">
+            {subjectStats.map(({ subject, average, count }) => {
+              const SubjectIcon = subjectIcons[subject.icon ?? ""] ?? BookOpen;
+              return (
+                <li key={subject.id} className="px-4 sm:px-5">
+                  <a
+                    href={average === null ? undefined : `#subject-results-${subject.id}`}
+                    aria-disabled={average === null || undefined}
+                    className="group grid min-h-[1.875rem] grid-cols-[2rem_minmax(0,1fr)_2.5rem_3.5rem] items-center gap-2 sm:grid-cols-[2rem_minmax(0,1fr)_2.75rem_5.7rem] sm:gap-3"
+                  >
+                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-sky-100 text-blue-600 dark:bg-sky-400/10 dark:text-sky-300">
+                      <SubjectIcon className="h-4 w-4" aria-hidden="true" />
+                    </span>
+                    <span className="truncate text-[13px] font-medium text-heading">
+                      {name(subject)}
+                    </span>
+                    <span className="w-10 text-right text-xs font-semibold text-heading sm:w-12 sm:text-sm">
+                      {average === null ? t("progress.noScoreYet") : `${average}%`}
+                    </span>
+                    <span
+                      role="progressbar"
+                      aria-label={name(subject)}
+                      aria-valuemin={0}
+                      aria-valuemax={100}
+                      aria-valuenow={average ?? 0}
+                      className="h-2 w-full overflow-hidden rounded-full bg-slate-200/80 dark:bg-slate-700"
+                    >
                       <span
-                        className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
-                          passed
-                            ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
-                            : "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200"
-                        }`}
-                      >
-                        {t(passed ? "progress.passed" : "progress.needsReview")}
+                        className="block h-full rounded-full bg-heading transition-[width]"
+                        style={{ width: `${average ?? 0}%` }}
+                      />
+                    </span>
+                    {count > 0 && (
+                      <span className="sr-only">
+                        {count} {t("progress.completedQuizzes")}
                       </span>
-                    </div>
-                    <QuizAttemptReview
-                      attemptId={attempt.id}
-                      createdAt={attempt.created_at}
-                      score={attempt.score}
-                      correctCount={attempt.correct_count}
-                      totalQuestions={attempt.total_questions}
-                      lang={lang}
-                      t={t}
-                      formatDate={formatDate}
-                    />
-                  </li>
-                );
-              })}
-            </ul>
-          )}
+                    )}
+                  </a>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
+
+      <div className="relative z-10 grid gap-4 md:grid-cols-2">
+        <section className="card-surface relative isolate grid min-h-[8.5rem] grid-cols-[minmax(7rem,0.8fr)_minmax(0,1.2fr)] items-center overflow-hidden border-blue-100 bg-gradient-to-br from-sky-100 via-blue-50 to-cyan-50 p-3 dark:border-sky-900 dark:from-sky-950/70 dark:via-blue-950/55 dark:to-indigo-950/70 sm:px-4">
+          <span
+            aria-hidden="true"
+            className="absolute -bottom-14 -right-12 -z-10 h-36 w-36 rounded-full border-[1.2rem] border-sky-200/40 dark:border-sky-700/20"
+          />
+          <EncouragementIllustration />
+          <div className="min-w-0 py-1">
+            <h2 className="text-base font-extrabold text-heading sm:text-lg">
+              {t("progress.encouragementTitle")}
+            </h2>
+            <p className="mt-1 text-xs leading-[1.45] text-foreground sm:text-[13px]">
+              {t("progress.encouragementBody")}
+            </p>
+            <Button
+              asChild
+              className="mt-2 h-8 rounded-full bg-slate-950 px-4 text-xs text-white hover:bg-slate-800 dark:bg-sky-100 dark:text-slate-950 dark:hover:bg-white"
+            >
+              <Link to="/evaluations">
+                <Play className="mr-1.5 h-3.5 w-3.5 fill-current" aria-hidden="true" />
+                {t("progress.viewQuizzes")}
+                <ArrowRight className="ml-1.5 h-3.5 w-3.5" aria-hidden="true" />
+              </Link>
+            </Button>
+          </div>
         </section>
 
-        <section className="card-surface relative isolate overflow-hidden bg-gradient-to-br from-sky-50 to-blue-100 p-5 dark:from-sky-950/50 dark:to-blue-950/40 sm:p-6">
-          <div className="flex items-center gap-2">
-            <Lightbulb className="h-5 w-5 text-brand" aria-hidden="true" />
-            <h2 className="text-lg font-bold text-heading">{t("progress.personalizedAdvice")}</h2>
+        <section className="card-surface relative isolate min-h-[8.5rem] overflow-hidden border-blue-100 bg-gradient-to-br from-sky-50 via-blue-50 to-blue-100 p-3 dark:border-sky-900 dark:from-sky-950/50 dark:via-blue-950/40 dark:to-blue-950/50 sm:px-4">
+          <div className="relative z-10 flex items-center gap-2">
+            <Lightbulb className="h-6 w-6 shrink-0 text-brand" aria-hidden="true" />
+            <h2 className="text-base font-extrabold text-heading sm:text-lg">
+              {t("progress.personalizedAdvice")}
+            </h2>
           </div>
-          <div className="relative z-10 mt-5 flex items-start gap-3">
-            <Target className="mt-0.5 h-6 w-6 shrink-0 text-primary" aria-hidden="true" />
-            <p className="text-sm leading-relaxed text-foreground">
+          <div className="relative z-10 mt-1.5 flex max-w-[82%] items-start gap-2">
+            <Target
+              className="mt-0.5 h-5 w-5 shrink-0 text-blue-600 dark:text-sky-300"
+              aria-hidden="true"
+            />
+            <p className="text-xs leading-[1.45] text-foreground sm:text-[13px]">
               {!quizAttempts.length
                 ? t("progress.adviceNoAttempts")
                 : weakestSubject && weakestSubject.average < PASSING_SCORE
@@ -341,16 +304,90 @@ function ProgressPage() {
           </div>
           <Link
             to="/evaluations"
-            className="relative z-10 mt-5 inline-flex min-h-10 items-center justify-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+            className="relative z-10 mt-2 inline-flex h-8 items-center justify-center gap-2 rounded-full bg-slate-950 px-4 text-xs font-semibold text-white transition-colors hover:bg-slate-800 dark:bg-sky-100 dark:text-slate-950 dark:hover:bg-white"
           >
-            {t("progress.viewQuizzes")} <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            {t("progress.viewQuizzes")} <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
           </Link>
-          <BookOpen
-            className="absolute -bottom-3 -right-2 -z-10 h-24 w-24 rotate-[-12deg] text-primary/10"
-            aria-hidden="true"
-          />
+          <BookIllustration />
         </section>
       </div>
+
+      <section
+        className="card-surface relative z-10 overflow-hidden"
+        aria-labelledby="recent-results-heading"
+      >
+        <div className="flex min-h-11 items-center justify-between gap-3 border-b border-blue-100 px-4 sm:px-5 dark:border-slate-800">
+          <h2
+            id="recent-results-heading"
+            className="flex items-center gap-2 text-base font-bold text-heading sm:text-lg"
+          >
+            <ClipboardCheck className="h-5 w-5 text-brand" aria-hidden="true" />
+            {t("progress.recentResults")}
+          </h2>
+          {quizAttempts.length > 3 && (
+            <button
+              type="button"
+              className="inline-flex items-center gap-1 text-xs font-semibold text-blue-700 hover:underline dark:text-sky-300"
+              onClick={() => setShowAllResults((value) => !value)}
+            >
+              {t(showAllResults ? "progress.showRecent" : "progress.viewAll")}
+              <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+            </button>
+          )}
+        </div>
+        {quizAttempts.length === 0 ? (
+          <div className="p-4">
+            <Empty>{t("quiz.noAttempts")}</Empty>
+          </div>
+        ) : (
+          <ul className="divide-y divide-blue-50 dark:divide-slate-800">
+            {resultsToShow.map((attempt) => {
+              const subject = catalog.data.subjects.find((item) => item.id === attempt.subject_id);
+              const chapter = catalog.data.chapters.find((item) => item.id === attempt.chapter_id);
+              const passed = attempt.score >= PASSING_SCORE;
+              return (
+                <li
+                  key={attempt.id}
+                  className="grid gap-x-4 gap-y-2 px-4 py-3 sm:grid-cols-[minmax(12rem,1fr)_auto_auto_auto_minmax(10rem,1.4fr)] sm:items-center sm:px-5"
+                >
+                  <div className="flex min-w-0 items-center gap-3">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-600 dark:bg-blue-400/10 dark:text-sky-300">
+                      <ClipboardCheck className="h-4 w-4" aria-hidden="true" />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="truncate text-xs font-semibold text-heading sm:text-sm">
+                        {t("progress.quizType")}
+                        {subject ? ` - ${name(subject)}` : ""}
+                        {chapter ? ` · ${name(chapter)}` : ""}
+                      </p>
+                      <p className="mt-0.5 flex items-center gap-1 text-[11px] text-muted-foreground">
+                        <CalendarDays className="h-3 w-3" aria-hidden="true" />
+                        {formatDate(attempt.created_at)}
+                      </p>
+                    </div>
+                  </div>
+                  <span className="pl-12 text-sm font-bold text-heading sm:pl-0">
+                    {attempt.correct_count}/{attempt.total_questions}
+                  </span>
+                  <span className="pl-12 text-sm font-bold text-blue-700 dark:text-sky-300 sm:pl-0">
+                    {attempt.score}%
+                  </span>
+                  <span
+                    className={`ml-12 w-fit rounded-full px-3 py-1 text-[11px] font-semibold sm:ml-0 ${
+                      passed
+                        ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
+                        : "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200"
+                    }`}
+                  >
+                    {t(passed ? "progress.passed" : "progress.needsReview")}
+                  </span>
+                  <QuizAttemptReview attemptId={attempt.id} lang={lang} t={t} />
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
 
       {quizAttempts.length > 0 && (
         <section className="space-y-4" aria-label={t("progress.detailedHistory")}>
@@ -425,22 +462,83 @@ function StatCard({
   value: string | number;
   tone: "blue" | "green" | "sky" | "amber";
 }) {
-  const colors = {
-    blue: "bg-blue-100 text-blue-600 dark:bg-blue-400/10 dark:text-blue-300",
-    green: "bg-emerald-100 text-emerald-600 dark:bg-emerald-400/10 dark:text-emerald-300",
-    sky: "bg-sky-100 text-sky-600 dark:bg-sky-400/10 dark:text-sky-300",
-    amber: "bg-amber-100 text-amber-600 dark:bg-amber-400/10 dark:text-amber-300",
+  const toneStyles = {
+    blue: {
+      icon: "bg-blue-100 text-blue-600 dark:bg-blue-400/10 dark:text-blue-300",
+      shape: "border-blue-200/70 bg-blue-200/35 dark:border-blue-800/50 dark:bg-blue-900/20",
+    },
+    green: {
+      icon: "bg-emerald-100 text-emerald-600 dark:bg-emerald-400/10 dark:text-emerald-300",
+      shape:
+        "border-emerald-200/70 bg-emerald-200/35 dark:border-emerald-800/50 dark:bg-emerald-900/20",
+    },
+    sky: {
+      icon: "bg-sky-100 text-sky-600 dark:bg-sky-400/10 dark:text-sky-300",
+      shape: "border-sky-200/70 bg-sky-200/35 dark:border-sky-800/50 dark:bg-sky-900/20",
+    },
+    amber: {
+      icon: "bg-amber-100 text-amber-600 dark:bg-amber-400/10 dark:text-amber-300",
+      shape: "border-amber-200/70 bg-amber-200/35 dark:border-amber-800/50 dark:bg-amber-900/20",
+    },
   }[tone];
   return (
-    <section className="card-surface flex min-h-24 items-center gap-3 p-4 sm:gap-4 sm:p-5">
-      <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${colors}`}>
-        <Icon className="h-6 w-6" aria-hidden="true" />
+    <section className="card-surface relative isolate flex min-h-[4.1rem] items-center gap-3 overflow-hidden p-2.5 sm:px-3">
+      <span
+        aria-hidden="true"
+        className={`absolute -bottom-8 -right-4 -z-10 h-16 w-16 rounded-full border-[0.7rem] ${toneStyles.shape}`}
+      />
+      <span
+        aria-hidden="true"
+        className={`absolute -bottom-7 right-2 -z-10 h-11 w-11 rounded-full ${toneStyles.shape} opacity-60`}
+      />
+      <span
+        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${toneStyles.icon}`}
+      >
+        <Icon className="h-5 w-5" aria-hidden="true" />
       </span>
-      <div className="min-w-0">
-        <p className="text-sm text-muted-foreground">{label}</p>
-        <p className="mt-1 text-2xl font-extrabold leading-none text-heading">{value}</p>
+      <div className="relative min-w-0">
+        <p className="text-xs text-muted-foreground">{label}</p>
+        <p className="mt-0.5 text-xl font-extrabold leading-none text-heading">{value}</p>
       </div>
     </section>
+  );
+}
+
+function BookIllustration() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 140 86"
+      className="pointer-events-none absolute -bottom-2 -right-1 h-[4.8rem] w-[7.8rem] text-blue-300/70 dark:text-sky-300/25"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M70 20C54 10 34 12 14 21L23 73C41 65 56 65 70 76V20Z"
+        stroke="currentColor"
+        strokeWidth="3"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M70 20C86 10 106 12 126 21L117 73C99 65 84 65 70 76V20Z"
+        stroke="currentColor"
+        strokeWidth="3"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M70 20V76M30 29C41 25 51 25 60 30M32 40C42 37 51 38 60 42M34 51C43 48 52 49 61 54M110 29C99 25 89 25 80 30M108 40C98 37 89 38 80 42M106 51C97 48 88 49 79 54"
+        stroke="currentColor"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+      />
+      <path
+        d="M17 25L26 76M123 25L114 76"
+        stroke="currentColor"
+        strokeWidth="4"
+        strokeLinecap="round"
+        opacity=".55"
+      />
+    </svg>
   );
 }
 
@@ -542,22 +640,12 @@ function EncouragementIllustration() {
 
 function QuizAttemptReview({
   attemptId,
-  createdAt,
-  score,
-  correctCount,
-  totalQuestions,
   lang,
   t,
-  formatDate,
 }: {
   attemptId: string;
-  createdAt: string;
-  score: number;
-  correctCount: number;
-  totalQuestions: number;
   lang: "fr" | "ht";
   t: ReturnType<typeof useI18n>["t"];
-  formatDate: (date: string) => string;
 }) {
   const [open, setOpen] = useState(false);
   const { data, error, isLoading, refetch } = useQuery({
@@ -583,56 +671,49 @@ function QuizAttemptReview({
     }
   }
   return (
-    <div className="space-y-3">
-      <div className="flex flex-wrap items-center gap-3 text-sm">
-        <span className="inline-flex flex-1 items-center gap-1.5 text-xs text-muted-foreground">
-          <CalendarDays className="h-3.5 w-3.5" aria-hidden="true" />
-          {formatDate(createdAt)}
-        </span>
-        <span className="text-xs text-muted-foreground">
-          {correctCount}/{totalQuestions}
-        </span>
-        <span className="text-xs font-semibold text-heading">{score}%</span>
-        <Button
-          type="button"
-          size="sm"
-          variant="ghost"
-          aria-expanded={open}
-          onClick={() => setOpen((previous) => !previous)}
-        >
-          {t(open ? "progress.hideAnswers" : "progress.viewAnswers")}
-        </Button>
-      </div>
-      {open &&
-        (isLoading ? (
-          <Loading />
-        ) : error ? (
-          <ErrorState error={error} onRetry={() => void refetch()} />
-        ) : !result ? (
-          <p className="text-sm text-destructive">{t("quiz.historyUnavailable")}</p>
-        ) : (
-          <ol className="space-y-3 border-t border-border pt-4">
-            {result.results.map((item, index) => {
-              const options = lang === "ht" ? item.options_ht : item.options_fr;
-              return (
-                <li key={`${item.id}-${index}`} className="rounded-lg bg-muted/40 p-3 text-sm">
-                  <p className="font-medium text-heading">
-                    {index + 1}. {lang === "ht" ? item.question_ht : item.question_fr}
-                  </p>
-                  <p className="mt-2 text-muted-foreground">
-                    {t("quiz.yourAnswer")}: {options[item.selected_index]}
-                  </p>
-                  <p className="text-muted-foreground">
-                    {t("quiz.correctAnswer")}: {options[item.correct_index]}
-                  </p>
-                  <p className="mt-2 leading-relaxed">
-                    {lang === "ht" ? item.explanation_ht : item.explanation_fr}
-                  </p>
-                </li>
-              );
-            })}
-          </ol>
-        ))}
-    </div>
+    <>
+      <button
+        type="button"
+        aria-expanded={open}
+        onClick={() => setOpen((previous) => !previous)}
+        className="inline-flex items-center gap-1 border-l border-blue-100 pl-4 text-left text-[11px] font-medium text-blue-700 hover:underline dark:border-slate-700 dark:text-sky-300 sm:ml-2"
+      >
+        {t(open ? "progress.hideAnswers" : "progress.viewAllAnswers")}
+        <ArrowRight className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+      </button>
+      {open && (
+        <div className="col-span-full space-y-3 border-t border-border pt-3">
+          {isLoading ? (
+            <Loading />
+          ) : error ? (
+            <ErrorState error={error} onRetry={() => void refetch()} />
+          ) : !result ? (
+            <p className="text-sm text-destructive">{t("quiz.historyUnavailable")}</p>
+          ) : (
+            <ol className="space-y-3 pt-1">
+              {result.results.map((item, index) => {
+                const options = lang === "ht" ? item.options_ht : item.options_fr;
+                return (
+                  <li key={`${item.id}-${index}`} className="rounded-lg bg-muted/40 p-3 text-sm">
+                    <p className="font-medium text-heading">
+                      {index + 1}. {lang === "ht" ? item.question_ht : item.question_fr}
+                    </p>
+                    <p className="mt-2 text-muted-foreground">
+                      {t("quiz.yourAnswer")}: {options[item.selected_index]}
+                    </p>
+                    <p className="text-muted-foreground">
+                      {t("quiz.correctAnswer")}: {options[item.correct_index]}
+                    </p>
+                    <p className="mt-2 leading-relaxed">
+                      {lang === "ht" ? item.explanation_ht : item.explanation_fr}
+                    </p>
+                  </li>
+                );
+              })}
+            </ol>
+          )}
+        </div>
+      )}
+    </>
   );
 }

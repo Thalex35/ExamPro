@@ -182,7 +182,7 @@ function ProgressPage() {
           {subjectStats.length === 0 ? (
             <Empty>{t("progress.noSubjects")}</Empty>
           ) : (
-            <ul className="space-y-4">
+            <ul className="space-y-1">
               {subjectStats.map(({ subject, average, count }) => {
                 const SubjectIcon = subjectIcons[subject.icon ?? ""] ?? BookOpen;
                 return (
@@ -190,7 +190,7 @@ function ProgressPage() {
                     <a
                       href={average === null ? undefined : `#subject-results-${subject.id}`}
                       aria-disabled={average === null || undefined}
-                      className="group grid grid-cols-[2.5rem_minmax(0,1fr)_3.25rem] items-center gap-3 rounded-xl p-1 transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:grid-cols-[2.5rem_minmax(8rem,0.8fr)_minmax(4rem,1.6fr)_3.25rem]"
+                      className="group grid min-h-14 grid-cols-[2.5rem_minmax(0,1fr)_auto] items-center gap-3 rounded-xl px-1 transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     >
                       <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent text-accent-foreground">
                         <SubjectIcon className="h-5 w-5" aria-hidden="true" />
@@ -198,14 +198,23 @@ function ProgressPage() {
                       <span className="truncate text-sm font-medium text-heading">
                         {name(subject)}
                       </span>
-                      <span className="col-start-2 h-2 overflow-hidden rounded-full bg-muted sm:col-start-auto">
+                      <span className="inline-flex items-center gap-3">
+                        <span className="w-8 text-right text-sm font-medium text-heading">
+                          {average === null ? t("progress.noScoreYet") : `${average}%`}
+                        </span>
                         <span
-                          className="block h-full rounded-full bg-primary transition-[width]"
-                          style={{ width: `${average ?? 0}%` }}
-                        />
-                      </span>
-                      <span className="col-start-3 row-start-1 text-right text-sm font-bold text-heading">
-                        {average === null ? t("progress.noScoreYet") : `${average}%`}
+                          role="progressbar"
+                          aria-label={name(subject)}
+                          aria-valuemin={0}
+                          aria-valuemax={100}
+                          aria-valuenow={average ?? 0}
+                          className="h-1.5 w-12 overflow-hidden rounded-full bg-muted"
+                        >
+                          <span
+                            className="block h-full rounded-full bg-primary transition-[width]"
+                            style={{ width: `${average ?? 0}%` }}
+                          />
+                        </span>
                       </span>
                       {count > 0 && (
                         <span className="sr-only">
